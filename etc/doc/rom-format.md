@@ -1,0 +1,53 @@
+# Egg ROM Format
+
+Binary, and integers are big-endian.
+
+Every resource is uniquely identified by 32 bits:
+- 0xfc000000 6-bit type id "tid". Nonzero.
+- 0x03ff0000 10-bit qualifier "qual". Usually zero, or a packed language code.
+- 0x0000ffff 16-bit resource id "rid". Nonzero.
+
+Zero-length resources are indistinguishable from absent ones.
+The archive's framing is designed such that resources must be sorted by (tid,qual,rid).
+
+Maximum resource length is 538968190, a little over 500 MB.
+
+Beware that it is possible to arbitrarily pad an Egg ROM.
+Don't depend on a ROM file's hash if it needs to be secure.
+
+Starts with Header:
+```
+0000   4 Signature: 0xea 0x00 0xff 0xff
+0004   4 Header length, minimum 16.
+0008   4 TOC length.
+000c   4 Heap length.
+0010
+```
+
+Any header content beyond 16 bytes is reserved for future use and must be ignored.
+
+Header is followed immediately by TOC.
+Read bytewise with a state machine:
+```
+tid = 1
+qual = 0
+rid = 1
+heapp = 0
+```
+Then read commands, which are distinguishable from high bits of their first byte:
+```
+0lllllll                              SMALL. Add resource. heapp+=l, rid+=1. Zero is legal.
+100lllll llllllll llllllll            MEDIUM. Add resource. heapp+=l+128, rid+=1
+101lllll llllllll llllllll llllllll   LARGE. Add resource. heapp+=l+2097279, rid+=1
+110000qq qqqqqqqq                     QUAL. qual+=q+1, rid=1
+1101rrrr                              RID. rid+=r+1
+1100rr..                              Reserved (r nonzero).
+111ttttt                              TYPE. tid+=t+1, qual=0, rid=1
+```
+
+Overflowing rid DOES NOT advance qual, nor does overflowing qual advance tid.
+It is an error if one of the "Add resource" commands occurs where tid>63, qual>1023, or rid>65535.
+
+TOC is followed immediately by Heap, which is just loose data.
+
+Content after Heap is reserved for future use and should be ignored.
