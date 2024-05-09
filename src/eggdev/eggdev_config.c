@@ -39,6 +39,7 @@ void eggdev_print_help(const char *topic,int topicc) {
   fprintf(stderr,
     "%s bundle -oEXE --rom=ROM [--code=LIB]\n"
     "  Generate a native executable from a ROM file and optional native code (static library).\n"
+    "  If EXE ends with '.html', generate a web app instead.\n"
     "\n",eggdev.exename
   );
   fprintf(stderr,

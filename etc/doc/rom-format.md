@@ -51,3 +51,21 @@ It is an error if one of the "Add resource" commands occurs where tid>63, qual>1
 TOC is followed immediately by Heap, which is just loose data.
 
 Content after Heap is reserved for future use and should be ignored.
+
+## Alternate Format for Embedded Web Apps
+
+We could base64 the whole ROM file and drop that in some HTML tag,
+but then the app is burdened with decoding that massive chunk of base64, before it can start real work.
+So when we build an embedded web app, we rewrite the ROM in a slightly different text format.
+
+It operates with the same state machine as the binary format.
+Read one character -- a lowercase letter -- from the input, then read a hexadecimal integer with no prefix,
+then for the 'r' command, read a parenthesized chunk of base64.
+
+Whitespace is permitted anywhere, even within those integer tokens.
+
+Commands:
+- 't N': tid+=N+1, qual=0, rid=1
+- 'q N': qual+=N+1, rid=1
+- 's N': rid+=N+1
+- 'r N (...)': Add resource, length N, rid++. After decoding base64, zero-pad or truncate to the stated length.

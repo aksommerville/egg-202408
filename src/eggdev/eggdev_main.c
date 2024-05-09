@@ -243,9 +243,21 @@ static int eggdev_main_bundle() {
     fprintf(stderr,"%s: Please specify input rom file '--rom=PATH'\n",eggdev.exename);
     return 1;
   }
+  int dstpathc=0,ishtml=0;
+  while (eggdev.dstpath[dstpathc]) dstpathc++;
+  if ((dstpathc>=5)&&!memcmp(eggdev.dstpath+dstpathc-5,".html",5)) {
+    ishtml=1;
+  }
   int err;
   if (eggdev.codepath) {
+    if (ishtml) {
+      fprintf(stderr,"%s: '--code' is incompatible with '.html' output.\n",eggdev.exename);
+      //...and if i have to explain that to you, you shouldn't be trusted with web dev!
+      return 1;
+    }
     err=eggdev_shell_script("egg-native.sh",eggdev.dstpath,eggdev.rompath,eggdev.codepath);
+  } else if (ishtml) {
+    err=eggdev_bundle_html(eggdev.dstpath,eggdev.rompath);
   } else {
     err=eggdev_shell_script("egg-bundle.sh",eggdev.dstpath,eggdev.rompath);
   }

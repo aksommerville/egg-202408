@@ -20,7 +20,7 @@ cat - >"\$TMPASM" <<EOFASM
 egg_rom_bundled: .incbin "\$2"
 egg_rom_bundled_length: .int (egg_rom_bundled_length-egg_rom_bundled)
 EOFASM
-$LD -o\$1 \$TMPASM \$3 $LDPOST || exit 1
+$LD -o\$1 \$TMPASM -Wl,--start-group \$3 $LDPOST -Wl,--end-group || exit 1
 rm \$TMPASM
 EOF
 

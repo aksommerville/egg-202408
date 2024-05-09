@@ -10,8 +10,28 @@ Having got Egg up to a point where it basically works, I'm seeing some key flaws
 - Networking vastly expands our vulnerability surface, and let's be honest, I'm not going to police it fully over time.
 - The 1 MB/resource limit hasn't bit me yet, but it's likely to.
 - Packing ROM files doesn't let the developer insert his own processing logic, and there's no obvious place for that to fit in.
+- - Not going to address this as such. We'll recommend preprocessing before pack. Only standard resource types get the special privilege of compiling during pack.
 - When packed into HTML, the whole archive is base64 encoded. Can we get smarter about that? Some more digestible text format for archives?
 - Reconsider exposing GL generically. But failing that, do make a richer set of render calls.
+
+So some important differences here:
+- No Network API.
+- No Javascript runtime.
+- Resources basically unlimited size (~500MB).
+- Smarter archive format for embedded HTML.
+
+And some minor ones:
+- Slightly cleaner build system.
+- Single dev tool.
+- Recommending clang over WASI, I didn't even realize that was an option, ha ha.
+- Some new video API.
+- Pointer warping.
+- Move audio playhead.
+- PNG available at runtime.
+- Map joysticks platform-side.
+
+And some major outstanding questions:
+- GLES2/WebGL exposed directly?
 
 ## TODO
 
@@ -23,7 +43,8 @@ Having got Egg up to a point where it basically works, I'm seeing some key flaws
 - - - [x] htdocs etc
 - - - [x] JSON listing of available ROMs.
 - [x] Define API.
-- [ ] Split up and generalize makefiles.
+- [x] Split up and generalize makefiles.
+- [ ] eggdev unbundle for HTML (text format)
 - [ ] Web runtime
 - [ ] Native runtime for Linux
 - [ ] Raspberry Pi

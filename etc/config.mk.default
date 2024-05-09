@@ -1,0 +1,53 @@
+# etc/config.mk
+# This file defines your local setup for building Egg.
+# It will be ignored by git.
+
+# wasm-micro-runtime, required to run WebAssembly (and our only 100% necessary dependency).
+# https://github.com/bytecodealliance/wasm-micro-runtime
+WAMR_SDK:=path/to/wasm-micro-runtime
+
+# Declare which things you want to build.
+# You must build 'tools', the other targets may require it.
+# 'web' is typical, and also your native architecture (linux, macos, mswin).
+TARGETS:=tools web demo linux
+
+# Shorthand make commands, these should always alias some target-specific command.
+run:linux-run
+serve:web-serve
+
+#------------------------------------------------------------------------------
+
+tools_OPT_ENABLE:=
+tools_TOOLCHAIN:=
+tools_CC_EXTRA:=
+tools_LD_EXTRA:=
+tools_EXE_SFX:=
+
+#------------------------------------------------------------------------------
+
+web_OPT_ENABLE:=
+web_TOOLCHAIN:=
+web_CC_EXTRA:=
+web_LD_EXTRA:=
+
+#------------------------------------------------------------------------------
+
+linux_OPT_ENABLE:=
+linux_TOOLCHAIN:=
+linux_CC_EXTRA:=
+linux_LD_EXTRA:=
+
+#------------------------------------------------------------------------------
+
+macos_OPT_ENABLE:=
+macos_TOOLCHAIN:=
+macos_CC_EXTRA:=
+macos_LD_EXTRA:=
+
+#------------------------------------------------------------------------------
+
+mswin_OPT_ENABLE:=
+mswin_TOOLCHAIN:=
+mswin_CC_EXTRA:=
+mswin_LD_EXTRA:=
+
