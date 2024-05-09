@@ -49,6 +49,8 @@ int eggdev_pack_add_file(struct romw *romw,const char *path);
 int eggdev_pack_digest(struct romw *romw,int toc_only);
 
 int eggdev_bundle_html(const char *dstpath,const char *srcpath);
+int eggdev_unbundle_html(void *dstpp,const char *srcpath);
+int eggdev_unbundle_exe(void *dstpp,const char *srcpath);
 
 int eggdev_tocflag_generate(struct sr_encoder *dst);
 

@@ -271,38 +271,6 @@ static int eggdev_main_bundle() {
 /* unbundle
  */
  
-static int eggdev_locate_rom_in_nm_output(int *p,const char *src,int srcc) {
-  struct sr_decoder decoder={.v=src,.c=srcc};
-  int linec,c=0;
-  const char *line;
-  while ((linec=sr_decode_line(&line,&decoder))>0) {
-    int qp=0,linep=0;
-    while (linec&&((unsigned char)line[linec-1]<=0x20)) linec--;
-    while ((linep<linec)&&((unsigned char)line[linep]<=0x20)) linep++;
-    while ((linep<linec)&&((unsigned char)line[linep]>0x20)) {
-      int digit;
-           if ((line[linep]>='0')&&(line[linep]<='9')) digit=line[linep]-'0';
-      else if ((line[linep]>='a')&&(line[linep]<='f')) digit=line[linep]-'a'+10;
-      else if ((line[linep]>='A')&&(line[linep]<='F')) digit=line[linep]-'A'+10;
-      else { qp=-1; break; }
-      if (qp&~(INT_MAX>>4)) { qp=-1; break; }
-      qp<<=4;
-      qp|=digit;
-      linep++;
-    }
-    if (qp<=0) continue; // 0 might be valid, but very unrealistic
-    const char *name=line+linec;
-    int namec=0;
-    while ((namec<linec)&&((unsigned char)name[-1]>0x20)) { name--; namec++; }
-    if ((namec==15)&&!memcmp(name,"egg_rom_bundled",15)) {
-      *p=qp;
-    } else if ((namec==22)&&!memcmp(name,"egg_rom_bundled_length",22)) {
-      c=qp;
-    }
-  }
-  return c;
-}
- 
 static int eggdev_main_unbundle() {
   if (!eggdev.dstpath) {
     fprintf(stderr,"%s: Please specify output ROM path '-oPATH'.\n",eggdev.exename);
@@ -313,37 +281,39 @@ static int eggdev_main_unbundle() {
     return 1;
   }
   const char *srcpath=eggdev.srcpathv[0];
-  char cmd[1024];
-  int cmdc=snprintf(cmd,sizeof(cmd),"nm %s",srcpath);
-  if ((cmdc<1)||(cmdc>=sizeof(cmd))) return 1;
-  struct sr_encoder nmout={0};
-  int err=eggdev_command_sync(&nmout,cmd);
-  if (err<0) {
-    fprintf(stderr,"%s: Error running 'nm' on '%s'\n",eggdev.exename,srcpath);
+  char sfx[16];
+  int sfxc=0,reading=0,srcpathc=0;
+  for (;srcpath[srcpathc];srcpathc++) {
+    if (srcpath[srcpathc]=='/') {
+      sfxc=0;
+      reading=0;
+    } else if (srcpath[srcpathc]=='.') {
+      sfxc=0;
+      reading=1;
+    } else if (reading) {
+      if (sfxc>=sizeof(sfx)) {
+        sfxc=0;
+        reading=0;
+      } else {
+        if ((srcpath[srcpathc]>='A')&&(srcpath[srcpathc]<='Z')) sfx[sfxc]=srcpath[srcpathc]+0x20;
+        else sfx[sfxc]=srcpath[srcpathc];
+        sfxc++;
+      }
+    }
+  }
+  void *serial=0;
+  int serialc=0;
+  if ((sfxc==4)&&!memcmp(sfx,"html",4)) {
+    serialc=eggdev_unbundle_html(&serial,srcpath);
+  } else {
+    serialc=eggdev_unbundle_exe(&serial,srcpath);
+  }
+  if (serialc<0) {
+    if (serialc!=-2) fprintf(stderr,"%s: Failed to extract ROM\n",srcpath);
     return 1;
   }
-  int p=0,cp=0;
-  if ((cp=eggdev_locate_rom_in_nm_output(&p,nmout.v,nmout.c))<=0) {
-    fprintf(stderr,"%s: Failed to located bundled ROM file.\n",srcpath);
-    return 1;
-  }
-  uint8_t *src=0;
-  int srcc=file_read(&src,srcpath);
-  if (srcc<0) {
-    fprintf(stderr,"%s: Failed to read file.\n",srcpath);
-    return 1;
-  }
-  if ((cp<0)||(cp>srcc-4)) {
-    fprintf(stderr,"%s: Impossible position %d for ROM length in %d-byte executable.\n",srcpath,cp,srcc);
-    return 1;
-  }
-  int c=src[cp]|(src[cp+1]<<8)|(src[cp+2]<<16)|(src[cp+3]<<24); // Assume little-endian. Is there some way we can be sure?
-  if ((p<0)||(c<0)||(p>srcc-c)) {
-    fprintf(stderr,"%s: Invalid position (%d,%d) in %d-byte executable.\n",srcpath,p,c,srcc);
-    return 1;
-  }
-  if (file_write(eggdev.dstpath,src+p,c)<0) {
-    fprintf(stderr,"%s: Failed to write %d-byte ROM\n",eggdev.dstpath,c);
+  if (file_write(eggdev.dstpath,serial,serialc)<0) {
+    fprintf(stderr,"%s: Failed to write %d-byte ROM file\n",eggdev.dstpath,serialc);
     return 1;
   }
   return 0;

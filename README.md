@@ -44,7 +44,7 @@ And some major outstanding questions:
 - - - [x] JSON listing of available ROMs.
 - [x] Define API.
 - [x] Split up and generalize makefiles.
-- [ ] eggdev unbundle for HTML (text format)
+- [x] eggdev unbundle for HTML (text format)
 - [ ] Web runtime
 - [ ] Native runtime for Linux
 - [ ] Raspberry Pi
