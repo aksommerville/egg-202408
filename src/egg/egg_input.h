@@ -160,7 +160,8 @@ int egg_lock_cursor(int lock);
  * TODO Confirm we can trigger callbacks in both web and wamr.
  */
 int egg_joystick_devid_by_index(int p);
-const char *egg_joystick_get_ids(int *vid,int *pid,int *version,int devid);
+void egg_joystick_get_ids(int *vid,int *pid,int *version,int devid);
+int egg_joystick_get_name(char *dst,int dsta,int devid);
 int egg_joystick_for_each_button(int devid,int (*cb)(int btnid,int usage,int lo,int hi,int value,void *userdata),void *userdata);
 
 #endif

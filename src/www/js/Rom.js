@@ -2,7 +2,24 @@ export class Rom {
   constructor(serial) {
     if (serial instanceof ArrayBuffer) serial = new Uint8Array(serial);
     this.resv = []; // {tid,qual,rid,v:Uint8Array}, sorted
+    this.empty = new Uint8Array(0);
     this.decode(serial);
+  }
+  
+  getRes(tid, qual, rid) {
+    let lo=0, hi=this.resv.length;
+    while (lo < hi) {
+      const ck = (lo + hi) >> 1;
+      const q = this.resv[ck];
+           if (tid < q.tid) hi = ck;
+      else if (tid > q.tid) lo = ck + 1;
+      else if (qual < q.qual) hi = ck;
+      else if (qual > q.qual) lo = ck + 1;
+      else if (rid < q.rid) hi = ck;
+      else if (rid > q.rid) lo = ck + 1;
+      else return q.v;
+    }
+    return this.empty;
   }
   
   decode(src) {
@@ -25,6 +42,7 @@ export class Rom {
       if (heapp > eof - len) throw "Invalid ROM";
       this.resv.push({ tid, qual, rid, v: new Uint8Array(src.buffer, heapp, len) });
       heapp += len;
+      rid += 1;
     };
     while (tocp < heap0) {
       const lead = src[tocp++];
@@ -33,13 +51,13 @@ export class Rom {
       } else switch (lead & 0xe0) {
         case 0x80: { // MEDIUM
             if (tocp > heap0 - 2) throw "Invalid ROM";
-            const len = ((lead & 0x1f) << 16) | (src[tocp] << 8) | src[tocp+1];
+            const len = (((lead & 0x1f) << 16) | (src[tocp] << 8) | src[tocp+1]) + 128;
             tocp += 2;
             addres(len);
           } break;
         case 0xa0: { // LARGE
             if (tocp > heap0 - 3) throw "Invalid ROM";
-            const len = ((lead & 0x1f) << 24) | (src[tocp] << 16) | (src[tocp+1] << 8) | src[tocp+2];
+            const len = (((lead & 0x1f) << 24) | (src[tocp] << 16) | (src[tocp+1] << 8) | src[tocp+2]) + 2097279;
             tocp += 3;
             addres(len);
           } break;
@@ -66,3 +84,10 @@ export class Rom {
     }
   }
 }
+
+Rom.RESTYPE_metadata = 1;
+Rom.RESTYPE_wasm = 2;
+Rom.RESTYPE_string = 3;
+Rom.RESTYPE_image = 4;
+Rom.RESTYPE_song = 5;
+Rom.RESTYPE_sound = 6;

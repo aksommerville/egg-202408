@@ -3,6 +3,7 @@
 
 #include "opt/rom/rom.h"
 #include "opt/wamr/wamr.h"
+#include "opt/png/png.h"
 #include "egg_config.h"
 #include "egg/egg.h"
 #include <stdlib.h>

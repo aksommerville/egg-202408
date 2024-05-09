@@ -5,6 +5,7 @@
 #include "opt/fs/fs.h"
 #include "opt/rom/rom.h"
 #include "opt/http/http.h"
+#include "egg/egg.h"
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>

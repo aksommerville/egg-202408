@@ -161,3 +161,12 @@ void *wamr_validate_pointer(struct wamr *wamr,int modid,uint32_t waddr,int reqc)
   }
   return 0;
 }
+
+/* Call something in the function table.
+ */
+                           
+int wamr_call_table(struct wamr *wamr,int fnid,uint32_t *argv,int argc) {
+  if (wamr->modulec<1) return -1;
+  if (!wasm_runtime_call_indirect(wamr->modulev[0].ee,fnid,argc,argv)) return -1;
+  return 0;
+}

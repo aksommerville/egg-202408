@@ -8,7 +8,7 @@ A valid ROM file must contain `metadata:0:1` and `wasm:0:1`, and they must be th
 | 0x01 | metadata              | qual always 0, rid always 1. See below. |
 | 0x02 | wasm                  | qual always 0, rid always 1. |
 | 0x03 | string                | Loose text. qual is language. Recommend UTF-8. |
-| 0x04 | image                 | Encoded image file. qual is language or zero. Recommend PNG. (TODO declare supported formats firmly) |
+| 0x04 | image                 | Encoded image file. qual is language or zero. Only PNG is supported. |
 | 0x05 | song                  | See below. |
 | 0x06 | sound                 | WAV or SFG (see below). qual is language or zero. |
 | 0x07..0x0f | reserved        | Reserved for future use by Egg. |
@@ -51,7 +51,7 @@ I recommend using both in this case, so lazy decoders don't have to look up stri
 | title               | yes  | Game's name. |
 | language            | no   | Comma-delimited list of ISO 639 codes ordered by your preference. |
 | framebuffer         | no   | "WIDTHxHEIGHT", decimal. |
-| iconImage           | no   | Decimal ID of an image resource, recommend 32x32 with alpha. |
+| iconImage           | no   | Decimal ID of an image resource, recommend 16x16 with alpha. |
 | author              | yes  | Your name. |
 | copyright           | yes  | eg "(c) 2024 AK Sommerville" |
 | description         | yes  | Long-form text for human consumption. |

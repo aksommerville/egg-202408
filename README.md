@@ -45,8 +45,13 @@ And some major outstanding questions:
 - [x] Define API.
 - [x] Split up and generalize makefiles.
 - [x] eggdev unbundle for HTML (text format)
+- [x] Can we use PNG as favicon? That will make the difference, whether we allow multiple image formats. ...YES PNG is fine.
 - [ ] Web runtime
 - [ ] Native runtime for Linux
 - [ ] Raspberry Pi
 - [ ] MS Windows
 - [ ] MacOS
+- [ ] eggdev pack: Validate wasm imports and exports, is that feasible?
+- [ ] eggdev bundle with native code: Automatically strip wasm resource, so we can bundle from the regular egg file
+- [ ] Some amount of libc for games. At least need memory and math functions.
+- - It's OK (advisable!) to do that purely client-side, but we should supply a library or something.

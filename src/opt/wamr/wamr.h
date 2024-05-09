@@ -31,4 +31,9 @@ int wamr_call(struct wamr *wamr,int modid,int fnid,uint32_t *argv,int argc);
  */
 void *wamr_validate_pointer(struct wamr *wamr,int modid,uint32_t waddr,int reqc);
 
+/* If the Wasm app gives you a function pointer, use this to call it.
+ * Return value goes into argv[0].
+ */
+int wamr_call_table(struct wamr *wamr,int fnid,uint32_t *argv,int argc);
+
 #endif

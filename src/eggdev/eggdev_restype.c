@@ -63,8 +63,8 @@ int eggdev_type_repr(char *dst,int dsta,int tid) {
   const char *src=0;
   if (eggdev.name_by_tid) src=eggdev.name_by_tid[tid];
   if (!src) switch (tid) {
-    #define _(tag) case RESTYPE_##tag: src=#tag; break;
-    RESTYPE_FOR_EACH
+    #define _(tag) case EGG_RESTYPE_##tag: src=#tag; break;
+    EGG_RESTYPE_FOR_EACH
     #undef _
   }
   if (src) {
@@ -94,8 +94,8 @@ int eggdev_type_eval(const char *src,int srcc) {
       return tid;
     }
   }
-  #define _(tag) if ((srcc==sizeof(#tag)-1)&&!memcmp(src,#tag,srcc)) return RESTYPE_##tag;
-  RESTYPE_FOR_EACH
+  #define _(tag) if ((srcc==sizeof(#tag)-1)&&!memcmp(src,#tag,srcc)) return EGG_RESTYPE_##tag;
+  EGG_RESTYPE_FOR_EACH
   #undef _
   return 0;
 }

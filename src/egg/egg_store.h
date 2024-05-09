@@ -5,6 +5,21 @@
 #ifndef EGG_STORE_H
 #define EGG_STORE_H
 
+#define EGG_RESTYPE_metadata 1
+#define EGG_RESTYPE_wasm 2
+#define EGG_RESTYPE_string 3
+#define EGG_RESTYPE_image 4
+#define EGG_RESTYPE_song 5
+#define EGG_RESTYPE_sound 6
+
+#define EGG_RESTYPE_FOR_EACH \
+  _(metadata) \
+  _(wasm) \
+  _(string) \
+  _(image) \
+  _(song) \
+  _(sound)
+
 /* Copy a resource from the ROM to client memory.
  * Always returns the actual length, never negative.
  * If >dsta, nothing is written to (dst).

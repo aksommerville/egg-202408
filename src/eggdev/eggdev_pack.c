@@ -93,7 +93,7 @@ static int eggdev_pack_add_regular_file(struct romw *romw,const char *path) {
   if (!rpath.rid) {
     switch (rpath.tid) {
     
-      case RESTYPE_string: {
+      case EGG_RESTYPE_string: {
           int err=eggdev_strings_slice(romw,serial,serialc,&rpath);
           if (err) {
             free(serial);
@@ -103,7 +103,7 @@ static int eggdev_pack_add_regular_file(struct romw *romw,const char *path) {
           }
         } break;
         
-      case RESTYPE_sound: {
+      case EGG_RESTYPE_sound: {
           int err=eggdev_sounds_slice(romw,serial,serialc,&rpath);
           if (err) {
             free(serial);
@@ -226,12 +226,12 @@ int eggdev_pack_digest(struct romw *romw,int toc_only) {
   int i=romw->resc;
   for (;i-->0;res++) {
     switch (res->tid) {
-      case RESTYPE_metadata: err=eggdev_metadata_compile(romw,res); break;
-      case RESTYPE_wasm: break;
-      case RESTYPE_string: break;
-      case RESTYPE_image: err=eggdev_image_compile(romw,res); break;
-      case RESTYPE_song: err=eggdev_song_compile(romw,res); break;
-      case RESTYPE_sound: err=eggdev_sound_compile(romw,res); break;
+      case EGG_RESTYPE_metadata: err=eggdev_metadata_compile(romw,res); break;
+      case EGG_RESTYPE_wasm: break;
+      case EGG_RESTYPE_string: break;
+      case EGG_RESTYPE_image: err=eggdev_image_compile(romw,res); break;
+      case EGG_RESTYPE_song: err=eggdev_song_compile(romw,res); break;
+      case EGG_RESTYPE_sound: err=eggdev_sound_compile(romw,res); break;
     }
   }
   return 0;
