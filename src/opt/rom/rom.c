@@ -187,13 +187,13 @@ void rom_unpack_fqrid(int *tid,int *qual,int *rid,uint32_t fqrid) {
 }
 
 void rom_qual_repr(char *dst/*2*/,int qual) {
-  dst[0]="abcdefghijklmnopqrstuvwxyz123456"[(qual>>5)&31];
-  dst[1]="abcdefghijklmnopqrstuvwxyz123456"[qual&31];
+  dst[0]="012345abcdefghijklmnopqrstuvwxyz"[(qual>>5)&31];
+  dst[1]="012345abcdefghijklmnopqrstuvwxyz"[qual&31];
 }
 
 static inline int rom_qual_eval_1(char src) {
-  if ((src>='a')&&(src<='z')) return src-'a';
-  if ((src>='1')&&(src<='6')) return src-'1'+26;
+  if ((src>='0')&&(src<='5')) return src-'0';
+  if ((src>='a')&&(src<='z')) return src-'a'+6;
   return -1;
 }
 

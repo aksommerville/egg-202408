@@ -44,7 +44,7 @@ export class Egg {
     this.canvas = document.createElement("CANVAS");
     this.setCanvasSize();
     body.appendChild(this.canvas);
-    this.render = new Render(this.canvas, this.data);
+    this.render = new Render(this);
     this.exec = new Exec(this);
     this.retitlePerRom();
   }

@@ -2,11 +2,9 @@ import { Rom } from "./Rom.js";
 import { Egg } from "./Egg.js";
 
 function startEgg(rom) {
-  console.log(`TODO bootstrap.js:startEgg`, { rom });
   const egg = new Egg(rom);
   egg.attachToDom();
   egg.start().then(() => {
-    console.log(`bootstrap: Egg started`);
   }).catch(displayError);
 }
 

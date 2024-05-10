@@ -4,6 +4,7 @@
 #include "opt/rom/rom.h"
 #include "opt/wamr/wamr.h"
 #include "opt/png/png.h"
+#include "opt/render/render.h"
 #include "egg_config.h"
 #include "egg/egg.h"
 #include <stdlib.h>
@@ -17,6 +18,8 @@ extern struct egg {
   int terminate;
   struct rom rom;
   struct wamr *wamr;
+  struct render *render;
+  volatile int sigc;
 } egg;
 
 extern const int egg_romsrc;

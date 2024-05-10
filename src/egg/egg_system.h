@@ -32,8 +32,8 @@ void egg_request_termination();
  * We may return (>a) if more are available, but in that case we do populate up to (a).
  * A language qualifier is ten bits, the way we use them in ROM files.
  * For presentation: [
- *   "abcdefghijklmnopqrstuvwxyz123456"[(v>>5)&31],
- *   "abcdefghijklmnopqrstuvwxyz123456"[v&31],
+ *   "012345abcdefghijklmnopqrstuvwxyz"[(v>>5)&31],
+ *   "012345abcdefghijklmnopqrstuvwxyz"[v&31],
  * ]
  */
 int egg_get_user_languages(int *v,int a);

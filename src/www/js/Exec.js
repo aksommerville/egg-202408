@@ -62,7 +62,6 @@ export class Exec {
       egg_audio_set_playhead: (b) => egg.audio.egg_audio_set_playhead(b),
     }};
     return WebAssembly.instantiate(serial, options).then(result => {
-      console.log(`wasm instantiated`, result);
       const yoink = name => {
         if (!result.instance.exports[name]) {
           throw new Error(`ROM does not export required symbol '${name}'`);
@@ -105,5 +104,11 @@ export class Exec {
       dstview.set(srcview);
     }
     return src.length;
+  }
+  
+  // Offset Uint8Array, or null if OOB
+  getView(p, c) {
+    if ((p < 0) || (c < 0) || (p > this.memory.buffer.byteLength - c)) return null;
+    return new Uint8Array(this.memory.buffer, p, c);
   }
 }

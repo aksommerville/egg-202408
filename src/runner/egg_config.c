@@ -12,6 +12,7 @@ static void egg_print_help(const char *topic,int topicc) {
   fprintf(stderr,
     "OPTIONS:\n"
     "  --help             Print this message and exit.\n"
+    "  --lang=en          Set language. Overrides LANG and LANGUAGE env vars.\n"
     "\n"
   );
 }
@@ -26,6 +27,14 @@ static int egg_config_kv(const char *k,int kc,const char *v,int vc) {
   if ((kc==4)&&!memcmp(k,"help",4)) {
     egg_print_help(v,vc);
     egg.terminate=1;
+    return 0;
+  }
+  
+  if ((kc==4)&&!memcmp(k,"lang",4)) {
+    if ((egg.config.lang=rom_qual_eval(v,vc))<=0) {
+      fprintf(stderr,"%s: Expected 2-letter ISO 639 language code for --lang, found '%.*s'\n",egg.exename,vc,v);
+      return -2;
+    }
     return 0;
   }
   

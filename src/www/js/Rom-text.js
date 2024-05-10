@@ -4,6 +4,22 @@ export class Rom {
     this.decode(src);
   }
   
+  getRes(tid, qual, rid) {
+    let lo=0, hi=this.resv.length;
+    while (lo < hi) {
+      const ck = (lo + hi) >> 1;
+      const q = this.resv[ck];
+           if (tid < q.tid) hi = ck;
+      else if (tid > q.tid) lo = ck + 1;
+      else if (qual < q.qual) hi = ck;
+      else if (qual > q.qual) lo = ck + 1;
+      else if (rid < q.rid) hi = ck;
+      else if (rid > q.rid) lo = ck + 1;
+      else return q.v;
+    }
+    return this.empty;
+  }
+  
   decode(src) {
     let tid=1, qual=0, rid=1, i=0;
     const rdch = () => {
@@ -71,3 +87,10 @@ export class Rom {
     }
   }
 }
+
+Rom.RESTYPE_metadata = 1;
+Rom.RESTYPE_wasm = 2;
+Rom.RESTYPE_string = 3;
+Rom.RESTYPE_image = 4;
+Rom.RESTYPE_song = 5;
+Rom.RESTYPE_sound = 6;

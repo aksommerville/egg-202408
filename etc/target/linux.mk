@@ -1,10 +1,10 @@
-linux_OPT_ENABLE+=fs rom serial wamr strfmt png
+linux_OPT_ENABLE+=fs rom serial wamr strfmt png render
 
 linux_CC:=$(linux_TOOLCHAIN)gcc -c -MMD -O3 -Isrc -Werror -Wimplicit $(linux_CC_EXTRA) \
   $(patsubst %,-DUSE_%=1,$(tools_OPT_ENABLE)) \
   -I$(WAMR_SDK)/core/iwasm/include
 linux_LD:=$(linux_TOOLCHAIN)gcc
-linux_LDPOST:=$(linux_LD_EXTRA) $(abspath $(WAMR_SDK)/build/libvmlib.a) -lm -lz
+linux_LDPOST:=$(linux_LD_EXTRA) $(abspath $(WAMR_SDK)/build/libvmlib.a) -lm -lz -lGL -lEGL
 linux_AR:=$(linux_TOOLCHAIN)ar rc
 
 $(linux_MIDDIR)/%.o:src/%.c;$(PRECMD) $(linux_CC) -o$@ $<

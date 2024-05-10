@@ -15,7 +15,7 @@ EGGINC:=../..
 EGGDEV:=../../../out/tools/eggdev
 EGGEXE:=../../../out/linux/egg
 
-CC:=clang --target=wasm32 -c -O3 -MMD -nostdlib -I$(EGGINC)
+CC:=clang --target=wasm32 -c -O3 -MMD -nostdlib -I$(EGGINC) -Wno-comment
 LD:=wasm-ld --no-entry -z stack-size=4194304 --no-gc-sections --allow-undefined --export-table \
   --export=egg_client_init --export=egg_client_quit --export=egg_client_update --export=egg_client_render
 

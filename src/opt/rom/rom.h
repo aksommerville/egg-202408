@@ -9,24 +9,6 @@
 
 struct sr_encoder;
 
-/* Standard resource types.
- *XXX move to egg_store.h
-#define RESTYPE_metadata 1
-#define RESTYPE_wasm 2
-#define RESTYPE_string 3
-#define RESTYPE_image 4
-#define RESTYPE_song 5
-#define RESTYPE_sound 6
-
-#define RESTYPE_FOR_EACH \
-  _(metadata) \
-  _(wasm) \
-  _(string) \
-  _(image) \
-  _(song) \
-  _(sound)
-/**/
-
 /* Normal read-only interface.
  **********************************************************/
 

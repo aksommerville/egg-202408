@@ -83,9 +83,7 @@ export class ImageDecoder {
       case 1: fmt = 3; break;
       default: fmt = 0; // force RGBA after preliminary decode
     }
-    console.log({ chunks, ihdr });
     const filtered = new Zlib.Inflate(chunks.idat).decompress();
-    console.log({ filtered });
     let dst = new Uint8Array(ihdr.stride * ihdr.h);
     this.unfilterPng(dst, filtered, ihdr.stride, ihdr.xstride);
     if (!fmt) {

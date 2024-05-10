@@ -7,6 +7,7 @@
 // These are globals, (egg.config).
 struct egg_config {
   const char *rompath;
+  int lang;
 };
 
 int egg_configure(int argc,char **argv);

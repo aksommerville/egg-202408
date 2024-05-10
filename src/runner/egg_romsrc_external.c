@@ -8,6 +8,7 @@
 #include "opt/strfmt/strfmt.h"
 #include "wasm_export.h"
 #include <sys/time.h>
+#include <time.h>
 
 #if EGG_BUNDLE_ROM
 const int egg_romsrc=EGG_ROMSRC_BUNDLED;
@@ -67,7 +68,28 @@ static double egg_wasm_time_real(wasm_exec_env_t ee) {
 }
 
 static void egg_wasm_time_local(wasm_exec_env_t ee,int vp,int a) {
-  //TODO egg_time_local
+  if (a<1) return;
+  if (a>7) a=7;
+  int *dst=wamr_validate_pointer(egg.wamr,1,vp,a*sizeof(int));
+  if (!dst) return;
+  time_t now=time(0);
+  struct tm tm={0};
+  localtime_r(&now,&tm);
+  *(dst++)=1900+tm.tm_year;
+  if (a<2) return;
+  *(dst++)=1+tm.tm_mon;
+  if (a<3) return;
+  *(dst++)=tm.tm_mday;
+  if (a<4) return;
+  *(dst++)=tm.tm_hour;
+  if (a<5) return;
+  *(dst++)=tm.tm_min;
+  if (a<6) return;
+  *(dst++)=tm.tm_sec;
+  if (a<7) return;
+  struct timeval tv={0};
+  gettimeofday(&tv,0);
+  *dst=tv.tv_usec/1000;
 }
 
 static void egg_wasm_request_termination(wasm_exec_env_t ee) {
@@ -76,55 +98,71 @@ static void egg_wasm_request_termination(wasm_exec_env_t ee) {
 }
 
 static int egg_wasm_get_user_languages(wasm_exec_env_t ee,int vp,int a) {
-  return 0;//TODO egg_get_user_languages
+  int tmp[16];
+  int tmpc=egg_get_user_languages(tmp,16);
+  if (tmpc>16) tmpc=16;
+  int cpc=(tmpc<a)?tmpc:a;
+  void *dst=wamr_validate_pointer(egg.wamr,1,vp,sizeof(int)*cpc);
+  if (!dst) return 0;
+  memcpy(dst,tmp,sizeof(int)*cpc);
+  return tmpc;
 }
 
 static void egg_wasm_texture_del(wasm_exec_env_t ee,int texid) {
-  //TODO egg_texture_del
+  render_texture_del(egg.render,texid);
 }
 
 static int egg_wasm_texture_new(wasm_exec_env_t ee) {
-  return 0;//TODO egg_texture_new
+  return render_texture_new(egg.render);
 }
 
 static void egg_wasm_texture_get_header(wasm_exec_env_t ee,int *w,int *h,int *fmt,int texid) {
-  //TODO egg_texture_get_header
+  render_texture_get_header(w,h,fmt,egg.render,texid);
 }
 
 static int egg_wasm_texture_load_image(wasm_exec_env_t ee,int texid,int qual,int rid) {
-  return -1;//TODO egg_texture_load_image
+  const void *serial=0;
+  int serialc=rom_get(&serial,&egg.rom,EGG_RESTYPE_image,qual,rid);
+  if (serialc<=0) return -1;
+  return render_texture_load(egg.render,texid,0,0,0,0,serial,serialc);
 }
 
 static int egg_wasm_texture_upload(wasm_exec_env_t ee,int texid,int w,int h,int stride,int fmt,const void *v,int c) {
-  return -1;//TODO egg_texture_upload
+  return render_texture_load(egg.render,texid,w,h,stride,fmt,v,c);
 }
 
 static void egg_wasm_texture_clear(wasm_exec_env_t ee,int texid) {
-  //TODO egg_texture_clear
+  render_texture_clear(egg.render,texid);
 }
 
 static void egg_wasm_render_tint(wasm_exec_env_t ee,uint32_t rgba) {
-  //TODO egg_render_tint
+  render_tint(egg.render,rgba);
 }
 
 static void egg_wasm_render_alpha(wasm_exec_env_t ee,uint8_t a) {
-  //TODO egg_render_alpha
+  render_alpha(egg.render,a);
 }
 
 static void egg_wasm_draw_rect(wasm_exec_env_t ee,int dsttexid,int x,int y,int w,int h,int rgba) {
-  //TODO egg_draw_rect
+  render_draw_rect(egg.render,dsttexid,x,y,w,h,rgba);
 }
 
-static void egg_wasm_draw_line(wasm_exec_env_t ee,int dsttexid,int vp/*const struct egg_draw_line *v*/,int c) {
-  //TODO egg_draw_line
+static void egg_wasm_draw_line(wasm_exec_env_t ee,int dsttexid,int vp,int c) {
+  if (c<1) return;
+  const struct egg_draw_line *v=wamr_validate_pointer(egg.wamr,1,vp,sizeof(struct egg_draw_line)*c);
+  if (!v) return;
+  render_draw_line(egg.render,dsttexid,v,c);
 }
 
 static void egg_wasm_draw_decal(wasm_exec_env_t ee,int dsttexid,int srctexid,int dstx,int dsty,int srcx,int srcy,int w,int h,int xform) {
-  //TODO egg_draw_decal
+  render_draw_decal(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,xform);
 }
 
-static void egg_wasm_draw_tile(wasm_exec_env_t ee,int dsttexid,int srctexid,int vp/*const struct egg_draw_tile *v*/,int c) {
-  //TODO egg_draw_tile
+static void egg_wasm_draw_tile(wasm_exec_env_t ee,int dsttexid,int srctexid,int vp,int c) {
+  if (c<1) return;
+  const struct egg_draw_tile *v=wamr_validate_pointer(egg.wamr,1,vp,sizeof(struct egg_draw_tile)*c);
+  if (!v) return;
+  render_draw_tile(egg.render,dsttexid,srctexid,v,c);
 }
 
 static void egg_wasm_image_get_header(wasm_exec_env_t ee,int *w,int *h,int *stride,int *fmt,int qual,int rid) {
@@ -132,9 +170,9 @@ static void egg_wasm_image_get_header(wasm_exec_env_t ee,int *w,int *h,int *stri
   int serialc=rom_get(&serial,&egg.rom,EGG_RESTYPE_image,qual,rid);
   struct png_image image={0};
   if (png_decode_header(&image,serial,serialc)<0) return;
-  *w=image.w;
-  *h=image.h;
-  *stride=image.stride;
+  if (w) *w=image.w;
+  if (h) *h=image.h;
+  if (stride) *stride=image.stride;
   switch (image.pixelsize) {
     case 1: *fmt=EGG_TEX_FMT_A1; break;
     case 8: *fmt=EGG_TEX_FMT_A8; break;
@@ -251,9 +289,9 @@ static void egg_wasm_audio_set_playhead(wasm_exec_env_t ee,double beat) {
 static NativeSymbol egg_wasm_exports[]={
   {"egg_log",egg_wasm_log,"($i)"},
   {"egg_time_real",egg_wasm_time_real,"()F"},
-  {"egg_time_local",egg_wasm_time_local,"(ia)"},
+  {"egg_time_local",egg_wasm_time_local,"(ii)"},
   {"egg_request_termination",egg_wasm_request_termination,"()"},
-  {"egg_get_user_languages",egg_wasm_get_user_languages,"(ia)"},
+  {"egg_get_user_languages",egg_wasm_get_user_languages,"(ii)i"},
   {"egg_texture_del",egg_wasm_texture_del,"(i)"},
   {"egg_texture_new",egg_wasm_texture_new,"()i"},
   {"egg_texture_get_header",egg_wasm_texture_get_header,"(***i)"},

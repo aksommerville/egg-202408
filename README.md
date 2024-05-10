@@ -19,6 +19,7 @@ So some important differences here:
 - No Javascript runtime.
 - Resources basically unlimited size (~500MB).
 - Smarter archive format for embedded HTML.
+- No soft render. It causes problems already, and if we enable direct OpenGL, will be completely infeasible.
 
 And some minor ones:
 - Slightly cleaner build system.
@@ -32,6 +33,7 @@ And some minor ones:
 
 And some major outstanding questions:
 - GLES2/WebGL exposed directly?
+- Can we get a GLES2 context in Mac and Windows? I've had trouble with this in the past, on Windows especially.
 
 ## TODO
 
@@ -53,5 +55,10 @@ And some major outstanding questions:
 - [ ] MacOS
 - [ ] eggdev pack: Validate wasm imports and exports, is that feasible?
 - [ ] eggdev bundle with native code: Automatically strip wasm resource, so we can bundle from the regular egg file
+- [ ] eggdev pack: Ensure we accept every format we produce. Packing the output of unpack must produce an identical ROM.
 - [ ] Some amount of libc for games. At least need memory and math functions.
 - - It's OK (advisable!) to do that purely client-side, but we should supply a library or something.
+- [ ] clang is inserting calls to memcpy. Can avoid by declaring arrays 'static const'. Or I guess by including libc. But can we tell it not to? I did say "-nostdlib"!
+- [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
+- [x] web Render.js: We're copying vertex buffers for egg_draw_line and egg_draw_tile. Can we shovel straight from Wasm to GL instead? ...yes
+- [ ] Since we're allowing line gradients, can we also do rect gradients? No need, if full OpenGL works out.

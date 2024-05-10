@@ -27,15 +27,18 @@ void egg_texture_get_header(int *w,int *h,int *fmt,int texid);
 /* Decode an image resource and load it into a texture.
  * <0 on errors, in which case the content of the texture is undefined.
  * For small games, it's normal to load all your images at startup.
- * You get up to a dozen or so, consider swapping them in and out as needed.
+ * When you get up to a dozen or so, consider swapping them in and out as needed.
  * There is no well-defined limit to how much texture can be loaded at once (but a limit surely exists).
+ * This call is equivalent to egg_res_get() followed by egg_texture_upload() but much more efficient.
  */
 int egg_texture_load_image(int texid,int qual,int imageid);
 
 /* Replace a texture with raw content from the client.
  * (stride) may be zero to have us use the minimum based on (w) and (fmt).
  * If (v,c) are both zero, allocate the texture and leave its content undefined.
+ * If (w,h,stride,fmt) are all zero, (v,c) may be a full PNG file.
  * Otherwise (c) is in bytes and must be (h*stride).
+ * Uploading to texid 1 is legal only for raw pixels, and only if the dimensions stay the same.
  * <0 on errors, 0 on success.
  */
 int egg_texture_upload(int texid,int w,int h,int stride,int fmt,const void *v,int c);
@@ -63,7 +66,7 @@ void egg_draw_rect(int dsttexid,int x,int y,int w,int h,int rgba);
  */
 struct egg_draw_line {
   int16_t x,y;
-  uint32_t rgba;
+  uint8_t r,g,b,a;
 };
 void egg_draw_line(int dsttexid,const struct egg_draw_line *v,int c);
 
