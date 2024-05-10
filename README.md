@@ -34,6 +34,7 @@ And some minor ones:
 And some major outstanding questions:
 - GLES2/WebGL exposed directly?
 - Can we get a GLES2 context in Mac and Windows? I've had trouble with this in the past, on Windows especially.
+- What would it take to support MP3 as a song format?
 
 ## TODO
 
@@ -49,10 +50,17 @@ And some major outstanding questions:
 - [x] eggdev unbundle for HTML (text format)
 - [x] Can we use PNG as favicon? That will make the difference, whether we allow multiple image formats. ...YES PNG is fine.
 - [ ] Web runtime
+- - [ ] Pointer Capture
+- - [ ] Reject event enablement if we know it's not supported. eg Gamepad and Accelerometer are easy to know. Does anything tell us about touch or keyboard?
+- - [ ] Audio playhead
+- - [ ] Audio: Shut down faster, at least drop events that haven't started yet.
+- - [ ] Audio: egg_audio_event
 - [ ] Native runtime for Linux
 - [ ] Raspberry Pi
 - [ ] MS Windows
 - [ ] MacOS
+- [ ] eggdev convert songs
+- [ ] eggdev compile sfg
 - [ ] eggdev pack: Validate wasm imports and exports, is that feasible?
 - [ ] eggdev bundle with native code: Automatically strip wasm resource, so we can bundle from the regular egg file
 - [ ] eggdev pack: Ensure we accept every format we produce. Packing the output of unpack must produce an identical ROM.
@@ -62,3 +70,4 @@ And some major outstanding questions:
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
 - [x] web Render.js: We're copying vertex buffers for egg_draw_line and egg_draw_tile. Can we shovel straight from Wasm to GL instead? ...yes
 - [ ] Since we're allowing line gradients, can we also do rect gradients? No need, if full OpenGL works out.
+- [ ] Storage access controls.

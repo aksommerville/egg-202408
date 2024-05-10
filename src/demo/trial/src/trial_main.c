@@ -118,6 +118,65 @@ int egg_client_init() {
       egg_log("  %.2s %d",repr,v[i]);
     }
   }
+  if (0) { // Storage.
+    egg_log("Dumping storage:");
+    int p=0; for (;;p++) {
+      char k[256];
+      int kc=egg_store_key_by_index(k,sizeof(k),p);
+      if (kc<1) break;
+      if (kc>sizeof(k)) {
+        egg_log("!!! Unexpectedly long key, %d",kc);
+      } else {
+        char v[1024];
+        int vc=egg_store_get(v,sizeof(v),k,kc);
+        if ((vc<1)||(vc>sizeof(v))) {
+          egg_log("!!! Unexpected length for key '%.*s': %d",kc,k,vc);
+        } else {
+          egg_log("'%.*s' = '%.*s'",kc,k,vc,v);
+        }
+      }
+    }
+    int time[6]={0};
+    egg_time_local(time,6);
+    char rtime[19]={
+      '0'+(time[0]/1000)%10,
+      '0'+(time[0]/ 100)%10,
+      '0'+(time[0]/  10)%10,
+      '0'+(time[0]     )%10,
+      '-',
+      '0'+(time[1]/  10)%10,
+      '0'+(time[1]     )%10,
+      '-',
+      '0'+(time[2]/  10)%10,
+      '0'+(time[2]     )%10,
+      'T',
+      '0'+(time[3]/  10)%10,
+      '0'+(time[3]     )%10,
+      ':',
+      '0'+(time[4]/  10)%10,
+      '0'+(time[4]     )%10,
+      ':',
+      '0'+(time[5]/  10)%10,
+      '0'+(time[5]     )%10,
+    };
+    if (egg_store_set("lastPlayTime",12,rtime,19)<0) egg_log("!!! Failed to save lastPlayTime");
+    else egg_log("Saved lastPlayTime = '%.19s'",rtime);
+  }
+  if (1) { // Enable every event and tell us how it goes.
+    #define ENEV(tag) egg_log("Enable event %s: %s",#tag,egg_event_enable(EGG_EVENT_##tag,1)?"OK":"disabled");
+    ENEV(JOY)
+    ENEV(KEY)
+    ENEV(TEXT)
+    ENEV(MMOTION)
+    ENEV(MBUTTON)
+    ENEV(MWHEEL)
+    ENEV(TOUCH)
+    ENEV(ACCEL)
+    #undef ENEV
+  }
+  if (1) { // Play a song.
+    egg_audio_play_song(0, 1, 0, 1);
+  }
   
   egg_texture_get_header(&screenw,&screenh,0,1);
   if ((texid=egg_texture_new())<1) return -1;
@@ -130,12 +189,28 @@ int egg_client_init() {
 void egg_client_update(double elapsed) {
   updatec++;
   total_elapsed+=elapsed;
-  /**
-  if (updatec>=5) {
-    egg_log("%s: Terminating for no reason.",__func__);
-    egg_request_termination();
+  
+  union egg_event eventv[16];
+  int eventc;
+  while ((eventc=egg_event_get(eventv,16))>0) {
+    const union egg_event *event=eventv;
+    int i=eventc;
+    for (;i-->0;event++) {
+      switch (event->type) {
+        case EGG_EVENT_JOY: { const struct egg_event_joy *e=(void*)event; egg_log("JOY %d.%x=%d",e->devid,e->btnid,e->value); } break;
+        case EGG_EVENT_KEY: { const struct egg_event_key *e=(void*)event; egg_log("KEY 0x%08x=%d",e->keycode,e->value); } break;
+        case EGG_EVENT_TEXT: { const struct egg_event_text *e=(void*)event; egg_log("TEXT U+%x",e->codepoint); } break;
+        case EGG_EVENT_MMOTION: { const struct egg_event_mmotion *e=(void*)event; egg_log("MMOTION %d,%d",e->x,e->y); } break;
+        case EGG_EVENT_MBUTTON: { const struct egg_event_mbutton *e=(void*)event; egg_log("MBUTTON %d=%d @%d,%d",e->btnid,e->value,e->x,e->y); } break;
+        case EGG_EVENT_MWHEEL: { const struct egg_event_mwheel *e=(void*)event; egg_log("MWHEEL %+d,%+d @%d,%d",e->dx,e->dy,e->x,e->y); } break;
+        case EGG_EVENT_TOUCH: { const struct egg_event_touch *e=(void*)event; egg_log("TOUCH #%d state=%d @%d,%d",e->touchid,e->state,e->x,e->y); } break;
+        case EGG_EVENT_ACCEL: { const struct egg_event_accel *e=(void*)event; egg_log("ACCEL %+d,%+d,%+d",e->x,e->y,e->z); } break;
+        default: { const int *e=(void*)event; egg_log("UNKNOWN EVENT [%d,%d,%d,%d,%d]",e[0],e[1],e[2],e[3],e[4]); } break;
+      }
+    }
+    if (eventc<16) break;
   }
-  /**/
+  
   if ((imageClock-=elapsed)<=0.0) {
     imageClock+=imageDisplayTime;
     imageid++;

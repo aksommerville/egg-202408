@@ -54,6 +54,7 @@ export class Egg {
     if (!match) throw new Error("ROM does not declare its framebuffer size.");
     this.canvas.width = +match[1];
     this.canvas.height = +match[2];
+    this.input.canvasChanged();
   }
   
   retitlePerRom() {

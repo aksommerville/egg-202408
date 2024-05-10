@@ -9,6 +9,7 @@ export class Exec {
     this.egg = egg;
     if (!window.WebAssembly) throw new Error("WebAssembly not supported");
     this.textDecoder = new TextDecoder("utf8");
+    this.textEncoder = new TextEncoder("utf8");
     this.memory = null;
     this.egg_client_quit = () => {};
     this.egg_client_init = () => -1;
@@ -52,14 +53,14 @@ export class Exec {
       egg_show_cursor: (s) => this.egg.input.egg_show_cursor(s),
       egg_lock_cursor: (l) => this.egg.input.egg_lock_cursor(l),
       egg_joystick_devid_by_index: (p) => this.egg.input.egg_joystick_devid_by_index(p),
-      egg_joystick_get_ids: (vid, pid, ver, devid) => egg.input.egg_joystick_get_ids(vid, pid, ver, devid),
-      egg_joystick_get_name: (v, a, devid) => egg.input.egg_joystick_get_name(v, a, devid),
-      egg_joystick_for_each_button: (devid, cb, ctx) => egg.input.egg_joystick_for_each_button(devid, cb, ctx),
-      egg_audio_play_song: (qual, rid, f, r) => egg.audio.egg_audio_play_song(qual, rid, f, r),
-      egg_audio_play_sound: (qual, rid, t, p) => egg.audio.egg_audio_play_sound(qual, rid, t, p),
-      egg_audio_event: (c, o, a, b) => egg.audio.egg_audio_event(c, o, a, b),
-      egg_audio_get_playhead: () => egg.audio.egg_audio_get_playhead(),
-      egg_audio_set_playhead: (b) => egg.audio.egg_audio_set_playhead(b),
+      egg_joystick_get_ids: (vid, pid, ver, devid) => this.egg.input.egg_joystick_get_ids(vid, pid, ver, devid),
+      egg_joystick_get_name: (v, a, devid) => this.egg.input.egg_joystick_get_name(v, a, devid),
+      egg_joystick_for_each_button: (devid, cb, ctx) => this.egg.input.egg_joystick_for_each_button(devid, cb, ctx),
+      egg_audio_play_song: (qual, rid, f, r) => this.egg.audio.egg_audio_play_song(qual, rid, f, r),
+      egg_audio_play_sound: (qual, rid, t, p) => this.egg.audio.egg_audio_play_sound(qual, rid, t, p),
+      egg_audio_event: (c, o, a, b) => this.egg.audio.egg_audio_event(c, o, a, b),
+      egg_audio_get_playhead: () => this.egg.audio.egg_audio_get_playhead(),
+      egg_audio_set_playhead: (b) => this.egg.audio.egg_audio_set_playhead(b),
     }};
     return WebAssembly.instantiate(serial, options).then(result => {
       const yoink = name => {
@@ -92,8 +93,11 @@ export class Exec {
     return this.textDecoder.decode(this.mem8.slice(p, z));
   }
   
-  // (src) must be Uint8Array
+  // (src) must be string or Uint8Array
   safeWrite(dst, dsta, src) {
+    if (typeof(src) === "string") {
+      src = this.textEncoder.encode(src);
+    }
     const cpc = Math.min(dsta, src.length);
     if (cpc === src.length) {
       const dstview = new Uint8Array(this.memory.buffer, dst, cpc);

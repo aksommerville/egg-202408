@@ -71,7 +71,7 @@ export class Render {
     const srctex = this.textures[0];
     if (!srctex) return;
 
-    const dstx = 0, dsty = 0, dstw = this.canvas.width, dsth = this.canvas.height;//TODO calculate bounds
+    const dstx = 0, dsty = 0, dstw = this.canvas.width, dsth = this.canvas.height;
     const aposv = this.vbufs16;
     const tcv = this.vbuff32;
     aposv[ 0] = dstx;      aposv[ 1] = dsty;      tcv[ 1] = 0.0; tcv[ 2] = 1.0;
