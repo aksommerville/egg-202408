@@ -91,6 +91,7 @@ export class Egg {
     this.running = true;
     this.loaded = false;
     this.pvtime = 0;
+    this.audio.start();
     return this.exec.load().then(() => {
       this.loaded = true;
       if (this.exec.egg_client_init() < 0) {
@@ -103,6 +104,7 @@ export class Egg {
   
   stop() {
     if (!this.running) return;
+    this.audio.stop();
     this.running = false;
     if (this.loaded) {
       this.exec.egg_client_quit();
@@ -120,6 +122,7 @@ export class Egg {
   update() {
     this.pendingFrame = null;
     if (!this.running) return;
+    this.audio.update();
     const elapsed = this.tick();
     if (elapsed >= 0) {
       this.exec.egg_client_update(elapsed);

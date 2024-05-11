@@ -1,5 +1,7 @@
 #include "egg/egg.h"
 
+int some_other_function();
+
 static double total_elapsed=0.0;
 static int updatec=0;
 static int texid;
@@ -14,7 +16,7 @@ void egg_client_quit() {
 }
 
 static int cb_res(int tid,int qual,int rid,int len,void *userdata) {
-  egg_log("  %d:%d:%d, %d bytes",tid,qual,rid,len);
+  egg_log("  %d:%d:%d, %d bytes %d",tid,qual,rid,len);
   return 0;
 }
 
@@ -175,7 +177,7 @@ int egg_client_init() {
     #undef ENEV
   }
   if (1) { // Play a song.
-    egg_audio_play_song(0, 1, 0, 1);
+    egg_audio_play_song(0, 4, 0, 1);
   }
   
   egg_texture_get_header(&screenw,&screenh,0,1);
@@ -200,7 +202,7 @@ void egg_client_update(double elapsed) {
         case EGG_EVENT_JOY: { const struct egg_event_joy *e=(void*)event; egg_log("JOY %d.%x=%d",e->devid,e->btnid,e->value); } break;
         case EGG_EVENT_KEY: { const struct egg_event_key *e=(void*)event; egg_log("KEY 0x%08x=%d",e->keycode,e->value); } break;
         case EGG_EVENT_TEXT: { const struct egg_event_text *e=(void*)event; egg_log("TEXT U+%x",e->codepoint); } break;
-        case EGG_EVENT_MMOTION: { const struct egg_event_mmotion *e=(void*)event; egg_log("MMOTION %d,%d",e->x,e->y); } break;
+        case EGG_EVENT_MMOTION: break;//{ const struct egg_event_mmotion *e=(void*)event; egg_log("MMOTION %d,%d",e->x,e->y); } break;
         case EGG_EVENT_MBUTTON: { const struct egg_event_mbutton *e=(void*)event; egg_log("MBUTTON %d=%d @%d,%d",e->btnid,e->value,e->x,e->y); } break;
         case EGG_EVENT_MWHEEL: { const struct egg_event_mwheel *e=(void*)event; egg_log("MWHEEL %+d,%+d @%d,%d",e->dx,e->dy,e->x,e->y); } break;
         case EGG_EVENT_TOUCH: { const struct egg_event_touch *e=(void*)event; egg_log("TOUCH #%d state=%d @%d,%d",e->touchid,e->state,e->x,e->y); } break;

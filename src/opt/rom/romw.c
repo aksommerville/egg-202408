@@ -219,6 +219,7 @@ static int romw_encode_toc(struct sr_encoder *dst,const struct romw *romw) {
         d-=16;
       }
       if (sr_encode_u8(dst,0xd0|(d-1))<0) return -1;
+      xrid=res->rid;
     }
     
     // Emit the resource.

@@ -59,11 +59,13 @@ And some major outstanding questions:
 - [ ] Raspberry Pi
 - [ ] MS Windows
 - [ ] MacOS
-- [ ] eggdev convert songs
-- [ ] eggdev compile sfg
-- [ ] eggdev pack: Validate wasm imports and exports, is that feasible?
-- [ ] eggdev bundle with native code: Automatically strip wasm resource, so we can bundle from the regular egg file
-- [ ] eggdev pack: Ensure we accept every format we produce. Packing the output of unpack must produce an identical ROM.
+- [x] eggdev convert songs
+- [x] eggdev compile sfg
+- [x] eggdev pack: Validate wasm imports and exports, is that feasible?
+- - ../thirdparty/wabt/bin/wasm-objdump mid/demo/trial/data/wasm/1 -x -j Import # or `-j Export`. Can't do both at once.
+- [x] eggdev bundle with native code: Automatically strip wasm resource, so we can bundle from the regular egg file
+- [x] eggdev pack: Ensure we accept every format we produce. Packing the output of unpack must produce an identical ROM.
+- [x] eggdev pack: Validation, eg must contain metadata and wasm, metadata must declare framebuffer...
 - [ ] Some amount of libc for games. At least need memory and math functions.
 - - It's OK (advisable!) to do that purely client-side, but we should supply a library or something.
 - [ ] clang is inserting calls to memcpy. Can avoid by declaring arrays 'static const'. Or I guess by including libc. But can we tell it not to? I did say "-nostdlib"!

@@ -11,6 +11,10 @@
 #include <limits.h>
 #include <stdio.h>
 
+#ifndef WABT_SDK /* Set via compiler, if you have it. */
+  #define WABT_SDK ""
+#endif
+
 extern struct eggdev {
   const char *exename;
   const char *command;
@@ -60,6 +64,13 @@ int eggdev_shell_script_(const char *scriptpath,...);
 
 int eggdev_command_sync(struct sr_encoder *dst,const char *cmd);
 
+/* Read the given ROM file and if it has any wasm resources, create a temporary new one without them.
+ * Returns (path) exactly if the file is OK as is.
+ * Null if we tried and failed, unlikely.
+ * Or the path to the temp file, which you should unlink when you're done.
+ */
+const char *eggdev_rewrite_rom_if_wasm(const char *path);
+
 int eggdev_http_serve(struct http_xfer *req,struct http_xfer *rsp,void *userdata);
 
 /* Split a file into multiple resources.
@@ -75,6 +86,7 @@ int eggdev_sounds_slice(struct romw *romw,const char *src,int srcc,const struct 
  * Mostly these are expected to rewrite (res->serial).
  */
 int eggdev_metadata_compile(struct romw *romw,struct romw_res *res);
+int eggdev_wasm_compile(struct romw *romw,struct romw_res *res);
 int eggdev_image_compile(struct romw *romw,struct romw_res *res);
 int eggdev_song_compile(struct romw *romw,struct romw_res *res);
 int eggdev_sound_compile(struct romw *romw,struct romw_res *res);

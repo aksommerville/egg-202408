@@ -4,7 +4,12 @@
  */
  
 int eggdev_metadata_compile(struct romw *romw,struct romw_res *res) {
+
+  // Already in the binary format? Great!
+  if ((res->serialc>=2)&&!memcmp(res->serial,"\xeeM",2)) return 0;
+
   struct sr_encoder dst={0};
+  if (sr_encode_raw(&dst,"\xeeM",2)<0) return -1;
   struct sr_decoder decoder={.v=res->serial,.c=res->serialc};
   int lineno=0,linec;
   const char *line;

@@ -285,7 +285,7 @@ static void egg_wasm_audio_set_playhead(wasm_exec_env_t ee,double beat) {
 
 /* Table of exports to wasm.
  */
- 
+
 static NativeSymbol egg_wasm_exports[]={
   {"egg_log",egg_wasm_log,"($i)"},
   {"egg_time_real",egg_wasm_time_real,"()F"},

@@ -1,4 +1,4 @@
-linux_OPT_ENABLE+=fs rom serial wamr strfmt png render
+linux_OPT_ENABLE+=fs rom serial wamr strfmt png render midi sfg
 
 linux_CC:=$(linux_TOOLCHAIN)gcc -c -MMD -O3 -Isrc -Werror -Wimplicit $(linux_CC_EXTRA) \
   $(patsubst %,-DUSE_%=1,$(tools_OPT_ENABLE)) \

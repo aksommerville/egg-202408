@@ -25,7 +25,8 @@ You can supply a file containing "TID NAME" as `--types=PATH` to most eggdev com
 `metadata:0:1` is required, and it must be the first resource in an archive.
 Must contain a field `framebuffer`. And I strongly recommend `title`, `iconImage`, and `language`.
 
-In the archive, it's a series of key=value pairs, with keys and values each limited to 256 bytes:
+Binary form starts with a 2-byte signature "\xeeM".
+Followed by a series of key=value pairs, with keys and values each limited to 256 bytes:
 
 ```
 u8 kc

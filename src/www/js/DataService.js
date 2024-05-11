@@ -27,9 +27,10 @@ export class DataService {
   }
   
   decodeMetadata(src) {
+    if ((src.length < 2) || (src[0] !== 0xee) || (src[1] !== 0x4d)) return {};
     const decoder = new TextDecoder("utf8");
     const dst = {};
-    for (let srcp=0; srcp<src.length; ) {
+    for (let srcp=2; srcp<src.length; ) {
       const kc = src[srcp++] || 0;
       const vc = src[srcp++] || 0;
       if (srcp > src.length - vc - kc) break;

@@ -30,7 +30,7 @@ WASM1:=$(MIDDIR)/data/wasm/1
 $(WASM1):$(OFILES);$(PRECMD) $(LD) -o$@ $^
 
 ROM:=$(OUTDIR)/trial.egg
-$(ROM):$(WASM1) $(DATAFILES);$(PRECMD) $(EGGDEV) pack -o$@ $(WASM1) data --types=restypes
+$(ROM):$(WASM1) $(DATAFILES) $(EGGDEV);$(PRECMD) $(EGGDEV) pack -o$@ $(WASM1) data --types=restypes
 all:$(ROM)
 
 run:$(ROM);$(EGGEXE) $(ROM)
@@ -58,11 +58,9 @@ AR_NATIVE:=ar rc
 $(MIDDIR)/native/%.o:src/%.c;$(PRECMD) $(CC_NATIVE) -o$@ $<
 
 TRUENATIVE:=$(OUTDIR)/trial-true.exe
-ROM_WASMLESS:=$(MIDDIR)/rom-wasmless.egg
-$(ROM_WASMLESS):$(DATAFILES);$(PRECMD) $(EGGDEV) pack -o$@ data --types restypes
 OFILES_NATIVE:=$(patsubst src/%.c,$(MIDDIR)/native/%.o,$(CFILES))
 -include $(OFILES_NATIVE:.o=.d)
 NATIVE_LIB:=$(MIDDIR)/native.a
 $(NATIVE_LIB):$(OFILES_NATIVE);$(PRECMD) $(AR_NATIVE) $@ $^
-$(TRUENATIVE):$(ROM_WASMLESS) $(NATIVE_LIB);$(PRECMD) $(EGGDEV) bundle -o$@ --rom=$(ROM_WASMLESS) --code=$(NATIVE_LIB)
+$(TRUENATIVE):$(ROM) $(NATIVE_LIB);$(PRECMD) $(EGGDEV) bundle -o$@ --rom=$(ROM) --code=$(NATIVE_LIB)
 all:$(TRUENATIVE)

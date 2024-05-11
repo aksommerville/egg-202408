@@ -5,6 +5,68 @@
 
 #include "eggdev_internal.h"
 
+/* Copy ROM file without wasm, if any wasm is present.
+ */
+ 
+static char eggdev_wasmless_path_storage[1024];
+
+const char *eggdev_rewrite_rom_if_wasm(const char *path) {
+  void *serial=0;
+  int serialc=file_read(&serial,path);
+  if (serialc<0) return path; // It's an error, but let someone else report it.
+  struct rom rom={0};
+  if (rom_init_handoff(&rom,serial,serialc)<0) {
+    free(serial);
+    return path;
+  }
+  int have_wasm=0;
+  const struct rom_res *res=rom.resv;
+  int i=rom.resc;
+  for (;i-->0;res++) {
+    int tid=0;
+    rom_unpack_fqrid(&tid,0,0,res->fqrid);
+    if (tid<EGG_RESTYPE_wasm) continue;
+    if (tid==EGG_RESTYPE_wasm) have_wasm=1;
+    break;
+  }
+  if (!have_wasm) {
+    rom_cleanup(&rom);
+    return path;
+  }
+  int dstpathc=snprintf(eggdev_wasmless_path_storage,sizeof(eggdev_wasmless_path_storage),"%s-wasmless",path);
+  if ((dstpathc<1)||(dstpathc>=sizeof(eggdev_wasmless_path_storage))) {
+    rom_cleanup(&rom);
+    return 0;
+  }
+  struct romw romw={0};
+  for (res=rom.resv,i=rom.resc;i-->0;res++) {
+    int tid=0,qual=0,rid=0;
+    rom_unpack_fqrid(&tid,&qual,&rid,res->fqrid);
+    if (tid==EGG_RESTYPE_wasm) continue;
+    struct romw_res *dstres=romw_res_add(&romw);
+    if (!dstres||(romw_res_set_serial(dstres,res->v,res->c)<0)) {
+      rom_cleanup(&rom);
+      romw_cleanup(&romw);
+      return 0;
+    }
+    dstres->tid=tid;
+    dstres->qual=qual;
+    dstres->rid=rid;
+  }
+  rom_cleanup(&rom);
+  struct sr_encoder dst={0};
+  if (romw_encode(&dst,&romw)<0) {
+    romw_cleanup(&romw);
+    sr_encoder_cleanup(&dst);
+    return 0;
+  }
+  romw_cleanup(&romw);
+  int err=file_write(eggdev_wasmless_path_storage,dst.v,dst.c);
+  sr_encoder_cleanup(&dst);
+  if (err<0) return 0;
+  return eggdev_wasmless_path_storage;
+}
+
 /* Write out a ROM in the HTML-specific bundler format.
  */
  

@@ -39,7 +39,6 @@ export class Audio {
     if (this.context.state === "suspended") {
       this.context.resume();
     }
-    return Promise.resolve();
   }
   
   stop() {
@@ -369,7 +368,7 @@ class Channel {
       case "drum": {
           const soundid = this.drumBase + noteid;
           const trim = 0.200 + (this.volume * this.master * velocity) * 0.900;
-          audio.audio_play_sound(0, soundid, trim, this.pan, when);
+          audio.egg_audio_play_sound(0, soundid, trim, this.pan, when);
         } break;
         
       case "blip": {

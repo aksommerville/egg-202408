@@ -1,5 +1,6 @@
 #include "eggdev_internal.h"
 #include <signal.h>
+#include <unistd.h>
 
 struct eggdev eggdev={0};
 
@@ -64,7 +65,7 @@ static int eggdev_main_unpack() {
     fprintf(stderr,"%s: Failed to create output directory.\n",eggdev.dstpath);
     return 1;
   }
-  int pvtid=-1;
+  int pvtid=-1,pvqual=-1;
   char tname[256];
   int tnamec=0;
   const struct rom_res *res=rom.resv;
@@ -83,13 +84,20 @@ static int eggdev_main_unpack() {
         fprintf(stderr,"%s: Failed to create directory.\n",dpath);
         return 1;
       }
+      pvqual=-1;
     }
     char dstpath[1024];
     int dstpathc;
     if (qual) {
       char qualstr[2];
       rom_qual_repr(qualstr,qual);
-      dstpathc=snprintf(dstpath,sizeof(dstpath),"%s/%.*s/%d-%.2s",eggdev.dstpath,tnamec,tname,rid,qualstr);
+      if (qual!=pvqual) {
+        dstpathc=snprintf(dstpath,sizeof(dstpath),"%s/%.*s/%.2s",eggdev.dstpath,tnamec,tname,qualstr);
+        if ((dstpathc<1)||(dstpathc>=sizeof(dstpath))) return -1;
+        if (dir_mkdir(dstpath)<0) return -1;
+        pvqual=qual;
+      }
+      dstpathc=snprintf(dstpath,sizeof(dstpath),"%s/%.*s/%.2s/%d",eggdev.dstpath,tnamec,tname,qualstr,rid);
     } else {
       dstpathc=snprintf(dstpath,sizeof(dstpath),"%s/%.*s/%d",eggdev.dstpath,tnamec,tname,rid);
     }
@@ -249,17 +257,26 @@ static int eggdev_main_bundle() {
     ishtml=1;
   }
   int err;
+  
   if (eggdev.codepath) {
     if (ishtml) {
       fprintf(stderr,"%s: '--code' is incompatible with '.html' output.\n",eggdev.exename);
-      //...and if i have to explain that to you, you shouldn't be trusted with web dev!
       return 1;
     }
-    err=eggdev_shell_script("egg-native.sh",eggdev.dstpath,eggdev.rompath,eggdev.codepath);
+    const char *rompath=eggdev_rewrite_rom_if_wasm(eggdev.rompath);
+    if (!rompath) {
+      fprintf(stderr,"%s: Failed to rewrite ROM for bundling.\n",eggdev.exename);
+      return 1;
+    }
+    err=eggdev_shell_script("egg-native.sh",eggdev.dstpath,rompath,eggdev.codepath);
+    if (rompath!=eggdev.rompath) unlink(rompath);
+    
   } else if (ishtml) {
     err=eggdev_bundle_html(eggdev.dstpath,eggdev.rompath);
+    
   } else {
     err=eggdev_shell_script("egg-bundle.sh",eggdev.dstpath,eggdev.rompath);
+    
   }
   if (err<0) {
     if (err!=-2) fprintf(stderr,"%s: Unspecified error bundling executable.\n",eggdev.exename);

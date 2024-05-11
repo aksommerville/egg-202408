@@ -6,6 +6,11 @@
 # https://github.com/bytecodealliance/wasm-micro-runtime
 WAMR_SDK:=path/to/wasm-micro-runtime
 
+# WABT, so eggdev can validate Wasm modules during pack. And maybe similar stuff.
+# Not required, but I do encourage. Blank to not use it.
+# https://github.com/WebAssembly/wabt
+WABT_SDK:=path/to/wabt
+
 # Declare which things you want to build.
 # You must build 'tools', the other targets may require it.
 # 'web' is typical, and also your native architecture (linux, macos, mswin).

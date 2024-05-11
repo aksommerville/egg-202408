@@ -8,7 +8,7 @@ static void eggdev_pack_analyze_path(struct eggdev_rpath *rpath,const char *path
   rpath->path=path;
   
   // Walk thru the path componentwise. If we see a valid type name, keep it and reset qual.
-  // After type, qual is allowed as a directory name.
+  // After type, qual is allowed as a directory name. Only if it starts with a letter.
   // We do examine the basename here too. For some things like string, it's convenient to use qual as the file name.
   const char *base=0;
   int pathp=0,basec=0;
@@ -25,9 +25,12 @@ static void eggdev_pack_analyze_path(struct eggdev_rpath *rpath,const char *path
       rpath->tid=q;
       rpath->qual=0;
     } else if (rpath->tid) {
-      if ((q=rom_qual_eval(base,basec))>0) {
+      if ((base[0]>='a')&&(base[0]<='z')&&((q=rom_qual_eval(base,basec))>0)) {
         rpath->qual=q;
       }
+    } else if (path[pathp]&&(sr_int_eval(&q,base,basec)>=2)&&(q>0)&&(q<64)) {
+      // Directory name is an integer in 1..63, type is not yet set, and there's more remaining in the path? Call this number the type, it could be a custom one.
+      rpath->tid=q;
     }
   }
   
@@ -212,6 +215,41 @@ static int eggdev_assign_missing_ids(struct romw *romw) {
   return 0;
 }
 
+/* Validate resource set.
+ * Everything has been compiled and finalized.
+ * But there can still be blanks, and they aren't sorted yet.
+ * We can return errors, but I think everything here will be advisory-only.
+ */
+ 
+static int eggdev_pack_validate(const struct romw *romw) {
+  int have_metadata=0,have_wasm=0;
+  const struct romw_res *res=romw->resv;
+  int i=romw->resc;
+  for (;i-->0;res++) {
+    switch (res->tid) {
+    
+      case EGG_RESTYPE_metadata: {
+          if ((res->qual!=0)||(res->rid!=1)) {
+            fprintf(stderr,"%s:WARNING: 'metadata' type should only be used once, with qual zero and rid one\n",res->path);
+          } else {
+            have_metadata=1;
+          }
+        } break;
+        
+      case EGG_RESTYPE_wasm: {
+          if ((res->qual!=0)||(res->rid!=1)) {
+            fprintf(stderr,"%s:WARNING: 'wasm' type should only be used once, with qual zero and rid one\n",res->path);
+          } else {
+            have_wasm=1;
+          }
+        } break;
+    }
+  }
+  if (!have_metadata) fprintf(stderr,"%s:WARNING: ROM file must contain a resource metadata:0:1\n",eggdev.dstpath);
+  if (!have_wasm) fprintf(stderr,"%s:WARNING: ROM file must contain a resource wasm:0:1\n",eggdev.dstpath);
+  return 0;
+}
+
 /* Digest resources, after everything is loaded.
  */
  
@@ -227,12 +265,22 @@ int eggdev_pack_digest(struct romw *romw,int toc_only) {
   for (;i-->0;res++) {
     switch (res->tid) {
       case EGG_RESTYPE_metadata: err=eggdev_metadata_compile(romw,res); break;
-      case EGG_RESTYPE_wasm: break;
+      case EGG_RESTYPE_wasm: err=eggdev_wasm_compile(romw,res); break;
       case EGG_RESTYPE_string: break;
       case EGG_RESTYPE_image: err=eggdev_image_compile(romw,res); break;
       case EGG_RESTYPE_song: err=eggdev_song_compile(romw,res); break;
       case EGG_RESTYPE_sound: err=eggdev_sound_compile(romw,res); break;
     }
+    if (err<0) {
+      if (err!=-2) {
+        char tname[32];
+        int tnamec=eggdev_type_repr(tname,sizeof(tname),res->tid);
+        if ((tnamec<1)||(tnamec>sizeof(tname))) tnamec=sr_decsint_repr(tname,sizeof(tname),res->tid);
+        fprintf(stderr,"%s:%d: Unspecified error processing resource of type %.*s:%d:%d\n",res->path,res->lineno0,tnamec,tname,res->qual,res->rid);
+      }
+      return -2;
+    }
   }
+  if ((err=eggdev_pack_validate(romw))<0) return err;
   return 0;
 }
