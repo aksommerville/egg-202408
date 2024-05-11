@@ -43,6 +43,7 @@ linux_OPT_ENABLE:=alsafd asound pulse drmgx xegl xinerama evdev
 linux_TOOLCHAIN:=
 linux_CC_EXTRA:=
 linux_LD_EXTRA:=
+linux_RUN_ARGS:=
 
 #------------------------------------------------------------------------------
 

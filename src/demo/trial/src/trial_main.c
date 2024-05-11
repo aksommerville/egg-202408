@@ -218,7 +218,7 @@ static void on_mbutton(const struct egg_event_mbutton *event) {
 }
 
 static void on_mwheel(const struct egg_event_mwheel *event) {
-  egg_log("MWHEEL %+d,%+d @%d,%d",event->dx,event->dy,event->x,event->y);
+  egg_log("MWHEEL %d,%d @%d,%d",event->dx,event->dy,event->x,event->y);
 }
 
 static void on_touch(const struct egg_event_touch *event) {

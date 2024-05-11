@@ -51,6 +51,11 @@ static int evdev_try_file(struct evdev *evdev,const char *base) {
     evdev_device_disconnect(evdev,device);
     return 0;
   }
+
+  /* Grab. No worries if this fails, but it does matter sometimes.
+   * eg on my Pi, if we don't grab the keyboard, it keeps talking to the console while we're running.
+   */
+  ioctl(device->fd,EVIOCGRAB,1);
   
   /* Alert our owner.
    * Beware that owner may disconnect the device during this callback, which will delete it for real.

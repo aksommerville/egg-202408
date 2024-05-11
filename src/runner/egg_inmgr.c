@@ -24,6 +24,7 @@ struct egg_device {
   int vid,pid,version;
   struct egg_button *buttonv;
   int buttonc,buttona;
+  int x,y,w,h; // For fake mouse only.
 };
  
 struct egg_inmgr {
@@ -219,6 +220,7 @@ static void egg_inmgr_remove_device(struct egg_inmgr *inmgr,int devid) {
  
 static int egg_inmgr_cb_declare_button(int btnid,int hidusage,int lo,int hi,int value,void *userdata) {
   struct egg_device *device=userdata;
+  fprintf(stderr,"%s %08x %08x %d..%d =%d\n",__func__,btnid,hidusage,lo,hi,value);
   int range=hi-lo+1;
   if (range<2) return 0; // Not interesting.
   int p=egg_device_buttonv_search(device,btnid);
@@ -260,6 +262,40 @@ static int egg_device_configure(struct egg_inmgr *inmgr,struct egg_device *devic
     }
   }
   
+  /* REL_X, REL_Y, and BTN_LEFT, assume it's a mouse.
+   * We're using evdev button ids here, this is only going to work for Linux.
+   * And of course if you're running a window manager, the mouse device shouldn't appear at all.
+   */
+  struct egg_button *relx=egg_device_get_button(device,0x00020000);
+  if (relx) {
+    struct egg_button *rely=egg_device_get_button(device,0x00020001);
+    struct egg_button *bleft=egg_device_get_button(device,0x00010110);
+    if (rely&&bleft) {
+      device->rptcls=EGG_EVENT_MMOTION;
+      relx->hidusage=0x00010030;
+      rely->hidusage=0x00010031;
+      bleft->hidusage=0x00090000;
+      struct egg_button *button;
+      if (button=egg_device_get_button(device,0x00010111)) button->hidusage=0x00090001; // right
+      if (button=egg_device_get_button(device,0x00010112)) button->hidusage=0x00090002; // middle
+      if (button=egg_device_get_button(device,0x00020006)) button->hidusage=0x00010033; // hwheel, calling it "Rx" in HID terms
+      if (button=egg_device_get_button(device,0x00020008)) button->hidusage=0x00010038; // wheel
+      int btnusagenext=0x00090003;
+      int i=device->buttonc;
+      for (button=device->buttonv;i-->0;button++) {
+        if (button->hidusage) continue; // already got it, cool
+        if ((button->lo==0)&&((button->hi==1)||(button->hi==2))) {
+          button->hidusage=btnusagenext++;
+        }
+      }
+      device->w=egg.hostio->video->w;
+      device->h=egg.hostio->video->h;
+      device->x=device->w>>1;
+      device->y=device->h>>1;
+      return 0;
+    }
+  }
+
   return 0;
 }
 
@@ -435,7 +471,7 @@ void egg_cb_disconnect(struct hostio_input *driver,int devid) {
 }
 
 void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
-  fprintf(stderr,"%s %d.0x%08x=%d\n",__func__,devid,btnid,value);
+  //fprintf(stderr,"%s %d.0x%08x=%d\n",__func__,devid,btnid,value);
   if (!btnid) return;
   struct egg_device *device=egg_inmgr_get_device(egg.inmgr,devid);
   if (!device) return;
@@ -466,7 +502,38 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
         // We'll fake KEY events straight off the device, but not TEXT. That would be too complicated. TODO But should we?
       } break;
       
-    case EGG_EVENT_MMOTION: break;//TODO
+    case EGG_EVENT_MMOTION: {
+        struct egg_button *button=egg_device_get_button(device,btnid);
+        if (!button||!button->hidusage) return;
+        switch (button->hidusage) {
+          case 0x00010030: { // X
+              int nx=device->x+value;
+              if (nx<0) nx=0; else if (nx>=device->w) nx=device->w-1;
+              if (nx!=device->x) {
+                device->x=nx;
+                egg_cb_mmotion(0,device->x,device->y);
+              }
+            } break;
+          case 0x00010031: { // Y
+              int ny=device->y+value;
+              if (ny<0) ny=0; else if (ny>=device->h) ny=device->h-1;
+              if (ny!=device->y) {
+                device->y=ny;
+                egg_cb_mmotion(0,device->x,device->y);
+              }
+            } break;
+          case 0x00010033: { // horz wheel.
+              egg_cb_mwheel(0,value,0);
+            } break;
+          case 0x00010038: { // vert (default) wheel
+              egg_cb_mwheel(0,0,-value);
+            } break;
+          default: if ((button->hidusage>=0x00090000)&&(button->hidusage<0x000a0000)) {
+              egg_cb_mbutton(0,button->hidusage-0x00090000+1,value);
+            }
+        }
+      } break;
+
     case EGG_EVENT_TOUCH: break;//TODO?
     case EGG_EVENT_ACCEL: break;//TODO?
   }
