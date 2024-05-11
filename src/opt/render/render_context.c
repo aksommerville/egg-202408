@@ -113,6 +113,17 @@ static int render_texture_measure(int w,int h,int stride,int fmt) {
   return stride*h;
 }
 
+static int render_minimum_stride(int w,int fmt) {
+  if (w<1) return 0;
+  if (w>0x7fff) return 0;
+  switch (fmt) {
+    case EGG_TEX_FMT_RGBA: return w<<2;
+    case EGG_TEX_FMT_A8: return w;
+    case EGG_TEX_FMT_A1: return (w+7)>>3;
+  }
+  return 0;
+}
+
 /* Expand to 32 from 1 bit.
  */
  
@@ -138,7 +149,7 @@ static int render_texture_upload(struct render *render,struct render_texture *te
   int ifmt,glfmt,type,chanc;
   switch (fmt) {
     case EGG_TEX_FMT_RGBA: chanc=4; ifmt=GL_RGBA; glfmt=GL_RGBA; type=GL_UNSIGNED_BYTE; break;
-    case EGG_TEX_FMT_A8: chanc=1; ifmt=GL_ALPHA; glfmt=GL_LUMINANCE; type=GL_UNSIGNED_BYTE; break;
+    case EGG_TEX_FMT_A8: chanc=1; ifmt=GL_ALPHA; glfmt=GL_ALPHA; type=GL_UNSIGNED_BYTE; break;
     case EGG_TEX_FMT_A1: {
         int expstride=w<<2;
         int explen=expstride*h;
@@ -184,6 +195,7 @@ static int render_force_valid_png(struct render *render,struct png_image *image)
   switch (image->depth*10+image->colortype) {
     case 10: return EGG_TEX_FMT_A1;
     case 80: return EGG_TEX_FMT_A8;
+    case 13: return EGG_TEX_FMT_A1; // 1-bit index assume it's a1, and color zero is transparent
     case 86: return EGG_TEX_FMT_RGBA;
   }
   if (png_image_reformat(image,8,6)<0) return -1;
@@ -223,6 +235,7 @@ int render_texture_load(struct render *render,int texid,int w,int h,int stride,i
   
   /* Validate length, then upload.
    */
+  if (stride<1) stride=render_minimum_stride(w,fmt);
   int expectsrcc=render_texture_measure(w,h,stride,fmt);
   if ((expectsrcc<1)||(src&&(srcc<expectsrcc))) return -1;
   if (render_texture_upload(render,texture,w,h,stride,fmt,src)<0) return -1;

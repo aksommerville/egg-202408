@@ -51,7 +51,7 @@ I recommend using both in this case, so lazy decoders don't have to look up stri
 |---------------------|------|-------------|
 | title               | yes  | Game's name. |
 | language            | no   | Comma-delimited list of ISO 639 codes ordered by your preference. |
-| framebuffer         | no   | "WIDTHxHEIGHT", decimal. |
+| framebuffer         | no   | "WIDTHxHEIGHT", decimal. Stop reading at whitespace, we might extend in the future. |
 | iconImage           | no   | Decimal ID of an image resource, recommend 16x16 with alpha. |
 | author              | yes  | Your name. |
 | copyright           | yes  | eg "(c) 2024 AK Sommerville" |
@@ -60,9 +60,9 @@ I recommend using both in this case, so lazy decoders don't have to look up stri
 | tags                | yes  | Comma-delimited. Ditto Itch. |
 | advisory            | yes  | Freeform text, warn of anything offensive etc. |
 | rating              | no   | Ratings from official agencies, machine readable. TODO exact format. |
-| timestamp           | no   | ISO 8601 ie "YYYY-MM-DDTHH:MM:SSS.mmm" (but stop anywhere) |
+| timestamp           | no   | ISO 8601 ie "YYYY-MM-DDTHH:MM:SSS.mmm" (but stop anywhere; just "YYYY" is sensible) |
 | version             | no   | Recommend semver eg "1.2.3". Version of your game, not the desired Egg version. |
-| posterImage         | no   | '' but bigger. TODO recommend dimensions. |
+| posterImage         | no   | Like iconImage but bigger. TODO recommend dimensions. |
 | url                 | no   | Game's promo page. |
 | contact             | no   | Email, telephone, or whatever. |
 | freedom             | no   | "restricted", "limited", "intact", "free". Default "limited". |

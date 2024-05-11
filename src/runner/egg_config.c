@@ -11,7 +11,8 @@ static void egg_print_help(const char *topic,int topicc) {
     fprintf(stderr,"\nUsage: %s [OPTIONS]\n\n",egg.exename);
   }
   fprintf(stderr,
-    "OPTIONS are normally omitted, and we'll pick sensible defaults.\n"
+    "Omit all options for sensible defaults, that's usually sufficient.\n"
+    "\n"
     "OPTIONS:\n"
     "  --help                   Print this message and exit.\n"
     "  --lang=en                Set language. Overrides LANG and LANGUAGE env vars.\n"
@@ -28,8 +29,11 @@ static void egg_print_help(const char *topic,int topicc) {
     "  --audio-buffer=INT       If required by driver.\n"
     "  --audio-driver=LIST      See below. First to start up wins.\n"
     "  --save=PATH              Save file. \"none\" to disable saving, or empty for default.\n"
-    "\n"
   );
+  if (egg_romsrc!=EGG_ROMSRC_NATIVE) {
+    fprintf(stderr,"  --ignore-required        Try to launch even if ROM's stated requirements can't be met.\n");
+  }
+  fprintf(stderr,"\n");
   #define LISTDRIVERS(type) { \
     fprintf(stderr,"Available %s drivers:\n",#type); \
     int p=0; for (;;p++) { \
@@ -154,6 +158,7 @@ static int egg_config_kv(const char *k,int kc,const char *v,int vc) {
   STROPT(audio_device,"audio-device")
   STROPT(audio_driver,"audio-driver")
   STROPT(storepath,"save")
+  BOOLOPT(ignore_required,"ignore-required")
   #undef BOOLOPT
   #undef INTOPT
   #undef STROPT

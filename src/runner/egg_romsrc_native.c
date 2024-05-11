@@ -29,6 +29,11 @@ void egg_log(const char *fmt,...) {
 /* Public API, simple features.
  * Anything complex enough that we don't want to duplicate in egg_romsrc_external.c, the native version lives in egg_public_api.c:
  *  - egg_get_user_languages
+ *  - egg_store_*
+ * And all input-related stuff lives in egg_event.c:
+ *  - egg_event-*
+ *  - egg_*_cursor
+ *  - egg_joystick_*
  */
  
 double egg_time_real() {
@@ -172,19 +177,30 @@ int egg_res_for_each(int (*cb)(int tid,int qual,int rid,int len,void *userdata),
   return 0;
 }
 
-//TODO
-int egg_event_get(union egg_event *v,int a) { return 0; }
-int egg_event_enable(int type,int enable) { return 0; }
-void egg_show_cursor(int show) {}
-int egg_lock_cursor(int lock) { return 0; }
-int egg_joystick_devid_by_index(int p) { return 0; }
-void egg_joystick_get_ids(int *vid,int *pid,int *version,int devid) {}
-int egg_joystick_get_name(char *dst,int dsta,int devid) { return 0; }
-void egg_audio_play_song(int qual,int rid,int force,int repeat) {}
-void egg_audio_play_sound(int qual,int rid,double trim,double pan) {}
-void egg_audio_event(int chid,int opcode,int a,int b) {}
-double egg_audio_get_playhead() { return 0.0; }
-void egg_audio_set_playhead(double beat) {}
+void egg_audio_play_song(int qual,int rid,int force,int repeat) {
+  if (egg_lock_audio()<0) return;
+  synth_play_song(egg.synth,qual,rid,force,repeat);
+}
+
+void egg_audio_play_sound(int qual,int rid,double trim,double pan) {
+  if (egg_lock_audio()<0) return;
+  synth_play_sound(egg.synth,qual,rid,trim,pan);
+}
+
+void egg_audio_event(int chid,int opcode,int a,int b) {
+  if (egg_lock_audio()<0) return;
+  synth_event(egg.synth,chid,opcode,a,b,0);
+}
+
+double egg_audio_get_playhead() {
+  // No need to lock.
+  //TODO Adjust per driver: About how far into the last buffer are we?
+  return synth_get_playhead(egg.synth);
+}
+void egg_audio_set_playhead(double beat) {
+  if (egg_lock_audio()<0) return;
+  synth_set_playhead(egg.synth,beat);
+}
 
 /* Load.
  */
@@ -194,6 +210,7 @@ int egg_romsrc_load() {
     fprintf(stderr,"%s: Failed to decode built-in ROM.\n",egg.exename);
     return -2;
   }
+  // In theory, we should call egg_rom_assert_required() here. But that seems pointless for a static build.
   return 0;
 }
 

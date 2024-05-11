@@ -21,25 +21,26 @@ static void egg_quit() {
 static int egg_init_video() {
 
   // Title, icon, and framebuffer size come from the ROM.
-  const char *title="TODO title";
-  const void *iconrgba=0;
-  int iconw=0,iconh=0;
-  int fbw=0,fbh=0;
+  struct egg_rom_startup_props props={0};
+  int err=egg_rom_startup_props(&props);
+  if (err<0) return err;
 
   // Find a driver and start it up.
   struct hostio_video_setup setup={
-    .title=title,
-    .iconrgba=iconrgba,
-    .iconw=iconw,
-    .iconh=iconh,
+    .title=props.title,
+    .iconrgba=props.iconrgba,
+    .iconw=props.iconw,
+    .iconh=props.iconh,
     .w=egg.config.windoww,
     .h=egg.config.windowh,
     .fullscreen=egg.config.fullscreen,
-    .fbw=fbw,
-    .fbh=fbh,
+    .fbw=props.fbw,
+    .fbh=props.fbh,
     .device=egg.config.video_device,
   };
-  if (hostio_init_video(egg.hostio,egg.config.video_driver,&setup)<0) {
+  err=hostio_init_video(egg.hostio,egg.config.video_driver,&setup);
+  egg_rom_startup_props_cleanup(&props);
+  if (err<0) {
     fprintf(stderr,"%s: Failed to initialize video driver.\n",egg.exename);
     return -2;
   }
@@ -53,6 +54,14 @@ static int egg_init_video() {
   // Make the renderer.
   if (!(egg.render=render_new())) {
     fprintf(stderr,"%s: Failed to initialize GLES2 context.\n",egg.exename);
+    return -2;
+  }
+  if (render_texture_new(egg.render)!=1) {
+    fprintf(stderr,"%s: Failed to allocate main framebuffer.\n",egg.exename);
+    return -2;
+  }
+  if (render_texture_load(egg.render,1,props.fbw,props.fbh,0,EGG_TEX_FMT_RGBA,0,0)<0) {
+    fprintf(stderr,"%s: Failed to initialize %dx%d framebuffer.\n",egg.exename,props.fbw,props.fbh);
     return -2;
   }
   
@@ -182,6 +191,21 @@ static int egg_init(int argc,char **argv) {
   return 0;
 }
 
+/* Sticky audio lock.
+ */
+ 
+int egg_lock_audio() {
+  if (egg.audio_locked) return 0;
+  if (hostio_audio_lock(egg.hostio)<0) return -1;
+  egg.audio_locked=1;
+  return 0;
+}
+
+void egg_unlock_audio() {
+  hostio_audio_unlock(egg.hostio);
+  egg.audio_locked=0;
+}
+
 /* Update.
  * Block as needed.
  */
@@ -197,6 +221,7 @@ static int egg_update() {
   usleep(100000);//TODO clock
   
   egg_romsrc_call_client_update(0.020);
+  if (egg.audio_locked) egg_unlock_audio();
   
   // Render.
   if (egg.hostio->video->type->gx_begin(egg.hostio->video)<0) {

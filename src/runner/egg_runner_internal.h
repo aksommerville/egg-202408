@@ -28,6 +28,7 @@ extern struct egg {
   char *store;
   int storec;
   int store_dirty;
+  int audio_locked; // Sticky lock that pops back open after the client update.
 } egg;
 
 extern const int egg_romsrc;
@@ -42,9 +43,34 @@ int egg_romsrc_call_client_init();
 void egg_romsrc_call_client_update(double elapsed);
 void egg_romsrc_call_client_render();
 
+int egg_rom_get_metadata(char *dst,int dsta,const char *k,int kc,int translatable);
+
+/* Acquire the metadata things we need for startup.
+ * If the call fails, no need to clean up.
+ */
+struct egg_rom_startup_props {
+  char *title;
+  void *iconrgba;
+  int iconw,iconh;
+  int fbw,fbh;
+};
+int egg_rom_startup_props(struct egg_rom_startup_props *props);
+void egg_rom_startup_props_cleanup(struct egg_rom_startup_props *props);
+
+/* Check the "required" metadata field.
+ * Anything amiss, we log it and fail.
+ * egg_romsrc_load() calls this before standing the Wasm context.
+ * (that sequencing is important; we want users to see our sensible error messages
+ * in preference to Wasm linkage errors).
+ */
+int egg_rom_assert_required();
+
 int egg_store_init();
 void egg_store_quit();
 void egg_store_flush();
+
+int egg_lock_audio();
+void egg_unlock_audio();
 
 void egg_cb_close(struct hostio_video *driver);
 void egg_cb_focus(struct hostio_video *driver,int focus);

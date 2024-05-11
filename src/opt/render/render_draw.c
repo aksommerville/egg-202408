@@ -462,4 +462,5 @@ void render_draw_to_main(struct render *render,int mainw,int mainh,int texid) {
   glDrawArrays(GL_TRIANGLE_STRIP,0,4);
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
+  glEnable(GL_BLEND);
 }

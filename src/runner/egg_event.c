@@ -1,5 +1,34 @@
 #include "egg_runner_internal.h"
 
+/* Public API.
+ */
+ 
+int egg_event_get(union egg_event *v,int a) {
+  return 0;
+}
+
+int egg_event_enable(int type,int enable) {
+  return 0;
+}
+
+void egg_show_cursor(int show) {
+}
+
+int egg_lock_cursor(int lock) {
+  return 0;
+}
+
+int egg_joystick_devid_by_index(int p) {
+  return 0;
+}
+
+void egg_joystick_get_ids(int *vid,int *pid,int *version,int devid) {
+}
+
+int egg_joystick_get_name(char *dst,int dsta,int devid) {
+  return 0;
+}
+
 /* Window manager callbacks.
  */
  

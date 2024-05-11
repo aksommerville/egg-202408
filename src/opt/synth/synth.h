@@ -63,6 +63,8 @@ void synth_play_sound_serial(
  */
 double synth_get_playhead(struct synth *synth);
 
+static inline void synth_set_playhead(struct synth *synth,double beats) {}//TODO
+
 /* You may push events into the system at any time.
  * Beware that this is the same event bus the song is using.
  * Songs can only address channels 0..7. You can use 8..15 and be confident you fully control them.

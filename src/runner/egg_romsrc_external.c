@@ -236,51 +236,59 @@ static int egg_wasm_store_key_by_index(wasm_exec_env_t ee,char *dst,int dsta,int
 }
 
 static int egg_wasm_event_get(wasm_exec_env_t ee,int vp/*union egg_event *v*/,int a) {
-  return 0;//TODO egg_event_get
+  union egg_event *v=wamr_validate_pointer(egg.wamr,1,vp,sizeof(union egg_event)*a);
+  if (!v) return 0;
+  return egg_event_get(v,a);
 }
 
 static int egg_wasm_event_enable(wasm_exec_env_t ee,int type,int enable) {
-  return 0;//TODO egg_event_enable
+  return egg_event_enable(type,enable);
 }
 
 static void egg_wasm_show_cursor(wasm_exec_env_t ee,int show) {
-  //TODO egg_show_cursor
+  egg_show_cursor(show);
 }
 
 static int egg_wasm_lock_cursor(wasm_exec_env_t ee,int lock) {
-  return 0;//TODO egg_lock_cursor
+  return egg_lock_cursor(lock);
 }
 
 static int egg_wasm_joystick_devid_by_index(wasm_exec_env_t ee,int p) {
-  return 0;//TODO egg_joystick_devid_by_index
+  return egg_joystick_devid_by_index(p);
 }
 
 static void egg_wasm_joystick_get_ids(wasm_exec_env_t ee,int *vid,int *pid,int *version,int devid) {
-  //TODO egg_joystick_get_ids
+  egg_joystick_get_ids(vid,pid,version,devid);
 }
 
 static int egg_wasm_joystick_get_name(wasm_exec_env_t ee,char *dst,int dsta,int devid) {
-  return 0;//TODO egg_joystick_get_name
+  return egg_joystick_get_name(dst,dsta,devid);
 }
 
 static void egg_wasm_audio_play_song(wasm_exec_env_t ee,int qual,int rid,int force,int repeat) {
-  //TODO egg_audio_play_song
+  if (egg_lock_audio()<0) return;
+  synth_play_song(egg.synth,qual,rid,force,repeat);
 }
 
 static void egg_wasm_audio_play_sound(wasm_exec_env_t ee,int qual,int rid,double trim,double pan) {
-  //TODO egg_audio_play_sound
+  if (egg_lock_audio()<0) return;
+  synth_play_sound(egg.synth,qual,rid,trim,pan);
 }
 
 static void egg_wasm_audio_event(wasm_exec_env_t ee,int chid,int opcode,int a,int b) {
-  //TODO egg_audio_event
+  if (egg_lock_audio()<0) return;
+  synth_event(egg.synth,chid,opcode,a,b,0);
 }
 
 static double egg_wasm_audio_get_playhead(wasm_exec_env_t ee) {
-  return 0.0;//TODO egg_audio_get_playhead
+  // No need to lock.
+  //TODO Adjust per driver: About how far into the last buffer are we?
+  return synth_get_playhead(egg.synth);
 }
 
 static void egg_wasm_audio_set_playhead(wasm_exec_env_t ee,double beat) {
-  //TODO egg_audio_set_playhead
+  if (egg_lock_audio()<0) return;
+  synth_set_playhead(egg.synth,beat);
 }
 
 /* Table of exports to wasm.
@@ -353,6 +361,8 @@ int egg_romsrc_load() {
       return -2;
     }
   #endif
+  
+  if ((err=egg_rom_assert_required())<0) return err;
   
   const void *wasm1ro=0;
   int wasm1c=rom_get(&wasm1ro,&egg.rom,EGG_RESTYPE_wasm,0,1);

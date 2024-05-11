@@ -1,4 +1,6 @@
 title=Trial
+titleString=2
 author=AK Sommerville
 framebuffer=640x360
 iconImage=8
+require=

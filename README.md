@@ -47,6 +47,12 @@ And some major outstanding questions:
 - - [ ] Audio: Shut down faster, at least drop events that haven't started yet.
 - - [ ] Audio: egg_audio_event
 - [ ] Native runtime for Linux
+- - [ ] Event dispatch
+- - [ ] Clock
+- - [ ] Input digestion. eg receiving mouse or keyboard via evdev.
+- - [ ] Fake standard mapping.
+- - [ ] egg_audio_get_playhead: Adjust per driver.
+- - [ ] synth_set_playhead
 - [ ] Raspberry Pi
 - [ ] MS Windows
 - [ ] MacOS
@@ -54,5 +60,11 @@ And some major outstanding questions:
 - - It's OK (advisable!) to do that purely client-side, but we should supply a library or something.
 - [ ] clang is inserting calls to memcpy. Can avoid by declaring arrays 'static const'. Or I guess by including libc. But can we tell it not to? I did say "-nostdlib"!
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
-- [ ] Since we're allowing line gradients, can we also do rect gradients? No need, if full OpenGL works out.
+- [x] Since we're allowing line gradients, can we also do rect gradients? No need, if full OpenGL works out. ...see below, raw triangle strip would cover it.
 - [ ] Storage access controls.
+- [ ] Remove the "fb" hooks from hostio_video. No harm if they exist, but they're misleading and dead weight, we'll never use.
+- [ ] Revisit exposing GLES2/WebGL directly to the game.
+- - [ ] If it's a no, add a few more render ops:
+- - - [ ] Raw triangle strip.
+- - - [ ] Decal with arbitrary scale and rotation.
+- - - [ ] Textured triangle strip?
