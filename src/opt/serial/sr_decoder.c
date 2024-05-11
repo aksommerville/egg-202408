@@ -163,10 +163,10 @@ int sr_decode_json_next(const char **kpp,struct sr_decoder *decoder) {
         int ktokenc=sr_string_measure(DECV+decoder->p,decoder->c-decoder->p,&ksimple);
         if (ktokenc<1) return decoder->jsonctx=-1;
         if (ksimple&&(ktokenc>2)) { // normal cases -- return what's inside the key token
-          *kpp=DECV+1;
+          *kpp=DECV+decoder->p+1;
           retval=ktokenc-2;
         } else { // empty or escape -- return the encoded key token
-          *kpp=DECV;
+          *kpp=DECV+decoder->p;
           retval=ktokenc;
         }
         decoder->p+=ktokenc;
@@ -219,7 +219,7 @@ int sr_decode_json_expression(const char **dstpp,struct sr_decoder *decoder) {
   const char *expr=DECV+decoder->p;
   int exprc=sr_json_measure(expr,decoder->c-decoder->p);
   if (exprc<1) return decoder->jsonctx=-1;
-  *dstpp=expr;
+  if (dstpp) *dstpp=expr;
   return exprc;
 }
 

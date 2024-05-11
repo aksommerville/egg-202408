@@ -6,8 +6,20 @@
 
 // These are globals, (egg.config).
 struct egg_config {
-  const char *rompath;
+  char *rompath;
   int lang;
+  int windoww,windowh;
+  int fullscreen;
+  char *video_device;
+  char *video_driver;
+  char *input_path;
+  char *input_drivers;
+  int audio_rate;
+  int audio_chanc;
+  int audio_buffer;
+  char *audio_device;
+  char *audio_driver;
+  char *storepath;
 };
 
 int egg_configure(int argc,char **argv);

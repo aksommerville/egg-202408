@@ -35,20 +35,11 @@ And some major outstanding questions:
 - GLES2/WebGL exposed directly?
 - Can we get a GLES2 context in Mac and Windows? I've had trouble with this in the past, on Windows especially.
 - What would it take to support MP3 as a song format?
+- - It's no longer under patent, but the spec is paywalled. Should I pay the $200 to be able to know conclusively that we can't support it? Or just assume.
+- - We can come back to this later.
 
 ## TODO
 
-- [x] eggdev
-- - [x] pack: Extension points. ...only needed `--types=PATH`, i think.
-- - [x] bundle
-- - [x] unbundle ...ha ha i can't believe it works :D
-- - [x] serve
-- - - [x] htdocs etc
-- - - [x] JSON listing of available ROMs.
-- [x] Define API.
-- [x] Split up and generalize makefiles.
-- [x] eggdev unbundle for HTML (text format)
-- [x] Can we use PNG as favicon? That will make the difference, whether we allow multiple image formats. ...YES PNG is fine.
 - [ ] Web runtime
 - - [ ] Pointer Capture
 - - [ ] Reject event enablement if we know it's not supported. eg Gamepad and Accelerometer are easy to know. Does anything tell us about touch or keyboard?
@@ -59,17 +50,9 @@ And some major outstanding questions:
 - [ ] Raspberry Pi
 - [ ] MS Windows
 - [ ] MacOS
-- [x] eggdev convert songs
-- [x] eggdev compile sfg
-- [x] eggdev pack: Validate wasm imports and exports, is that feasible?
-- - ../thirdparty/wabt/bin/wasm-objdump mid/demo/trial/data/wasm/1 -x -j Import # or `-j Export`. Can't do both at once.
-- [x] eggdev bundle with native code: Automatically strip wasm resource, so we can bundle from the regular egg file
-- [x] eggdev pack: Ensure we accept every format we produce. Packing the output of unpack must produce an identical ROM.
-- [x] eggdev pack: Validation, eg must contain metadata and wasm, metadata must declare framebuffer...
 - [ ] Some amount of libc for games. At least need memory and math functions.
 - - It's OK (advisable!) to do that purely client-side, but we should supply a library or something.
 - [ ] clang is inserting calls to memcpy. Can avoid by declaring arrays 'static const'. Or I guess by including libc. But can we tell it not to? I did say "-nostdlib"!
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
-- [x] web Render.js: We're copying vertex buffers for egg_draw_line and egg_draw_tile. Can we shovel straight from Wasm to GL instead? ...yes
 - [ ] Since we're allowing line gradients, can we also do rect gradients? No need, if full OpenGL works out.
 - [ ] Storage access controls.

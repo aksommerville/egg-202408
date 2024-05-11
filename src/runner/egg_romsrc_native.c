@@ -173,9 +173,6 @@ int egg_res_for_each(int (*cb)(int tid,int qual,int rid,int len,void *userdata),
 }
 
 //TODO
-int egg_store_get(char *dst,int dsta,const char *k,int kc) { return 0; }
-int egg_store_set(const char *k,int kc,const char *v,int vc) { return -1; }
-int egg_store_key_by_index(char *dst,int dsta,int p) { return 0; }
 int egg_event_get(union egg_event *v,int a) { return 0; }
 int egg_event_enable(int type,int enable) { return 0; }
 void egg_show_cursor(int show) {}

@@ -1,11 +1,30 @@
-linux_OPT_ENABLE+=fs rom serial wamr strfmt png render midi sfg
+linux_OPT_ENABLE+=fs rom serial wamr strfmt png render midi sfg hostio synth
 
 linux_CC:=$(linux_TOOLCHAIN)gcc -c -MMD -O3 -Isrc -Werror -Wimplicit $(linux_CC_EXTRA) \
-  $(patsubst %,-DUSE_%=1,$(tools_OPT_ENABLE)) \
+  $(patsubst %,-DUSE_%=1,$(linux_OPT_ENABLE)) \
   -I$(WAMR_SDK)/core/iwasm/include
 linux_LD:=$(linux_TOOLCHAIN)gcc
 linux_LDPOST:=$(linux_LD_EXTRA) $(abspath $(WAMR_SDK)/build/libvmlib.a) -lm -lz -lGL -lEGL
 linux_AR:=$(linux_TOOLCHAIN)ar rc
+
+# Linux is a little wacky with its OPT_ENABLE.
+# Other platforms, you might have a fixed set of optional units, and don't need conditional stuff like this.
+ifneq (,$(strip asound,$(linux_OPT_ENABLE)))
+  linux_LDPOST+=-lasound
+endif
+ifneq (,$(strip pulse,$(linux_OPT_ENABLE)))
+  linux_LDPOST+=-lpulse-simple
+endif
+ifneq (,$(strip drmgx,$(linux_OPT_ENABLE)))
+  linux_CC+=-I/usr/include/libdrm
+  linux_LDPOST+=-ldrm -lgbm
+endif
+ifneq (,$(strip xegl,$(linux_OPT_ENABLE)))
+  linux_LDPOST+=-lX11
+  ifneq (,$(strip xinerama,$(linux_OPT_ENABLE)))
+    linux_LDPOST+=-lXinerama
+  endif
+endif
 
 $(linux_MIDDIR)/%.o:src/%.c;$(PRECMD) $(linux_CC) -o$@ $<
 $(linux_MIDDIR)/runner/egg_romsrc_external.o:src/runner/egg_romsrc_external.c;$(PRECMD) $(linux_CC) -o$@ $< -DEGG_BUNDLE_ROM=0

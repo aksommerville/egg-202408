@@ -37,7 +37,9 @@ web_LD_EXTRA:=
 
 #------------------------------------------------------------------------------
 
-linux_OPT_ENABLE:=
+# You need at least one of (alsafd,asound,pulse) and one of (drmgx,xegl).
+# It's fine to include all of them.
+linux_OPT_ENABLE:=alsafd asound pulse drmgx xegl xinerama evdev
 linux_TOOLCHAIN:=
 linux_CC_EXTRA:=
 linux_LD_EXTRA:=

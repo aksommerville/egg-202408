@@ -224,15 +224,15 @@ static int egg_wasm_res_for_each(wasm_exec_env_t ee,int cbid,int userdata) {
 }
 
 static int egg_wasm_store_get(wasm_exec_env_t ee,char *dst,int dsta,const char *k,int kc) {
-  return 0;//TODO egg_store_get
+  return egg_store_get(dst,dsta,k,kc);
 }
 
 static int egg_wasm_store_set(wasm_exec_env_t ee,const char *k,int kc,const char *v,int vc) {
-  return -1;//TODO egg_store_set
+  return egg_store_set(k,kc,v,vc);
 }
 
 static int egg_wasm_store_key_by_index(wasm_exec_env_t ee,char *dst,int dsta,int p) {
-  return 0;//TODO egg_store_key_by_index
+  return egg_store_key_by_index(dst,dsta,p);
 }
 
 static int egg_wasm_event_get(wasm_exec_env_t ee,int vp/*union egg_event *v*/,int a) {
