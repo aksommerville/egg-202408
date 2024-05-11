@@ -47,10 +47,11 @@ And some major outstanding questions:
 - - [ ] Audio: Shut down faster, at least drop events that haven't started yet.
 - - [ ] Audio: egg_audio_event
 - [ ] Native runtime for Linux
-- - [ ] Event dispatch
-- - [ ] Clock
+- - [x] Event dispatch
+- - [x] Clock
 - - [ ] Input digestion. eg receiving mouse or keyboard via evdev.
 - - [ ] Fake standard mapping.
+- - [ ] Pointer Capture
 - - [ ] egg_audio_get_playhead: Adjust per driver.
 - - [ ] synth_set_playhead
 - [ ] Raspberry Pi
@@ -68,3 +69,8 @@ And some major outstanding questions:
 - - - [ ] Raw triangle strip.
 - - - [ ] Decal with arbitrary scale and rotation.
 - - - [ ] Textured triangle strip?
+- [ ] TOUCH events for native. What would that take? Maybe acquire some tablet thingy and try it out?
+- - https://shop.puri.sm/shop/librem-11/ oooh that looks cool. $1k, don't rush it.
+- - https://pine64.com/product/pinetab2-10-1-8gb-128gb-linux-tablet-with-detached-backlit-keyboard/ about $200, looks low quality
+- - https://raspad.com/products/raspadv3?variant=41161312764080 $300 project kit, pi+touchscreen. looks adorable
+- [ ] When we fake KEY events via hostio_input, should we also attempt TEXT mapping? Determining the user's preferred keyboard layout sounds like a can of rotten worms.

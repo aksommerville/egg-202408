@@ -188,6 +188,53 @@ int egg_client_init() {
   return 0;
 }
 
+static void on_joy(const struct egg_event_joy *event) {
+  if (!event->btnid) {
+    if (event->value) { // Connected.
+      egg_log("Connected joystick %d",event->devid);
+      //TODO fetch and log ids and buttons
+    } else { // Disconnected.
+      egg_log("Lost joystick %d",event->devid);
+    }
+  } else { // State change.
+    egg_log("JOY %d.0x%x=%d",event->devid,event->btnid,event->value);
+  }
+}
+
+static void on_key(const struct egg_event_key *event) {
+  egg_log("KEY 0x%x=%d",event->keycode,event->value);
+}
+
+static void on_text(const struct egg_event_text *event) {
+  egg_log("TEXT U+%x",event->codepoint);
+}
+
+static void on_mmotion(const struct egg_event_mmotion *event) {
+  egg_log("MMOTION %d,%d",event->x,event->y);
+}
+
+static void on_mbutton(const struct egg_event_mbutton *event) {
+  egg_log("MBUTTON %d=%d @%d,%d",event->btnid,event->value,event->x,event->y);
+}
+
+static void on_mwheel(const struct egg_event_mwheel *event) {
+  egg_log("MWHEEL %+d,%+d @%d,%d",event->dx,event->dy,event->x,event->y);
+}
+
+static void on_touch(const struct egg_event_touch *event) {
+  const char *statestr="!!!INVALID!!!";
+  switch (event->state) {
+    case 0: statestr="release"; break;
+    case 1: statestr="press"; break;
+    case 2: statestr="move"; break;
+  }
+  egg_log("TOUCH #%d %d(%s) @%d,%d",event->touchid,event->state,statestr,event->x,event->y);
+}
+
+static void on_accel(const struct egg_event_accel *event) {
+  egg_log("ACCEL %+d,%+d,%+d",event->x,event->y,event->z);
+}
+
 void egg_client_update(double elapsed) {
   updatec++;
   total_elapsed+=elapsed;
@@ -199,14 +246,14 @@ void egg_client_update(double elapsed) {
     int i=eventc;
     for (;i-->0;event++) {
       switch (event->type) {
-        case EGG_EVENT_JOY: { const struct egg_event_joy *e=(void*)event; egg_log("JOY %d.%x=%d",e->devid,e->btnid,e->value); } break;
-        case EGG_EVENT_KEY: { const struct egg_event_key *e=(void*)event; egg_log("KEY 0x%08x=%d",e->keycode,e->value); } break;
-        case EGG_EVENT_TEXT: { const struct egg_event_text *e=(void*)event; egg_log("TEXT U+%x",e->codepoint); } break;
-        case EGG_EVENT_MMOTION: break;//{ const struct egg_event_mmotion *e=(void*)event; egg_log("MMOTION %d,%d",e->x,e->y); } break;
-        case EGG_EVENT_MBUTTON: { const struct egg_event_mbutton *e=(void*)event; egg_log("MBUTTON %d=%d @%d,%d",e->btnid,e->value,e->x,e->y); } break;
-        case EGG_EVENT_MWHEEL: { const struct egg_event_mwheel *e=(void*)event; egg_log("MWHEEL %+d,%+d @%d,%d",e->dx,e->dy,e->x,e->y); } break;
-        case EGG_EVENT_TOUCH: { const struct egg_event_touch *e=(void*)event; egg_log("TOUCH #%d state=%d @%d,%d",e->touchid,e->state,e->x,e->y); } break;
-        case EGG_EVENT_ACCEL: { const struct egg_event_accel *e=(void*)event; egg_log("ACCEL %+d,%+d,%+d",e->x,e->y,e->z); } break;
+        case EGG_EVENT_JOY: on_joy((void*)event); break;
+        case EGG_EVENT_KEY: on_key((void*)event); break;
+        case EGG_EVENT_TEXT: on_text((void*)event); break;
+        case EGG_EVENT_MMOTION: on_mmotion((void*)event); break;
+        case EGG_EVENT_MBUTTON: on_mbutton((void*)event); break;
+        case EGG_EVENT_MWHEEL: on_mwheel((void*)event); break;
+        case EGG_EVENT_TOUCH: on_touch((void*)event); break;
+        case EGG_EVENT_ACCEL: on_accel((void*)event); break;
         default: { const int *e=(void*)event; egg_log("UNKNOWN EVENT [%d,%d,%d,%d,%d]",e[0],e[1],e[2],e[3],e[4]); } break;
       }
     }

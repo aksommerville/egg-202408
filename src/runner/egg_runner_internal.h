@@ -8,6 +8,8 @@
 #include "opt/hostio/hostio.h"
 #include "opt/synth/synth.h"
 #include "egg_config.h"
+#include "egg_timer.h"
+#include "egg_inmgr.h"
 #include "egg/egg.h"
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +26,8 @@ extern struct egg {
   struct render *render;
   struct synth *synth;
   struct hostio *hostio;
+  struct egg_timer timer;
+  struct egg_inmgr *inmgr;
   volatile int sigc;
   char *store;
   int storec;
@@ -71,6 +75,8 @@ void egg_store_flush();
 
 int egg_lock_audio();
 void egg_unlock_audio();
+
+void egg_event_init();
 
 void egg_cb_close(struct hostio_video *driver);
 void egg_cb_focus(struct hostio_video *driver,int focus);

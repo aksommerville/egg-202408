@@ -10,9 +10,11 @@ struct egg egg={0};
 static void egg_quit() {
   if (egg.client_initted) egg_romsrc_call_client_quit();
   egg_store_quit();
-  //TODO Log performance etc
+  egg_timer_report(&egg.timer);
   render_del(egg.render);
   hostio_del(egg.hostio);
+  synth_del(egg.synth);
+  egg_inmgr_del(egg.inmgr);
 }
 
 /* Init: Video driver and renderer.
@@ -77,6 +79,10 @@ static int egg_init_input() {
   };
   if (hostio_init_input(egg.hostio,egg.config.input_drivers,&setup)<0) {
     fprintf(stderr,"%s: Error initializing input drivers.\n",egg.exename);
+    return -2;
+  }
+  if (!(egg.inmgr=egg_inmgr_new())) {
+    fprintf(stderr,"%s: Failed to initialize input manager.\n",egg.exename);
     return -2;
   }
   return 0;
@@ -188,6 +194,9 @@ static int egg_init(int argc,char **argv) {
   }
   egg.client_initted=1;
   
+  // And now time begins.
+  egg_timer_init(&egg.timer,60.0,0.250);
+  
   return 0;
 }
 
@@ -213,14 +222,19 @@ void egg_unlock_audio() {
 static int egg_update() {
   int err;
   
+  // Pump the upstream event queue.
   if (hostio_update(egg.hostio)<0) {
     fprintf(stderr,"%s: Error updating I/O drivers.\n",egg.exename);
     return -2;
   }
+  if ((err=egg_inmgr_update(egg.inmgr))<0) {
+    if (err!=-2) fprintf(stderr,"%s: Unspecified error updating input manager.\n",egg.exename);
+    return -2;
+  }
   
-  usleep(100000);//TODO clock
-  
-  egg_romsrc_call_client_update(0.020);
+  // Sleep if needed, then update the client.
+  double elapsed=egg_timer_tick(&egg.timer);
+  egg_romsrc_call_client_update(elapsed);
   if (egg.audio_locked) egg_unlock_audio();
   
   // Render.

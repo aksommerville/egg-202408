@@ -265,6 +265,27 @@ static int egg_wasm_joystick_get_name(wasm_exec_env_t ee,char *dst,int dsta,int 
   return egg_joystick_get_name(dst,dsta,devid);
 }
 
+struct egg_joystick_for_each_button_ctx {
+  int cbid;
+  int userdata;
+};
+
+static int egg_wasm_cb_joystick_for_each_button(int btnid,int usage,int lo,int hi,int value,void *userdata) {
+  struct egg_joystick_for_each_button_ctx *ctx=userdata;
+  uint32_t argv[5]={btnid,usage,lo,hi,value};
+  if (wamr_call_table(egg.wamr,ctx->cbid,argv,5)<0) return -1;
+  return argv[0];
+}
+
+static int egg_wasm_joystick_for_each_button(int devid,int cbid,int userdata) {
+  // int (*cb)(int btnid,int usage,int lo,int hi,int value,void *userdata)
+  struct egg_joystick_for_each_button_ctx ctx={
+    .cbid=cbid,
+    .userdata=userdata,
+  };
+  return egg_joystick_for_each_button(devid,egg_wasm_cb_joystick_for_each_button,&ctx);
+}
+
 static void egg_wasm_audio_play_song(wasm_exec_env_t ee,int qual,int rid,int force,int repeat) {
   if (egg_lock_audio()<0) return;
   synth_play_song(egg.synth,qual,rid,force,repeat);
@@ -326,6 +347,7 @@ static NativeSymbol egg_wasm_exports[]={
   {"egg_joystick_devid_by_index",egg_wasm_joystick_devid_by_index,"(i)i"},
   {"egg_joystick_get_ids",egg_wasm_joystick_get_ids,"(***i)"},
   {"egg_joystick_get_name",egg_wasm_joystick_get_name,"(*~i)i"},
+  {"egg_joystick_for_each_button",egg_wasm_joystick_for_each_button,"(iii)i"},
   {"egg_audio_play_song",egg_wasm_audio_play_song,"(iiii)"},
   {"egg_audio_play_sound",egg_wasm_audio_play_sound,"(iiFF)"},
   {"egg_audio_event",egg_wasm_audio_event,"(iiii)"},
