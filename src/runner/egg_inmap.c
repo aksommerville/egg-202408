@@ -51,6 +51,12 @@ static int egg_inmap_btnid_eval(int *dst,const char *src,int srcc) {
         JOYBTN(RP)
         JOYBTN(UP)
       } break;
+    case 3: {
+        INMAP_BTN(NLX)
+        INMAP_BTN(NLY)
+        INMAP_BTN(NRX)
+        INMAP_BTN(NRY)
+      } break;
     case 4: {
         JOYBTN(AUX1)
         JOYBTN(AUX2)
@@ -70,6 +76,8 @@ static int egg_inmap_btnid_eval(int *dst,const char *src,int srcc) {
         JOYBTN(RIGHT)
         ALIAS(START,AUX1)
         ALIAS(HEART,AUX3)
+        INMAP_BTN(NHORZ)
+        INMAP_BTN(NVERT)
       } break;
     case 6: {
         ALIAS(SELECT,AUX2)
@@ -111,6 +119,12 @@ static const char *egg_inmap_btnid_repr(int btnid) {
     _(HORZ)
     _(VERT)
     _(DPAD)
+    _(NHORZ)
+    _(NVERT)
+    _(NLX)
+    _(NLY)
+    _(NRX)
+    _(NRY)
     #undef _
   }
   return 0;
@@ -183,6 +197,37 @@ static struct egg_inmap_rules *egg_inmap_new_rules(struct egg_inmap *inmap,const
   return rules;
 }
 
+/* Clear an existing rules or create a new one.
+ */
+ 
+struct egg_inmap_rules *egg_inmap_rewrite_rules(struct egg_inmap *inmap,int vid,int pid,int version,const char *name,int namec) {
+  if (!name) namec=0; else if (namec<0) { namec=0; while (name[namec]) namec++; }
+  struct egg_inmap_rules *rules=0;
+  // Find exact matches only.
+  int i=inmap->rulesc;
+  while (i-->0) {
+    struct egg_inmap_rules *q=inmap->rulesv[i];
+    if ((q->vid==vid)&&(q->pid==pid)&&(q->namec==namec)&&!memcmp(q->name,name,namec)) {
+      rules=q;
+      break;
+    }
+  }
+  // Clear the matched rules...
+  if (rules) {
+    rules->buttonc=0;
+  // ...or create new blank rules.
+  } else {
+    if (!(rules=egg_inmap_add_rules(inmap))) return 0;
+    rules->vid=vid;
+    rules->pid=pid;
+    if (!(rules->name=malloc(namec+1))) return 0;
+    memcpy(rules->name,name,namec);
+    rules->name[namec]=0;
+    rules->namec=namec;
+  }
+  return rules;
+}
+
 /* Button list in rules.
  */
  
@@ -198,7 +243,8 @@ static int egg_inmap_rules_buttonv_search(const struct egg_inmap_rules *rules,in
   return -lo-1;
 }
 
-static int egg_inmap_rules_add_button(struct egg_inmap_rules *rules,int srcbtnid,int dstbtnid) {
+int egg_inmap_rules_add_button(struct egg_inmap_rules *rules,int srcbtnid,int dstbtnid) {
+  if (!rules) return -1;
   int p=egg_inmap_rules_buttonv_search(rules,srcbtnid);
   if (p>=0) return -1;
   p=-p-1;
@@ -516,4 +562,11 @@ struct egg_inmap_rules *egg_inmap_synthesize_rules(struct egg_inmap *inmap,struc
   }
   egg_inmap_save(inmap);
   return rules;
+}
+
+/* End of user's edit.
+ */
+ 
+int egg_inmap_ready(struct egg_inmap *inmap) {
+  return egg_inmap_save(inmap);
 }

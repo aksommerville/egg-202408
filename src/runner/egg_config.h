@@ -21,6 +21,7 @@ struct egg_config {
   char *audio_driver;
   char *storepath;
   int ignore_required;
+  int configure_input;
 };
 
 int egg_configure(int argc,char **argv);

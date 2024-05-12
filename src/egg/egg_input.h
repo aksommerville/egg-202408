@@ -7,14 +7,16 @@
 
 /* Event type.
  */
-#define EGG_EVENT_JOY 1
-#define EGG_EVENT_KEY 2
-#define EGG_EVENT_TEXT 3
-#define EGG_EVENT_MMOTION 4
-#define EGG_EVENT_MBUTTON 5
-#define EGG_EVENT_MWHEEL 6
-#define EGG_EVENT_TOUCH 7
-#define EGG_EVENT_ACCEL 8
+#define EGG_EVENT_JOY     1 /* Standard Mapping joysticks, see JOYBTN below. */
+#define EGG_EVENT_KEY     2 /* System keyboard, with keycodes always in USB-HID page 7. Value 2 = auto-repeat. */
+#define EGG_EVENT_TEXT    3 /* Digested text from the keyboard, one Unicode codepoint at a time. */
+#define EGG_EVENT_MMOTION 4 /* Mouse motion. Normally in absolute framebuffer pixels, but relative if locked. */
+#define EGG_EVENT_MBUTTON 5 /* Mouse button. The first three are well-defined, and others willy-nilly. */
+#define EGG_EVENT_MWHEEL  6 /* Mouse wheel, both horizontal and vertical. */
+#define EGG_EVENT_TOUCH   7 /* Touchscreens. */
+#define EGG_EVENT_ACCEL   8 /* Accelerometers. Never enabled by default, and usually not available at all. */
+#define EGG_EVENT_RAW     9 /* Alternative to JOY that delivers events without mapping, you see what the platform sees. */
+#define EGG_EVENT_ID_MAX  9
 
 /* Joystick button, for standard mapping.
  * We may report other buttons outside this range, if we didn't know how to map them.
@@ -109,6 +111,8 @@ struct egg_event_accel {
   int z;
 };
 
+#define egg_event_raw egg_event_joy
+
 union egg_event {
   int type;
   struct egg_event_joy joy;
@@ -119,6 +123,7 @@ union egg_event {
   struct egg_event_mwheel mwheel;
   struct egg_event_touch touch;
   struct egg_event_accel accel;
+  struct egg_event_raw raw;
 };
 
 /* Write up to (a) events at (v) and return the count written.
@@ -136,6 +141,7 @@ int egg_event_get(union egg_event *v,int a);
  *   MWHEEL *** disabled
  *   TOUCH enabled
  *   ACCEL *** disabled
+ *   RAW *** disabled
  * Returns the new state for this event, which is not always what you asked for.
  * If the platform knows that an event type is not possible, it should refuse to enable.
  */

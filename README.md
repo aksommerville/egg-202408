@@ -50,11 +50,14 @@ sudo apt install clang wabt
 - - [ ] Audio playhead
 - - [ ] Audio: Shut down faster, at least drop events that haven't started yet.
 - - [ ] Audio: egg_audio_event
+- - [ ] incfg: First, is it worth the effort? How much coverage does Standard Mapping give us? And then.... how?
 - [ ] Native runtime for Linux
 - - [x] Event dispatch
 - - [x] Clock
 - - [x] Input digestion. eg receiving mouse or keyboard via evdev.
 - - [x] Fake standard mapping.
+- - [x] Live input config. Trigger with --configure-input
+- - [ ] Invoke incfg via client too.
 - - [ ] Pointer Capture
 - - [ ] egg_audio_get_playhead: Adjust per driver.
 - - [ ] synth_set_playhead

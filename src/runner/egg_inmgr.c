@@ -64,6 +64,10 @@ struct egg_inmgr *egg_inmgr_new() {
   return inmgr;
 }
 
+struct egg_inmap *egg_inmgr_get_inmap(struct egg_inmgr *inmgr) {
+  return &inmgr->inmap;
+}
+
 /* Test event capability.
  *   <1: Forbidden.
  *    1: Optional.
@@ -72,14 +76,15 @@ struct egg_inmgr *egg_inmgr_new() {
  
 static int egg_event_capable(int type) {
   switch (type) {
-    case EGG_EVENT_JOY: return 1;
-    case EGG_EVENT_KEY: return 1;
-    case EGG_EVENT_TEXT: return 1;
-    case EGG_EVENT_MMOTION: return 1;
-    case EGG_EVENT_MBUTTON: return 1;
-    case EGG_EVENT_MWHEEL: return 1;
-    case EGG_EVENT_TOUCH: return 0;
-    case EGG_EVENT_ACCEL: return 0;
+    case EGG_EVENT_JOY: return 0;
+    case EGG_EVENT_KEY: return 0;
+    case EGG_EVENT_TEXT: return 0;
+    case EGG_EVENT_MMOTION: return 0;
+    case EGG_EVENT_MBUTTON: return 0;
+    case EGG_EVENT_MWHEEL: return 0;
+    case EGG_EVENT_TOUCH: return -1;
+    case EGG_EVENT_ACCEL: return -1;
+    case EGG_EVENT_RAW: return 0;
   }
   return 0;
 }
@@ -245,6 +250,15 @@ static inline struct egg_device *egg_inmgr_get_device(const struct egg_inmgr *in
   return inmgr->devicev[p];
 }
 
+const char *egg_inmgr_get_device_ids(int *vid,int *pid,int *version,const struct egg_inmgr *inmgr,int devid) {
+  struct egg_device *device=egg_inmgr_get_device(inmgr,devid);
+  if (!device) return 0;
+  *vid=device->vid;
+  *pid=device->pid;
+  *version=device->version;
+  return device->name;
+}
+
 /* Remove device.
  */
  
@@ -302,10 +316,24 @@ static int egg_device_apply_rules(struct egg_inmgr *inmgr,struct egg_device *dev
             button->hidusage=0;
           }
         } break;
+      case EGG_INMAP_BTN_NLX:
+      case EGG_INMAP_BTN_NLY:
+      case EGG_INMAP_BTN_NRX:
+      case EGG_INMAP_BTN_NRY: {
+          if (button->lo>button->hi-2) {
+            button->hidusage=0;
+          } else {
+            int tmp=button->lo;
+            button->lo=button->hi;
+            button->hi=tmp;
+          }
+        } break;
         
       // To dpad axis: Verify range of at least 3, then rephrase (lo,hi) as thresholds (as opposed to limits).
       case EGG_INMAP_BTN_HORZ:
-      case EGG_INMAP_BTN_VERT: {
+      case EGG_INMAP_BTN_VERT:
+      case EGG_INMAP_BTN_NHORZ:
+      case EGG_INMAP_BTN_NVERT: {
           if (button->lo>button->hi-2) {
             button->hidusage=0;
           } else {
@@ -314,8 +342,13 @@ static int egg_device_apply_rules(struct egg_inmgr *inmgr,struct egg_device *dev
             int midhi=(button->hi+mid)>>1;
             if (midlo>=mid) midlo=mid-1;
             if (midhi<=mid) midhi=mid+1;
-            button->lo=midlo;
-            button->hi=midhi;
+            if ((dstbtnid==EGG_INMAP_BTN_NHORZ)||(dstbtnid==EGG_INMAP_BTN_NVERT)) {
+              button->lo=midhi;
+              button->hi=midlo;
+            } else {
+              button->lo=midlo;
+              button->hi=midhi;
+            }
           }
         } break;
         
@@ -367,7 +400,17 @@ static int egg_device_configure(struct egg_inmgr *inmgr,struct egg_device *devic
     __FILE__,__LINE__,device->vid,device->pid,device->version,device->namec,device->name
   );
   
-  /* First and foremost, if matches a rule set from the config file, go with that.
+  /* If RAW is enabled and JOY is not, take the somewhat risky position that the device should stay in RAW mode.
+   */
+  if (
+    (inmgr->eventmask&(1<<EGG_EVENT_RAW))&&
+    !(inmgr->eventmask&(1<<EGG_EVENT_JOY))
+  ) {
+    device->rptcls=EGG_EVENT_RAW;
+    return 0;
+  }
+  
+  /* If matches a rule set from the config file, go with that.
    */
   struct egg_inmap_rules *rules=egg_inmap_rules_for_device(
     &inmgr->inmap,device->vid,device->pid,device->version,device->name,device->namec
@@ -496,13 +539,32 @@ static struct egg_device *egg_inmgr_add_device(struct egg_inmgr *inmgr,struct ho
   
   // Decide how we're going to use the device (keyboard, mouse, joystick, touch, accelerometer?), and configure that.
   if ((egg_device_configure(egg.inmgr,device)<0)||!device->rptcls) {
-    fprintf(stderr,"%s: Dropping input device '%.*s' after failure to configure.\n",egg.exename,device->namec,device->name);
-    egg_inmgr_remove_device(egg.inmgr,devid);
-    if (driver->type->disconnect) driver->type->disconnect(driver,devid);
-    return 0;
+    /*XXX If we knew that RAW events will never be enabled, we could clean things up a little and drop the device immediately.
+     * But we probably shouldn't -- a device that fails to configure is a strong candidate for guided configuration, which requires RAW.
+     *
+      fprintf(stderr,"%s: Dropping input device '%.*s' after failure to configure.\n",egg.exename,device->namec,device->name);
+      egg_inmgr_remove_device(egg.inmgr,devid);
+      if (driver->type->disconnect) driver->type->disconnect(driver,devid);
+      return 0;
+    /**/
+    device->rptcls=EGG_EVENT_RAW;
+    return device;
   }
   
   return device;
+}
+
+/* Range for one button.
+ */
+ 
+void egg_inmgr_get_button_range(int *lo,int *hi,int *rest,const struct egg_inmgr *inmgr,int devid,int btnid) {
+  struct egg_device *device=egg_inmgr_get_device(inmgr,devid);
+  if (!device) return;
+  struct egg_button *button=egg_device_get_button(device,btnid);
+  if (!button) return;
+  *lo=button->lo;
+  *hi=button->hi;
+  *rest=button->value;
 }
 
 /* hostio callbacks.
@@ -564,7 +626,24 @@ void egg_cb_connect(struct hostio_input *driver,int devid) {
   if (!device) return;
   switch (device->rptcls) {
   
+    case EGG_EVENT_RAW: {
+        if (egg.inmgr->eventmask&(1<<EGG_EVENT_RAW)) {
+          union egg_event *event=egg_event_push(egg.inmgr);
+          event->raw.type=EGG_EVENT_RAW;
+          event->raw.devid=devid;
+          event->raw.btnid=0; // "connection state"
+          event->raw.value=1;
+        }
+      } break;
+  
     case EGG_EVENT_JOY: {
+        if (egg.inmgr->eventmask&(1<<EGG_EVENT_RAW)) {
+          union egg_event *event=egg_event_push(egg.inmgr);
+          event->raw.type=EGG_EVENT_RAW;
+          event->raw.devid=devid;
+          event->raw.btnid=0; // "connection state"
+          event->raw.value=1;
+        }
         if (egg.inmgr->eventmask&(1<<EGG_EVENT_JOY)) {
           union egg_event *event=egg_event_push(egg.inmgr);
           event->joy.type=EGG_EVENT_JOY;
@@ -588,8 +667,25 @@ void egg_cb_disconnect(struct hostio_input *driver,int devid) {
   if (!device) return;
   switch (device->rptcls) {
   
+    case EGG_EVENT_RAW: {
+        if (egg.inmgr->eventmask&(1<<EGG_EVENT_RAW)) {
+          union egg_event *event=egg_event_push(egg.inmgr);
+          event->raw.type=EGG_EVENT_RAW;
+          event->raw.devid=devid;
+          event->raw.btnid=0; // "connection state"
+          event->raw.value=0;
+        }
+      } break;
+  
     case EGG_EVENT_JOY: {
         //TODO Drop nonzero buttons? Or is that the client's problem?
+        if (egg.inmgr->eventmask&(1<<EGG_EVENT_RAW)) {
+          union egg_event *event=egg_event_push(egg.inmgr);
+          event->raw.type=EGG_EVENT_RAW;
+          event->raw.devid=devid;
+          event->raw.btnid=0; // "connection state"
+          event->raw.value=0;
+        }
         if (egg.inmgr->eventmask&(1<<EGG_EVENT_JOY)) {
           union egg_event *event=egg_event_push(egg.inmgr);
           event->joy.type=EGG_EVENT_JOY;
@@ -637,7 +733,24 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
   if (!device) return;
   switch (device->rptcls) {
   
+    case EGG_EVENT_RAW: {
+        if (egg.inmgr->eventmask&(1<<EGG_EVENT_RAW)) {
+          union egg_event *event=egg_event_push(egg.inmgr);
+          event->raw.type=EGG_EVENT_RAW;
+          event->raw.devid=devid;
+          event->raw.btnid=btnid;
+          event->raw.value=value;
+        }
+      } break;
+  
     case EGG_EVENT_JOY: {
+        if (egg.inmgr->eventmask&(1<<EGG_EVENT_RAW)) {
+          union egg_event *event=egg_event_push(egg.inmgr);
+          event->raw.type=EGG_EVENT_RAW;
+          event->raw.devid=devid;
+          event->raw.btnid=btnid;
+          event->raw.value=value;
+        }
         struct egg_button *button=egg_device_get_button(device,btnid);
         if (!button) return;
         switch (button->hidusage) {
@@ -645,8 +758,13 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
           case EGG_JOYBTN_LX:
           case EGG_JOYBTN_LY:
           case EGG_JOYBTN_RX:
-          case EGG_JOYBTN_RY: {
-              value=((value-button->lo)*256)/(button->hi-button->lo+1)-128;
+          case EGG_JOYBTN_RY: 
+          case EGG_INMAP_BTN_NLX:
+          case EGG_INMAP_BTN_NLY:
+          case EGG_INMAP_BTN_NRX:
+          case EGG_INMAP_BTN_NRY: {
+              if (button->lo<button->hi) value=((value-button->lo)*256)/(button->hi-button->lo+1)-128;
+              else value=128-((value-button->hi)*256)/(button->lo-button->hi+1);
               if (value<-128) value=-128;
               else if (value>127) value=127;
               if (value==button->value) return;
@@ -655,8 +773,11 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
             } break;
             
           case EGG_INMAP_BTN_HORZ:
-          case EGG_INMAP_BTN_VERT: {
-              value=(value<=button->lo)?-1:(value>=button->hi)?1:0;
+          case EGG_INMAP_BTN_VERT: 
+          case EGG_INMAP_BTN_NHORZ:
+          case EGG_INMAP_BTN_NVERT: {
+              if (button->lo<button->hi) value=(value<=button->lo)?-1:(value>=button->hi)?1:0;
+              else value=(value<=button->hi)?1:(value>=button->lo)?-1:0;
               if (value==button->value) return;
               int btnidlo,btnidhi;
               if (button->hidusage==EGG_INMAP_BTN_HORZ) {
@@ -787,15 +908,15 @@ int egg_event_get(union egg_event *v,int a) {
 }
 
 int egg_event_enable(int type,int enable) {
-  if ((type<1)||(type>8)) return 0;
+  if ((type<1)||(type>EGG_EVENT_ID_MAX)) return 0;
   int bit=1<<type;
   if (enable) {
     if (egg.inmgr->eventmask&bit) return 1;
-    if (egg_event_capable(type)<1) return 0;
+    if (egg_event_capable(type)<0) return 0;
     egg.inmgr->eventmask|=bit;
   } else {
     if (!(egg.inmgr->eventmask&bit)) return 0;
-    if (egg_event_capable(type)>1) return 1;
+    if (egg_event_capable(type)>0) return 1;
     egg.inmgr->eventmask&=~bit;
   }
   switch (type) {
@@ -807,6 +928,7 @@ int egg_event_enable(int type,int enable) {
     case EGG_EVENT_MWHEEL: egg_inmgr_refresh_cursor(egg.inmgr); break;
     case EGG_EVENT_TOUCH: break;
     case EGG_EVENT_ACCEL: break;
+    case EGG_EVENT_RAW: break;
   }
   return (egg.inmgr->eventmask&bit)?1:0;
 }

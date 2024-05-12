@@ -10,6 +10,7 @@
 #include "egg_config.h"
 #include "egg_timer.h"
 #include "egg_inmgr.h"
+#include "incfg/incfg.h"
 #include "egg/egg.h"
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,7 @@ extern struct egg {
   struct hostio *hostio;
   struct egg_timer timer;
   struct egg_inmgr *inmgr;
+  struct incfg *incfg;
   volatile int sigc;
   char *store;
   int storec;

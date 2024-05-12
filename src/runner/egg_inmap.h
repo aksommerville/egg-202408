@@ -31,9 +31,15 @@ struct egg_device {
 /* EGG_JOYBTN_* are legal for dstbtnid of course.
  * We also define these special aggregate symbols.
  */
-#define EGG_INMAP_BTN_HORZ 0x20 /* dpad left+right */
-#define EGG_INMAP_BTN_VERT 0x21 /* dpad up+down */
-#define EGG_INMAP_BTN_DPAD 0x22 /* dpad as hat */
+#define EGG_INMAP_BTN_HORZ  0x20 /* dpad left+right */
+#define EGG_INMAP_BTN_VERT  0x21 /* dpad up+down */
+#define EGG_INMAP_BTN_DPAD  0x22 /* dpad as hat */
+#define EGG_INMAP_BTN_NHORZ 0x23 /* dpad left+right reversed */
+#define EGG_INMAP_BTN_NVERT 0x24
+#define EGG_INMAP_BTN_NLX   0x25 /* analogue axes reversed */
+#define EGG_INMAP_BTN_NLY   0x26
+#define EGG_INMAP_BTN_NRX   0x27
+#define EGG_INMAP_BTN_NRY   0x28
 
 struct egg_inmap_button {
   int srcbtnid;
@@ -69,5 +75,11 @@ int egg_inmap_rules_get_button(const struct egg_inmap_rules *rules,int srcbtnid)
  * If we have a config file, we rewrite it before returning.
  */
 struct egg_inmap_rules *egg_inmap_synthesize_rules(struct egg_inmap *inmap,struct egg_device *device);
+
+/* Support for adding rules.
+ */
+struct egg_inmap_rules *egg_inmap_rewrite_rules(struct egg_inmap *inmap,int vid,int pid,int version,const char *name,int namec);
+int egg_inmap_rules_add_button(struct egg_inmap_rules *rules,int srcbtnid,int dstbtnid);
+int egg_inmap_ready(struct egg_inmap *inmap);
 
 #endif

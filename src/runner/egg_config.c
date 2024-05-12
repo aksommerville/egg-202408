@@ -29,6 +29,7 @@ static void egg_print_help(const char *topic,int topicc) {
     "  --audio-buffer=INT       If required by driver.\n"
     "  --audio-driver=LIST      See below. First to start up wins.\n"
     "  --save=PATH              Save file. \"none\" to disable saving, or empty for default.\n"
+    "  --configure-input        Launch in a special mode to map a joystick.\n"
   );
   if (egg_romsrc!=EGG_ROMSRC_NATIVE) {
     fprintf(stderr,"  --ignore-required        Try to launch even if ROM's stated requirements can't be met.\n");
@@ -159,6 +160,7 @@ static int egg_config_kv(const char *k,int kc,const char *v,int vc) {
   STROPT(audio_driver,"audio-driver")
   STROPT(storepath,"save")
   BOOLOPT(ignore_required,"ignore-required")
+  BOOLOPT(configure_input,"configure-input")
   #undef BOOLOPT
   #undef INTOPT
   #undef STROPT
