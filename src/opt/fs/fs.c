@@ -257,3 +257,103 @@ int path_join(char *dst,int dsta,const char *a,int ac,const char *b,int bc) {
   return dstc;
 }
 
+/* Find home directory.
+ */
+ 
+static int path_find_home(char *dst,int dsta) {
+  const char *src;
+  
+  if (src=getenv("HOME")) {
+    int srcc=0; while (src[srcc]) srcc++;
+    if ((srcc>0)&&(src[0]=='/')) {
+      if (srcc<=dsta) {
+        memcpy(dst,src,srcc);
+        if (srcc<dsta) dst[srcc]=0;
+      }
+      return srcc;
+    }
+  }
+  
+  if (src=getenv("USER")) {
+    int srcc=0; while (src[srcc]) srcc++;
+    if (srcc) {
+      int dstc=6+srcc;
+      if (dstc<=dsta) {
+        memcpy(dst,"/home/",6);
+        memcpy(dst+6,src,srcc);
+        if (dstc<dsta) dst[dstc]=0;
+      }
+      return dstc;
+    }
+  }
+  
+  return -1;
+}
+
+/* Resolve empty, dot, and double-dot in place.
+ */
+ 
+static int path_canonicalize_ip(char *path,int pathc) {
+  if (pathc<1) return 0;
+  int wp=0,rp=0;
+  if (path[0]=='/') wp=rp=1; // Leading slash is sacred, no touch.
+  while (rp<pathc) {
+    int elemc=0;
+    while ((rp+elemc<pathc)&&(path[rp+elemc]!='/')) elemc++;
+    if (!elemc) {
+      rp++;
+    } else if ((elemc==1)&&(path[rp]=='.')) {
+      rp+=2;
+    } else if ((elemc==2)&&(path[rp]=='.')&&(path[rp+1]=='.')) {
+      rp+=3;
+      if (wp>1) {
+        wp--;
+        while (wp&&(path[wp-1]!='/')) wp--;
+      }
+    } else if (wp==rp) {
+      wp+=elemc+1;
+      rp+=elemc+1;
+    } else {
+      memmove(path+wp,path+rp,elemc);
+      rp+=elemc+1;
+      wp+=elemc;
+      path[wp++]='/';
+    }
+  }
+  if (wp>1) wp--; // we'll have emitted an extra trailing slash
+  path[wp]=0;
+  return wp;
+}
+
+/* Resolve home and working directories.
+ */
+ 
+int path_resolve(char *dst,int dsta,const char *src,int srcc) {
+  if (!dst||(dsta<0)) dsta=0;
+  if (!src) srcc=0; else if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  
+  // Stage 1: Absolute, relative, or home, depending on first character.
+  int dstc=0;
+  if (srcc) {
+    if (src[0]=='/') {
+      if (srcc<=dsta) memcpy(dst,src,srcc);
+      dstc=srcc;
+    } else if (src[0]=='~') {
+      if ((dstc=path_find_home(dst,dsta))<0) return -1;
+      if (dstc<=dsta-srcc-1) memcpy(dst+dstc,src+1,srcc-1);
+      dstc+=srcc-1;
+    } else {
+      if (getcwd(dst,dsta)!=dst) return -1;
+      while (dst[dstc]) dstc++;
+      if (!dstc||(dst[dstc-1]!='/')) dst[dstc++]='/';
+      if (dstc<=dsta-srcc) memcpy(dst+dstc,src,srcc);
+      dstc+=srcc;
+    }
+  }
+  
+  // Stage 2: Resolve empty, dot, and double-dot in place.
+  if (dstc<=dsta) dstc=path_canonicalize_ip(dst,dstc);
+  
+  if (dstc<dsta) dst[dstc]=0;
+  return dstc;
+}

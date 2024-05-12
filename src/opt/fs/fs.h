@@ -61,4 +61,9 @@ int path_join(char *dst,int dsta,const char *a,int ac,const char *b,int bc);
 
 extern const char path_separator;
 
+/* Resolve leading tilde and working directory.
+ * This is a syntatic operation: We don't care whether the file actually exists.
+ */
+int path_resolve(char *dst,int dsta,const char *src,int srcc);
+
 #endif

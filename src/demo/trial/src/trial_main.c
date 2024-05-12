@@ -197,7 +197,30 @@ static void on_joy(const struct egg_event_joy *event) {
       egg_log("Lost joystick %d",event->devid);
     }
   } else { // State change.
-    egg_log("JOY %d.0x%x=%d",event->devid,event->btnid,event->value);
+    switch (event->btnid) {
+      case EGG_JOYBTN_LX:    egg_log("JOY %d.LX=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_LY:    egg_log("JOY %d.LY=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_RX:    egg_log("JOY %d.RX=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_RY:    egg_log("JOY %d.RY=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_LEFT:  egg_log("JOY %d.LEFT=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_RIGHT: egg_log("JOY %d.RIGHT=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_UP:    egg_log("JOY %d.UP=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_DOWN:  egg_log("JOY %d.DOWN=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_SOUTH: egg_log("JOY %d.SOUTH=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_WEST:  egg_log("JOY %d.WEST=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_EAST:  egg_log("JOY %d.EAST=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_NORTH: egg_log("JOY %d.NORTH=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_L1:    egg_log("JOY %d.L1=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_R1:    egg_log("JOY %d.R1=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_L2:    egg_log("JOY %d.L2=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_R2:    egg_log("JOY %d.R2=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_LP:    egg_log("JOY %d.LP=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_RP:    egg_log("JOY %d.RP=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_AUX1:  egg_log("JOY %d.AUX1=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_AUX2:  egg_log("JOY %d.AUX2=%d",event->devid,event->value); break;
+      case EGG_JOYBTN_AUX3:  egg_log("JOY %d.AUX3=%d",event->devid,event->value); break;
+      default: egg_log("JOY %d.0x%x=%d",event->devid,event->btnid,event->value);
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 #include "egg_runner_internal.h"
+#include "egg_inmap.h"
 
 #define EGG_EVENTQ_LIMIT 256
 #define EGG_BUTTON_LIMIT 128 /* Refuse to list more than so many buttons per device, as a safety measure. */
@@ -8,25 +9,6 @@
  * This speeds things up for public access.
  */
  
-struct egg_button {
-  int btnid;
-  int hidusage;
-  int lo,hi;
-  int value;
-};
- 
-struct egg_device {
-  int devid;
-  int rptcls; // What are we calling it, to the public? An EGG_EVENT_* or zero to ignore. (MMOTION for mouse)
-  struct hostio_input *driver;
-  char *name;
-  int namec;
-  int vid,pid,version;
-  struct egg_button *buttonv;
-  int buttonc,buttona;
-  int x,y,w,h; // For fake mouse only.
-};
- 
 struct egg_inmgr {
   union egg_event eventq[EGG_EVENTQ_LIMIT];
   int eventp,eventc;
@@ -35,6 +17,9 @@ struct egg_inmgr {
   struct egg_device **devicev;
   int devicec,devicea;
   int mousex,mousey;
+  int show_fake_cursor;
+  int texid_cursor;
+  struct egg_inmap inmap;
 };
 
 /* Cleanup.
@@ -53,6 +38,7 @@ void egg_inmgr_del(struct egg_inmgr *inmgr) {
     while (inmgr->devicec-->0) egg_device_del(inmgr->devicev[inmgr->devicec]);
     free(inmgr->devicev);
   }
+  egg_inmap_cleanup(&inmgr->inmap);
   free(inmgr);
 }
 
@@ -69,6 +55,11 @@ struct egg_inmgr *egg_inmgr_new() {
     //(1<<EGG_EVENT_TOUCH)| // TOUCH should enable by default, but we're not supporting at all.
   0);
   inmgr->cursor_desired=1;
+  
+  if (egg_inmap_load(&inmgr->inmap)<0) {
+    egg_inmgr_del(inmgr);
+    return 0;
+  }
   
   return inmgr;
 }
@@ -96,6 +87,26 @@ static int egg_event_capable(int type) {
 /* React to changes to the mouse event mask or visibility request.
  */
  
+static int egg_inmgr_has_fake_mouse(const struct egg_inmgr *inmgr) {
+  int i=inmgr->devicec;
+  while (i-->0) {
+    struct egg_device *device=inmgr->devicev[i];
+    if (device->rptcls==EGG_EVENT_MMOTION) return 1;
+  }
+  return 0;
+}
+ 
+static void egg_inmgr_show_cursor(struct egg_inmgr *inmgr,int show) {
+  if (egg.hostio->video->type->show_cursor) {
+    egg.hostio->video->type->show_cursor(egg.hostio->video,show);
+    inmgr->show_fake_cursor=0;
+  } else if (show&&egg_inmgr_has_fake_mouse(inmgr)) {
+    inmgr->show_fake_cursor=1;
+  } else {
+    inmgr->show_fake_cursor=0;
+  }
+}
+ 
 static void egg_inmgr_refresh_cursor(struct egg_inmgr *inmgr) {
   const int any_mouse_event=(
     (1<<EGG_EVENT_MMOTION)|
@@ -104,12 +115,12 @@ static void egg_inmgr_refresh_cursor(struct egg_inmgr *inmgr) {
   0);
   if (inmgr->eventmask&any_mouse_event) {
     if (inmgr->cursor_desired) {
-      if (egg.hostio->video->type->show_cursor) egg.hostio->video->type->show_cursor(egg.hostio->video,1);
+      egg_inmgr_show_cursor(inmgr,1);
     } else {
-      if (egg.hostio->video->type->show_cursor) egg.hostio->video->type->show_cursor(egg.hostio->video,0);
+      egg_inmgr_show_cursor(inmgr,0);
     }
   } else {
-    if (egg.hostio->video->type->show_cursor) egg.hostio->video->type->show_cursor(egg.hostio->video,0);
+    egg_inmgr_show_cursor(inmgr,0);
   }
 }
 
@@ -120,6 +131,38 @@ static void egg_inmgr_refresh_cursor(struct egg_inmgr *inmgr) {
  
 int egg_inmgr_update(struct egg_inmgr *inmgr) {
   return 0;
+}
+
+/* Render.
+ */
+ 
+static uint8_t egg_fake_cursor_image[]={
+#define _ 0,0,0,0,
+#define K 0,0,0,255,
+#define W 255,255,255,255,
+  K K K K K K K K
+  K W W W W W W K
+  K W W W W W K _
+  K W W W W K _ _
+  K W W W W W K _
+  K W W K W W W K
+  K W K _ K W W K
+  K K _ _ _ K K _
+#undef _
+#undef K
+#undef W
+};
+ 
+void egg_inmgr_render(struct egg_inmgr *inmgr) {
+  if (inmgr->show_fake_cursor) {
+    if (!inmgr->texid_cursor) {
+      if ((inmgr->texid_cursor=render_texture_new(egg.render))<1) return;
+      render_texture_load(egg.render,inmgr->texid_cursor,8,8,32,EGG_TEX_FMT_RGBA,egg_fake_cursor_image,sizeof(egg_fake_cursor_image));
+    }
+    render_tint(egg.render,0);
+    render_alpha(egg.render,0xff);
+    render_draw_decal(egg.render,1,inmgr->texid_cursor,inmgr->mousex,inmgr->mousey,0,0,8,8,0);
+  }
 }
 
 /* Push to event queue.
@@ -220,7 +263,6 @@ static void egg_inmgr_remove_device(struct egg_inmgr *inmgr,int devid) {
  
 static int egg_inmgr_cb_declare_button(int btnid,int hidusage,int lo,int hi,int value,void *userdata) {
   struct egg_device *device=userdata;
-  fprintf(stderr,"%s %08x %08x %d..%d =%d\n",__func__,btnid,hidusage,lo,hi,value);
   int range=hi-lo+1;
   if (range<2) return 0; // Not interesting.
   int p=egg_device_buttonv_search(device,btnid);
@@ -232,6 +274,83 @@ static int egg_inmgr_cb_declare_button(int btnid,int hidusage,int lo,int hi,int 
   button->lo=lo;
   button->hi=hi;
   button->value=value;
+  return 0;
+}
+
+/* Apply existing rules to device.
+ * We're going to overwrite the declare buttons list, and use that to hold all the mapping state.
+ */
+ 
+static int egg_device_apply_rules(struct egg_inmgr *inmgr,struct egg_device *device,struct egg_inmap_rules *rules) {
+  struct egg_button *button=device->buttonv;
+  int i=device->buttonc;
+  for (;i-->0;button++) {
+    int dstbtnid=egg_inmap_rules_get_button(rules,button->btnid);
+    if (dstbtnid<1) { // Mark the button as defunct; we'll reap them before returning.
+      button->hidusage=0;
+      continue;
+    }
+    button->hidusage=dstbtnid;
+    switch (dstbtnid) {
+    
+      // To analogue axis: Verify range of at least 3, and keep existing (lo,hi), mapping will use them.
+      case EGG_JOYBTN_LX:
+      case EGG_JOYBTN_LY:
+      case EGG_JOYBTN_RX:
+      case EGG_JOYBTN_RY: {
+          if (button->lo>button->hi-2) {
+            button->hidusage=0;
+          }
+        } break;
+        
+      // To dpad axis: Verify range of at least 3, then rephrase (lo,hi) as thresholds (as opposed to limits).
+      case EGG_INMAP_BTN_HORZ:
+      case EGG_INMAP_BTN_VERT: {
+          if (button->lo>button->hi-2) {
+            button->hidusage=0;
+          } else {
+            int mid=(button->lo+button->hi)>>1;
+            int midlo=(button->lo+mid)>>1;
+            int midhi=(button->hi+mid)>>1;
+            if (midlo>=mid) midlo=mid-1;
+            if (midhi<=mid) midhi=mid+1;
+            button->lo=midlo;
+            button->hi=midhi;
+          }
+        } break;
+        
+      // To full dpad: Verify range of exactly 8. We'll use (lo), and (hi) will be ignored.
+      case EGG_INMAP_BTN_DPAD: {
+          if (button->lo!=button->hi-7) {
+            button->hidusage=0;
+          }
+        } break;
+        
+      // Everything else has a 2-state output, and we'll map zero/nonzero. Verify they have a low value of zero.
+      default: {
+          if (button->lo) {
+            button->hidusage=0;
+          }
+        }
+    }
+  }
+  
+  // Drop all buttons whose (hidusage) is now zero.
+  int rmc=0;
+  for (i=device->buttonc,button=device->buttonv+device->buttonc-1;i-->0;button--) {
+    if (button->hidusage) continue;
+    device->buttonc--;
+    memmove(button,button+1,sizeof(struct egg_button)*(device->buttonc-i));
+    rmc++;
+  }
+  
+  fprintf(stderr,
+    "Done mapping %04x:%04x:%04x '%.*s' against existing map. Will ignore %d declared buttons.\n",
+    device->vid,device->pid,device->version,device->namec,device->name,rmc
+  );
+  for (i=device->buttonc,button=device->buttonv;i-->0;button++) {
+    fprintf(stderr,"  %08x => %08x [%d..%d]\n",button->btnid,button->hidusage,button->lo,button->hi);
+  }
   return 0;
 }
 
@@ -247,6 +366,18 @@ static int egg_device_configure(struct egg_inmgr *inmgr,struct egg_device *devic
     "%s:%d:TODO: Establish mapping etc for new input device %04x:%04x:%04x '%.*s'\n",
     __FILE__,__LINE__,device->vid,device->pid,device->version,device->namec,device->name
   );
+  
+  /* First and foremost, if matches a rule set from the config file, go with that.
+   */
+  struct egg_inmap_rules *rules=egg_inmap_rules_for_device(
+    &inmgr->inmap,device->vid,device->pid,device->version,device->name,device->namec
+  );
+  if (rules) {
+    fprintf(stderr,"!!! Found mapping rules. !!!\n");
+    device->rptcls=EGG_EVENT_JOY;
+    if (egg_device_apply_rules(inmgr,device,rules)<0) return -1;
+    return 0;
+  }
   
   /* If it has at least 40 keys and one of them is 0x00070004 (Keyboard A), call it a keyboard.
    * These map straight off the buttons' hidusage.
@@ -295,6 +426,24 @@ static int egg_device_configure(struct egg_inmgr *inmgr,struct egg_device *devic
       return 0;
     }
   }
+  
+  /* Try to synthesize rules.
+   */
+  if (rules=egg_inmap_synthesize_rules(&inmgr->inmap,device)) {
+    device->rptcls=EGG_EVENT_JOY;
+    if (egg_device_apply_rules(inmgr,device,rules)<0) return -1;
+    if (inmgr->inmap.cfgpath) { // Only advise to reconfigure if rules can be saved.
+      fprintf(stderr,
+        "%s: Generated mapping for input device %04x:%04x:%04x '%.*s' by guessing wildly.\n",
+        egg.exename,device->vid,device->pid,device->version,device->namec,device->name
+      );
+      fprintf(stderr,
+        "%s: If it's not mapped right, edit '%s' or relaunch with '--configure-input'.\n",
+        egg.exename,inmgr->inmap.cfgpath
+      );
+    }
+    return 0;
+  }
 
   return 0;
 }
@@ -329,7 +478,9 @@ static struct egg_device *egg_inmgr_add_device(struct egg_inmgr *inmgr,struct ho
   if (driver->type->get_ids) {
     const char *name=driver->type->get_ids(&device->vid,&device->pid,&device->version,driver,devid);
     if (name&&name[0]) {
-      int namec=0; while (name[namec++]) namec++;
+      int namec=0; while (name[namec]) namec++;
+      while (namec&&((unsigned char)name[namec-1]<=0x20)) namec--;
+      while (namec&&((unsigned char)name[0]<=0x20)) { namec--; name++; }
       if (device->name=malloc(namec+1)) {
         memcpy(device->name,name,namec);
         device->name[namec]=0;
@@ -470,6 +621,15 @@ void egg_cb_disconnect(struct hostio_input *driver,int devid) {
   egg_inmgr_remove_device(egg.inmgr,devid);
 }
 
+static void egg_send_joy_event(int devid,int btnid,int value) {
+  if (!(egg.inmgr->eventmask&(1<<EGG_EVENT_JOY))) return;
+  union egg_event *event=egg_event_push(egg.inmgr);
+  event->joy.type=EGG_EVENT_JOY;
+  event->joy.devid=devid;
+  event->joy.btnid=btnid;
+  event->joy.value=value;
+}
+
 void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
   //fprintf(stderr,"%s %d.0x%08x=%d\n",__func__,devid,btnid,value);
   if (!btnid) return;
@@ -478,13 +638,81 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
   switch (device->rptcls) {
   
     case EGG_EVENT_JOY: {
-        //TODO Mapping etc.
-        if (egg.inmgr->eventmask&(1<<EGG_EVENT_JOY)) {
-          union egg_event *event=egg_event_push(egg.inmgr);
-          event->joy.type=EGG_EVENT_JOY;
-          event->joy.devid=devid;
-          event->joy.btnid=btnid;
-          event->joy.value=value;
+        struct egg_button *button=egg_device_get_button(device,btnid);
+        if (!button) return;
+        switch (button->hidusage) {
+        
+          case EGG_JOYBTN_LX:
+          case EGG_JOYBTN_LY:
+          case EGG_JOYBTN_RX:
+          case EGG_JOYBTN_RY: {
+              value=((value-button->lo)*256)/(button->hi-button->lo+1)-128;
+              if (value<-128) value=-128;
+              else if (value>127) value=127;
+              if (value==button->value) return;
+              button->value=value;
+              egg_send_joy_event(devid,button->hidusage,value);
+            } break;
+            
+          case EGG_INMAP_BTN_HORZ:
+          case EGG_INMAP_BTN_VERT: {
+              value=(value<=button->lo)?-1:(value>=button->hi)?1:0;
+              if (value==button->value) return;
+              int btnidlo,btnidhi;
+              if (button->hidusage==EGG_INMAP_BTN_HORZ) {
+                btnidlo=EGG_JOYBTN_LEFT;
+                btnidhi=EGG_JOYBTN_RIGHT;
+              } else {
+                btnidlo=EGG_JOYBTN_UP;
+                btnidhi=EGG_JOYBTN_DOWN;
+              }
+                   if (button->value<0) egg_send_joy_event(devid,btnidlo,0);
+              else if (button->value>0) egg_send_joy_event(devid,btnidhi,0);
+              button->value=value;
+                   if (value<0) egg_send_joy_event(devid,btnidlo,1);
+              else if (value>0) egg_send_joy_event(devid,btnidhi,1);
+            } break;
+            
+          case EGG_INMAP_BTN_DPAD: {
+              value-=button->lo;
+              int pdx=0,pdy=0,ndx=0,ndy=0;
+              switch (button->value) {
+                case 7: case 6: case 5: pdx=-1; break;
+                case 1: case 2: case 3: pdx=1; break;
+              }
+              switch (button->value) {
+                case 7: case 0: case 1: pdy=-1; break;
+                case 5: case 4: case 3: pdy=1; break;
+              }
+              switch (value) {
+                case 7: case 6: case 5: ndx=-1; break;
+                case 1: case 2: case 3: ndx=1; break;
+              }
+              switch (value) {
+                case 7: case 0: case 1: ndy=-1; break;
+                case 5: case 4: case 3: ndy=1; break;
+              }
+              button->value=value;
+              if (pdx!=ndx) {
+                     if (pdx<0) egg_send_joy_event(devid,EGG_JOYBTN_LEFT,0);
+                else if (pdx>0) egg_send_joy_event(devid,EGG_JOYBTN_RIGHT,0);
+                     if (ndx<0) egg_send_joy_event(devid,EGG_JOYBTN_LEFT,1);
+                else if (ndx>0) egg_send_joy_event(devid,EGG_JOYBTN_RIGHT,1);
+              }
+              if (pdy!=ndy) {
+                     if (pdy<0) egg_send_joy_event(devid,EGG_JOYBTN_UP,0);
+                else if (pdy>0) egg_send_joy_event(devid,EGG_JOYBTN_DOWN,0);
+                     if (ndy<0) egg_send_joy_event(devid,EGG_JOYBTN_UP,1);
+                else if (ndy>0) egg_send_joy_event(devid,EGG_JOYBTN_DOWN,1);
+              }
+            } break;
+            
+          default: {
+              if (value&&button->value) return;
+              if (!value&&!button->value) return;
+              button->value=value;
+              egg_send_joy_event(devid,button->hidusage,value);
+            }
         }
       } break;
       

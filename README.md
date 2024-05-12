@@ -38,6 +38,10 @@ And some major outstanding questions:
 - - It's no longer under patent, but the spec is paywalled. Should I pay the $200 to be able to know conclusively that we can't support it? Or just assume.
 - - We can come back to this later.
 
+```
+sudo apt install clang wabt
+```
+
 ## TODO
 
 - [ ] Web runtime
@@ -49,8 +53,8 @@ And some major outstanding questions:
 - [ ] Native runtime for Linux
 - - [x] Event dispatch
 - - [x] Clock
-- - [ ] Input digestion. eg receiving mouse or keyboard via evdev.
-- - [ ] Fake standard mapping.
+- - [x] Input digestion. eg receiving mouse or keyboard via evdev.
+- - [x] Fake standard mapping.
 - - [ ] Pointer Capture
 - - [ ] egg_audio_get_playhead: Adjust per driver.
 - - [ ] synth_set_playhead

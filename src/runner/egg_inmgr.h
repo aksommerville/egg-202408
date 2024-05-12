@@ -22,4 +22,9 @@ struct egg_inmgr *egg_inmgr_new();
 
 int egg_inmgr_update(struct egg_inmgr *inmgr);
 
+/* inmgr doesn't do any heavy faking like a virtual keyboard -- that's up to the client.
+ * But we do produce our own cursor when there's a generic mouse but no window manager.
+ */
+void egg_inmgr_render(struct egg_inmgr *inmgr);
+
 #endif

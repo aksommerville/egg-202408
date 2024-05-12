@@ -245,6 +245,7 @@ static int egg_update() {
   render_tint(egg.render,0);
   render_alpha(egg.render,0xff);
   egg_romsrc_call_client_render();
+  egg_inmgr_render(egg.inmgr);
   render_draw_to_main(egg.render,egg.hostio->video->w,egg.hostio->video->h,1);
   if (egg.hostio->video->type->gx_end(egg.hostio->video)<0) {
     fprintf(stderr,"%s: Error submitting video frame.\n",egg.exename);
