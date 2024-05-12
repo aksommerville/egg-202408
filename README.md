@@ -45,7 +45,7 @@ sudo apt install clang wabt
 ## TODO
 
 - [ ] Web runtime
-- - [ ] Pointer Capture
+- - [x] Pointer Capture ...easy. but the term is "Lock", "Capture" exists and is something else.
 - - [ ] Reject event enablement if we know it's not supported. eg Gamepad and Accelerometer are easy to know. Does anything tell us about touch or keyboard?
 - - [ ] Audio playhead
 - - [ ] Audio: Shut down faster, at least drop events that haven't started yet.
@@ -58,10 +58,12 @@ sudo apt install clang wabt
 - - [x] Fake standard mapping.
 - - [x] Live input config. Trigger with --configure-input
 - - [ ] Invoke incfg via client too.
-- - [ ] Pointer Capture
+- - - Think this thru. We'll need to add some kind of abort option, otherwise the user is stuck for about 2 minutes while it cycles thru.
+- - [x] Pointer Capture ...whoa easier than i thought!
 - - [ ] egg_audio_get_playhead: Adjust per driver.
 - - [ ] synth_set_playhead
-- [ ] Raspberry Pi
+- [x] Pointer Capture for fake pointers, see egg_inmgr.c
+- [ ] Raspberry Pi.
 - [ ] MS Windows
 - [ ] MacOS
 - [ ] Some amount of libc for games. At least need memory and math functions.

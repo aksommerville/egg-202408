@@ -58,8 +58,22 @@ static int xegl_evt_mbtn(struct xegl *xegl,XButtonEvent *evt,int value) {
 }
 
 static int xegl_evt_mmotion(struct xegl *xegl,XMotionEvent *evt) {
-  if (xegl->delegate.cb_mmotion) {
-    xegl->delegate.cb_mmotion(xegl->delegate.userdata,evt->x,evt->y);
+  if (xegl->cursor_locked) {
+    int midx=xegl->w>>1;
+    int midy=xegl->h>>1;
+    int dx=evt->x-midx;
+    int dy=evt->y-midy;
+    if (dx||dy) {
+      if (xegl->delegate.cb_mmotion) {
+        xegl->delegate.cb_mmotion(xegl->delegate.userdata,dx,dy);
+      }
+      XWarpPointer(xegl->dpy,None,xegl->win,0,0,0,0,xegl->w>>1,xegl->h>>1);
+      XFlush(xegl->dpy);
+    }
+  } else {
+    if (xegl->delegate.cb_mmotion) {
+      xegl->delegate.cb_mmotion(xegl->delegate.userdata,evt->x,evt->y);
+    }
   }
   return 0;
 }

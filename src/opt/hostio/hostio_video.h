@@ -26,6 +26,7 @@ struct hostio_video {
   struct hostio_video_delegate delegate;
   int w,h,fullscreen;
   int cursor_visible;
+  int cursor_locked;
 };
 
 struct hostio_video_setup {
@@ -62,6 +63,10 @@ struct hostio_video_type {
   int (*init)(struct hostio_video *driver,const struct hostio_video_setup *setup);
   int (*update)(struct hostio_video *driver);
   void (*show_cursor)(struct hostio_video *driver,int show);
+  
+  // "locked" cursor is implicitly hidden, and reports relative motion only.
+  void (*lock_cursor)(struct hostio_video *driver,int lock);
+  
   void (*set_fullscreen)(struct hostio_video *driver,int fullscreen);
   void (*suppress_screensaver)(struct hostio_video *driver);
   

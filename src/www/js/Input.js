@@ -20,6 +20,7 @@ export class Input {
     this.mouseButtonsDown = new Set();
     this.mouseX = 0;
     this.mouseY = 0;
+    this.mouseLocked = false;
     
     this.keyListener = e => this.onKey(e);
     window.addEventListener("keydown", this.keyListener);
@@ -262,10 +263,16 @@ export class Input {
     const y = Math.floor(((e.y - bounds.y) * this.canvas.height) / bounds.height);
     switch (e.type) {
       case "mousemove": {
-          if ((x === this.mouseX) && (y === this.mouseY)) return;
-          this.mouseX = x;
-          this.mouseY = y;
-          this.pushEvent([Input.EGG_EVENT_MMOTION, x, y]);
+          if (this.mouseLocked) {
+            if (e.movementX || e.movementY) {
+              this.pushEvent([Input.EGG_EVENT_MMOTION, e.movementX, e.movementY]);
+            }
+          } else {
+            if ((x === this.mouseX) && (y === this.mouseY)) return;
+            this.mouseX = x;
+            this.mouseY = y;
+            this.pushEvent([Input.EGG_EVENT_MMOTION, x, y]);
+          }
         } break;
       case "mousedown": {
           if (e.target !== this.canvas) return;
@@ -315,8 +322,6 @@ export class Input {
         } break;
     }
   }
-  
-  //TODO Pointer Capture
   
   /* Keyboard.
    **************************************************************************/
@@ -508,6 +513,7 @@ export class Input {
     }
     //TODO Reject changes if we can tell they aren't supported.
     switch (type) {
+      case Input.EGG_EVENT_RAW: break;
       case Input.EGG_EVENT_JOY: break;
       case Input.EGG_EVENT_KEY: break;
       case Input.EGG_EVENT_TEXT: break;
@@ -535,9 +541,26 @@ export class Input {
     this._checkCursorVisibility(this.evtmask & mouseEvents);
   }
   
-  egg_lock_cursor(lock) { //TODO Pointer Capture
+  egg_lock_cursor(lock) {
     console.log(`TODO egg_lock_cursor`, { lock });
-    return 0;
+    if (!this.canvas || !this.canvas.requestPointerLock) return 0;
+    if (lock) {
+      if (this.mouseLocked) return 1;
+      this.mouseLocked = true;
+      console.log(`requesting...`);
+      this.canvas.requestPointerLock(/*{
+        unadjustedMovement: true, // Not supported in Chrome/Linux, and the whole request gets rejected for it.
+      }*/).then(rsp => {
+        console.log(`...locked`, rsp);
+      }).catch(e => {
+        console.error(`...denied`, e);
+        this.mouseLocked = false;
+      });
+    } else if (this.mouseLocked) {
+      this.mouseLocked = false;
+      document.exitPointerLock();
+    }
+    return 1;
   }
   
   egg_joystick_devid_by_index(p) {
@@ -617,6 +640,7 @@ Input.EGG_EVENT_MBUTTON = 5;
 Input.EGG_EVENT_MWHEEL = 6;
 Input.EGG_EVENT_TOUCH = 7;
 Input.EGG_EVENT_ACCEL = 8;
+Input.EGG_EVENT_RAW = 9;
 
 Input.EGG_JOYBTN_LX    = 0x40;
 Input.EGG_JOYBTN_LY    = 0x41;

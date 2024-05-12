@@ -54,9 +54,11 @@ int xegl_end(struct xegl *xegl);
 
 /* Odds and ends.
  * The cursor is initially hidden.
+ * Locking the cursor implicitly hides it, and unlocking does not show it again.
  * Initial fullscreen state is specified in setup.
  */
 void xegl_show_cursor(struct xegl *xegl,int show);
+void xegl_lock_cursor(struct xegl *xegl,int lock);
 void xegl_set_fullscreen(struct xegl *xegl,int fullscreen);
 void xegl_suppress_screensaver(struct xegl *xegl);
 

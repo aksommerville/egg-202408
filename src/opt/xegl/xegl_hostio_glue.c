@@ -53,8 +53,15 @@ static int _xegl_update(struct hostio_video *driver) {
 }
 
 static void _xegl_show_cursor(struct hostio_video *driver,int show) {
+  if (DRIVER->xegl->cursor_locked) return;
   xegl_show_cursor(DRIVER->xegl,show);
   driver->cursor_visible=DRIVER->xegl->cursor_visible;
+}
+
+static void _xegl_lock_cursor(struct hostio_video *driver,int lock) {
+  xegl_lock_cursor(DRIVER->xegl,lock);
+  driver->cursor_visible=0;
+  driver->cursor_locked=DRIVER->xegl->cursor_locked;
 }
 
 static void _xegl_set_fullscreen(struct hostio_video *driver,int fullscreen) {
@@ -87,6 +94,7 @@ const struct hostio_video_type hostio_video_type_xegl={
   .init=_xegl_init,
   .update=_xegl_update,
   .show_cursor=_xegl_show_cursor,
+  .lock_cursor=_xegl_lock_cursor,
   .set_fullscreen=_xegl_set_fullscreen,
   .suppress_screensaver=_xegl_suppress_screensaver,
   .gx_begin=_xegl_begin,

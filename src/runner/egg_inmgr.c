@@ -17,6 +17,7 @@ struct egg_inmgr {
   struct egg_device **devicev;
   int devicec,devicea;
   int mousex,mousey;
+  int lock_fake_cursor;
   int show_fake_cursor;
   int texid_cursor;
   struct egg_inmap inmap;
@@ -159,7 +160,7 @@ static uint8_t egg_fake_cursor_image[]={
 };
  
 void egg_inmgr_render(struct egg_inmgr *inmgr) {
-  if (inmgr->show_fake_cursor) {
+  if (inmgr->show_fake_cursor&&!inmgr->lock_fake_cursor) {
     if (!inmgr->texid_cursor) {
       if ((inmgr->texid_cursor=render_texture_new(egg.render))<1) return;
       render_texture_load(egg.render,inmgr->texid_cursor,8,8,32,EGG_TEX_FMT_RGBA,egg_fake_cursor_image,sizeof(egg_fake_cursor_image));
@@ -849,19 +850,27 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
         if (!button||!button->hidusage) return;
         switch (button->hidusage) {
           case 0x00010030: { // X
-              int nx=device->x+value;
-              if (nx<0) nx=0; else if (nx>=device->w) nx=device->w-1;
-              if (nx!=device->x) {
-                device->x=nx;
-                egg_cb_mmotion(0,device->x,device->y);
+              if (egg.inmgr->lock_fake_cursor) {
+                egg_cb_mmotion(0,value,0);
+              } else {
+                int nx=device->x+value;
+                if (nx<0) nx=0; else if (nx>=device->w) nx=device->w-1;
+                if (nx!=device->x) {
+                  device->x=nx;
+                  egg_cb_mmotion(0,device->x,device->y);
+                }
               }
             } break;
           case 0x00010031: { // Y
-              int ny=device->y+value;
-              if (ny<0) ny=0; else if (ny>=device->h) ny=device->h-1;
-              if (ny!=device->y) {
-                device->y=ny;
-                egg_cb_mmotion(0,device->x,device->y);
+              if (egg.inmgr->lock_fake_cursor) {
+                egg_cb_mmotion(0,0,value);
+              } else {
+                int ny=device->y+value;
+                if (ny<0) ny=0; else if (ny>=device->h) ny=device->h-1;
+                if (ny!=device->y) {
+                  device->y=ny;
+                  egg_cb_mmotion(0,device->x,device->y);
+                }
               }
             } break;
           case 0x00010033: { // horz wheel.
@@ -938,8 +947,12 @@ void egg_show_cursor(int show) {
 }
 
 int egg_lock_cursor(int lock) {
-  //TODO Pointer Capture. Will require additional support from hostio.
-  return 0;
+  if (egg.hostio->video->type->lock_cursor) {
+    egg.hostio->video->type->lock_cursor(egg.hostio->video,lock);
+    return egg.hostio->video->cursor_locked;
+  } else {
+    return egg.inmgr->lock_fake_cursor=lock;
+  }
 }
 
 int egg_joystick_devid_by_index(int p) {

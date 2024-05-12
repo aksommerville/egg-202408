@@ -267,6 +267,10 @@ static void on_mmotion(const struct egg_event_mmotion *event) {
 
 static void on_mbutton(const struct egg_event_mbutton *event) {
   egg_log("MBUTTON %d=%d @%d,%d",event->btnid,event->value,event->x,event->y);
+  if (event->value&&(event->btnid==1)) {
+    // I'd do this during egg_client_init(), but it's like Audio and Fullscreen -- a user gesture is required first.
+    egg_lock_cursor(1);
+  }
 }
 
 static void on_mwheel(const struct egg_event_mwheel *event) {
