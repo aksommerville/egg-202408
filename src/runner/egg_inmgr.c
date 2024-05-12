@@ -466,6 +466,7 @@ static int egg_device_configure(struct egg_inmgr *inmgr,struct egg_device *devic
       device->h=egg.hostio->video->h;
       device->x=device->w>>1;
       device->y=device->h>>1;
+      egg_inmgr_refresh_cursor(inmgr);
       return 0;
     }
   }
@@ -665,6 +666,7 @@ void egg_cb_disconnect(struct hostio_input *driver,int devid) {
   fprintf(stderr,"%s %d\n",__func__,devid);
   struct egg_device *device=egg_inmgr_get_device(egg.inmgr,devid);
   if (!device) return;
+  int checkcursor=0;
   switch (device->rptcls) {
   
     case EGG_EVENT_RAW: {
@@ -710,11 +712,16 @@ void egg_cb_disconnect(struct hostio_input *driver,int devid) {
         }
       } break;
       
-    case EGG_EVENT_MMOTION: break;//TODO drop held buttons
+    case EGG_EVENT_MMOTION: {
+        //TODO drop held buttons
+        checkcursor=1;
+      } break;
+
     case EGG_EVENT_TOUCH: break;//TODO?
     case EGG_EVENT_ACCEL: break;//TODO?
   }
   egg_inmgr_remove_device(egg.inmgr,devid);
+  if (checkcursor) egg_inmgr_refresh_cursor(egg.inmgr);
 }
 
 static void egg_send_joy_event(int devid,int btnid,int value) {
