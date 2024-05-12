@@ -10,10 +10,15 @@
  * We need them for synthesizing map.
  */
 struct egg_button {
+// Constant, will match the driver:
   int btnid;
   int hidusage; // dstbtnid after mapping
   int lo,hi; // thresholds for HORZ,VERT,DPAD after mapping; or nominal range for LX,LY,RX,RY
   int value;
+// Available for mappers' use:
+  int dstbtnid;
+  int srclo,srchi;
+  int dstvalue;
 };
  
 struct egg_device {

@@ -272,12 +272,12 @@ struct egg_joystick_for_each_button_ctx {
 
 static int egg_wasm_cb_joystick_for_each_button(int btnid,int usage,int lo,int hi,int value,void *userdata) {
   struct egg_joystick_for_each_button_ctx *ctx=userdata;
-  uint32_t argv[5]={btnid,usage,lo,hi,value};
-  if (wamr_call_table(egg.wamr,ctx->cbid,argv,5)<0) return -1;
+  uint32_t argv[6]={btnid,usage,lo,hi,value,ctx->userdata};
+  if (wamr_call_table(egg.wamr,ctx->cbid,argv,6)<0) return -1;
   return argv[0];
 }
 
-static int egg_wasm_joystick_for_each_button(int devid,int cbid,int userdata) {
+static int egg_wasm_joystick_for_each_button(wasm_exec_env_t ee,int devid,int cbid,int userdata) {
   // int (*cb)(int btnid,int usage,int lo,int hi,int value,void *userdata)
   struct egg_joystick_for_each_button_ctx ctx={
     .cbid=cbid,

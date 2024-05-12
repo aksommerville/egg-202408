@@ -188,11 +188,36 @@ int egg_client_init() {
   return 0;
 }
 
+// Press space bar to list all joysticks. This is the only test of egg_joystick_devid_by_index.
+static void dump_joysticks() {
+  egg_log("Currently connected devices:");
+  int p=0; for (;;p++) {
+    int devid=egg_joystick_devid_by_index(p);
+    if (devid<1) return;
+    char name[256];
+    int namec=egg_joystick_get_name(name,sizeof(name),devid);
+    if ((namec<0)||(namec>sizeof(name))) namec=0;
+    int vid=0,pid=0,version=0;
+    egg_joystick_get_ids(&vid,&pid,&version,devid);
+    egg_log("  %04x:%04x:%04x %.*s",vid,pid,version,namec,name);
+  }
+}
+
+static int cb_joybtn(int btnid,int hidusage,int lo,int hi,int value,void *userdata) {
+  egg_log("  %08x %08x %d..%d =%d",btnid,hidusage,lo,hi,value);
+  return 0;
+}
+
 static void on_joy(const struct egg_event_joy *event) {
   if (!event->btnid) {
     if (event->value) { // Connected.
-      egg_log("Connected joystick %d",event->devid);
-      //TODO fetch and log ids and buttons
+      char name[256];
+      int namec=egg_joystick_get_name(name,sizeof(name),event->devid);
+      if ((namec<0)||(namec>sizeof(name))) namec=0;
+      int vid=0,pid=0,version=0;
+      egg_joystick_get_ids(&vid,&pid,&version,event->devid);
+      egg_log("Connected joystick %d: %04x:%04x:%04x %.*s",event->devid,vid,pid,version,namec,name);
+      egg_joystick_for_each_button(event->devid,cb_joybtn,0);
     } else { // Disconnected.
       egg_log("Lost joystick %d",event->devid);
     }
@@ -226,6 +251,10 @@ static void on_joy(const struct egg_event_joy *event) {
 
 static void on_key(const struct egg_event_key *event) {
   egg_log("KEY 0x%x=%d",event->keycode,event->value);
+  if (event->value) switch (event->keycode) {
+    case 0x00070029: egg_request_termination(); break; // Esc
+    case 0x0007002c: dump_joysticks(); break; // Space
+  }
 }
 
 static void on_text(const struct egg_event_text *event) {

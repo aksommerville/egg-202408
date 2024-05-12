@@ -167,6 +167,10 @@ void *wamr_validate_pointer(struct wamr *wamr,int modid,uint32_t waddr,int reqc)
                            
 int wamr_call_table(struct wamr *wamr,int fnid,uint32_t *argv,int argc) {
   if (wamr->modulec<1) return -1;
-  if (!wasm_runtime_call_indirect(wamr->modulev[0].ee,fnid,argc,argv)) return -1;
+  if (!wasm_runtime_call_indirect(wamr->modulev[0].ee,fnid,argc,argv)) {
+    // Errors here appear to kill the runtime altogether. TODO Is it possible to recover?
+    fprintf(stderr,"wasm_runtime_call_indirect failed! Could be caused by incorrect parameter count to a callback function.\n");
+    return -1;
+  }
   return 0;
 }

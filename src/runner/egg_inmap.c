@@ -453,7 +453,6 @@ struct egg_inmap_rules *egg_inmap_rules_for_device(
  */
  
 static int egg_inmap_synthesize_rules_inner(struct egg_inmap_rules *rules,struct egg_device *device) {
-  fprintf(stderr,"%s...\n",__func__);
   int orphan_buttonv[32];
   int orphan_axisv[32];
   int orphan_buttonc=0,orphan_axisc=0;
@@ -461,7 +460,6 @@ static int egg_inmap_synthesize_rules_inner(struct egg_inmap_rules *rules,struct
   const struct egg_button *button=device->buttonv;
   int i=device->buttonc;
   for (;i-->0;button++) {
-    fprintf(stderr,"  %08x %08x %d..%d =%d\n",button->btnid,button->hidusage,button->lo,button->hi,button->value);
     int range=button->hi-button->lo+1;
     
     // Range under 2, there's nothing we can do with it.

@@ -69,7 +69,6 @@ int incfg_start(struct incfg *incfg) {
  */
  
 static int incfg_deliver_sources(struct incfg *incfg) {
-  fprintf(stderr,"***** ok let's deliver the gathered mapping to inmap *****\n");
   int vid=0,pid=0,version=0;
   const char *name=egg_inmgr_get_device_ids(&vid,&pid,&version,egg.inmgr,incfg->devid);
   struct egg_inmap *inmap=egg_inmgr_get_inmap(egg.inmgr);
@@ -77,7 +76,6 @@ static int incfg_deliver_sources(struct incfg *incfg) {
   if (!rules) return -1;
   const struct incfg_source *source=incfg->sourcev;
   int i=0; for (;i<21;i++,source++) {
-    fprintf(stderr,"  [%d] %08x:%d\n",i,source->btnid,source->part);
     if (!source->btnid) continue;
     int dstbtnid=0;
     
