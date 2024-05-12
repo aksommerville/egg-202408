@@ -45,24 +45,16 @@ sudo apt install clang wabt
 ## TODO
 
 - [ ] Web runtime
-- - [x] Pointer Capture ...easy. but the term is "Lock", "Capture" exists and is something else.
 - - [ ] Reject event enablement if we know it's not supported. eg Gamepad and Accelerometer are easy to know. Does anything tell us about touch or keyboard?
 - - [ ] Audio playhead
 - - [ ] Audio: Shut down faster, at least drop events that haven't started yet.
 - - [ ] Audio: egg_audio_event
 - - [ ] incfg: First, is it worth the effort? How much coverage does Standard Mapping give us? And then.... how?
 - [ ] Native runtime for Linux
-- - [x] Event dispatch
-- - [x] Clock
-- - [x] Input digestion. eg receiving mouse or keyboard via evdev.
-- - [x] Fake standard mapping.
-- - [x] Live input config. Trigger with --configure-input
 - - [ ] Invoke incfg via client too.
 - - - Think this thru. We'll need to add some kind of abort option, otherwise the user is stuck for about 2 minutes while it cycles thru.
-- - [x] Pointer Capture ...whoa easier than i thought!
 - - [ ] egg_audio_get_playhead: Adjust per driver.
 - - [ ] synth_set_playhead
-- [x] Pointer Capture for fake pointers, see egg_inmgr.c
 - [ ] Raspberry Pi.
 - [ ] MS Windows
 - [ ] MacOS
@@ -70,14 +62,16 @@ sudo apt install clang wabt
 - - It's OK (advisable!) to do that purely client-side, but we should supply a library or something.
 - [ ] clang is inserting calls to memcpy. Can avoid by declaring arrays 'static const'. Or I guess by including libc. But can we tell it not to? I did say "-nostdlib"!
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
-- [x] Since we're allowing line gradients, can we also do rect gradients? No need, if full OpenGL works out. ...see below, raw triangle strip would cover it.
 - [ ] Storage access controls.
-- [ ] Remove the "fb" hooks from hostio_video. No harm if they exist, but they're misleading and dead weight, we'll never use.
+- [x] Remove the "fb" hooks from hostio_video. No harm if they exist, but they're misleading and dead weight, we'll never use. video_dummy too
 - [ ] Revisit exposing GLES2/WebGL directly to the game.
-- - [ ] If it's a no, add a few more render ops:
-- - - [ ] Raw triangle strip.
-- - - [ ] Decal with arbitrary scale and rotation.
-- - - [ ] Textured triangle strip?
+- - [x] If it's a no, add a few more render ops:
+- - - [x] Raw triangle strip.
+- - - [x] Decal with arbitrary scale and rotation.
+- - - xxx Textured triangle strip? ...nah too complicated. If someone needs this, they need something fancier than Egg.
+- - Exposing GL directly would be inconsistently low-level compared to the rest of the public api.
+- - That's not a reason to reject it, but I think even if we implement, we should keep the high-level render api too.
+- - So do proceed with the additional calls.
 - [ ] TOUCH events for native. What would that take? Maybe acquire some tablet thingy and try it out?
 - - https://shop.puri.sm/shop/librem-11/ oooh that looks cool. $1k, don't rush it.
 - - https://pine64.com/product/pinetab2-10-1-8gb-128gb-linux-tablet-with-detached-backlit-keyboard/ about $200, looks low quality

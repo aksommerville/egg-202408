@@ -70,6 +70,12 @@ struct egg_draw_line {
 };
 void egg_draw_line(int dsttexid,const struct egg_draw_line *v,int c);
 
+/* Untextured triangle strip.
+ * You can use this for rectangle gradients, for approximated ovals, or maybe some lo-fi 3d?
+ * (3d, you'd have to do all the projection yourself, it's probably not workable).
+ */
+void egg_draw_trig(int dsttexid,const struct egg_draw_line *v,int c);
+
 /* Copy some portion of one image onto another.
  * (dstx,dsty) is the top-left corner of output, regardless of (xform).
  * Output bounds are (h,w) if EGG_XFORM_SWAP in play. Input bounds are always (w,h).
@@ -81,6 +87,19 @@ void egg_draw_decal(
   int srcx,int srcy,
   int w,int h,
   int xform
+);
+
+/* Copy from one texture to another with scaling and rotation.
+ * (dstx,dsty) is the *center* of output. Not the top-left corner as with egg_draw_decal.
+ * No (xform) option, because you can reproduce it exactly using (rotation,xscale,yscale).
+ * (rotation) is in radians clockwise.
+ */
+void egg_draw_decal_mode7(
+  int dsttexid,int srctexid,
+  int dstx,int dsty,
+  int srcx,int srcy,
+  int w,int h,
+  double rotation,double xscale,double yscale
 );
 
 /* Draw any number of square axis-aligned tiles.
@@ -99,6 +118,7 @@ struct egg_draw_tile {
 void egg_draw_tile(int dsttexid,int srctexid,const struct egg_draw_tile *v,int c);
 
 //TODO Try again to support more direct access to GLES/WebGL. I'm sure it can be done, and that would be so cool.
+// If successful with that, keep the high-level API above. I don't want to *force* clients to use GL directly.
 
 /* Access to image decoder for software rendering.
  * For ordinary rendering, use egg_texture_load_image(), it's much more efficient.

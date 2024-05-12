@@ -114,8 +114,16 @@ void egg_draw_line(int dsttexid,const struct egg_draw_line *v,int c) {
   render_draw_line(egg.render,dsttexid,v,c);
 }
 
+void egg_draw_trig(int dsttexid,const struct egg_draw_line *v,int c) {
+  render_draw_trig(egg.render,dsttexid,v,c);
+}
+
 void egg_draw_decal(int dsttexid,int srctexid,int dstx,int dsty,int srcx,int srcy,int w,int h,int xform) {
   render_draw_decal(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,xform);
+}
+
+void egg_draw_decal_mode7(int dsttexid,int srctexid,int dstx,int dsty,int srcx,int srcy,int w,int h,double r,double xs,double ys) {
+  render_draw_decal_mode7(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,r,xs,ys);
 }
 
 void egg_draw_tile(int dsttexid,int srctexid,const struct egg_draw_tile *v,int c) {

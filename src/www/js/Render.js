@@ -223,7 +223,7 @@ export class Render {
     this.gl.disableVertexAttribArray(1);
   }
   
-  egg_draw_line(dsttexid, v, c) {
+  drawRaw(dsttexid, mode, v, c) {
     const texture = this.textures[dsttexid - 1];
     if (!texture) return;
     this.requireFramebuffer(texture);
@@ -243,9 +243,17 @@ export class Render {
     this.gl.enableVertexAttribArray(1);
     this.gl.vertexAttribPointer(0, 2, this.gl.SHORT, false, 8, 0);
     this.gl.vertexAttribPointer(1, 4, this.gl.UNSIGNED_BYTE, true, 8, 4);
-    this.gl.drawArrays(this.gl.LINE_STRIP, 0, c);
+    this.gl.drawArrays(mode, 0, c);
     this.gl.disableVertexAttribArray(0);
     this.gl.disableVertexAttribArray(1);
+  }
+  
+  egg_draw_line(dsttexid, v, c) {
+    this.drawRaw(dsttexid, this.gl.LINE_STRIP, v, c);
+  }
+  
+  egg_draw_trig(dsttexid, v, c) {
+    this.drawRaw(dsttexid, this.gl.TRIANGLE_STRIP, v, c);
   }
   
   egg_draw_decal(dsttexid, srctexid, dstx, dsty, srcx, srcy, w, h, xform) {
@@ -283,6 +291,54 @@ export class Render {
         tcv[i] = 1.0 - tcv[i];
       }
     }
+    const tx0 = srcx / srctex.w;
+    const tx1 = w / srctex.w;
+    const ty0 = srcy / srctex.h;
+    const ty1 = h / srctex.h;
+    for (let i=1; i<12; i+=3) {
+      tcv[i] = tx0 + tx1 * tcv[i];
+      tcv[i+1] = ty0 + ty1 * tcv[i+1];
+    }
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vbuf, this.gl.STREAM_DRAW);
+    
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, dsttex.fbid);
+    this.gl.viewport(0, 0, dsttex.w, dsttex.h);
+    this.gl.useProgram(this.pgm_decal);
+    this.gl.uniform2f(this.u_decal_screensize, dsttex.w, dsttex.h);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, srctex.texid);
+    this.gl.uniform4f(this.u_decal_tint, this.tr, this.tg, this.tb, this.ta);
+    this.gl.uniform1f(this.u_decal_alpha, this.alpha);
+    this.gl.enableVertexAttribArray(0);
+    this.gl.enableVertexAttribArray(1);
+    this.gl.vertexAttribPointer(0, 2, this.gl.SHORT, false, 12, 0);
+    this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 12, 4);
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    this.gl.disableVertexAttribArray(0);
+    this.gl.disableVertexAttribArray(1);
+  }
+  
+  egg_draw_decal_mode7(dsttexid, srctexid, dstx, dsty, srcx, srcy, w, h, rotation, xscale, yscale) {
+    if (dsttexid === srctexid) return;
+    const dsttex = this.textures[dsttexid - 1];
+    const srctex = this.textures[srctexid - 1];
+    if (!dsttex || !srctex) return;
+    this.requireFramebuffer(dsttex);
+    
+    const aposv = this.vbufs16;
+    const tcv = this.vbuff32;
+    const cost = Math.cos(-rotation);
+    const sint = Math.sin(-rotation);
+    const halfw = w * xscale * 0.5;
+    const halfh = h * yscale * 0.5;
+    const nwx = Math.round( cost * halfw + sint * halfh);
+    const nwy = Math.round(-sint * halfw + cost * halfh);
+    const swx = Math.round( cost * halfw - sint * halfh);
+    const swy = Math.round(-sint * halfw - cost * halfh);
+    aposv[ 0] = dstx - nwx; aposv[ 1] = dsty - nwy; tcv[ 1] = 0.0; tcv[ 2] = 0.0;
+    aposv[ 6] = dstx - swx; aposv[ 7] = dsty - swy; tcv[ 4] = 0.0; tcv[ 5] = 1.0;
+    aposv[12] = dstx + swx; aposv[13] = dsty + swy; tcv[ 7] = 1.0; tcv[ 8] = 0.0;
+    aposv[18] = dstx + nwx; aposv[19] = dsty + nwy; tcv[10] = 1.0; tcv[11] = 1.0;
     const tx0 = srcx / srctex.w;
     const tx1 = w / srctex.w;
     const ty0 = srcy / srctex.h;

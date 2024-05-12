@@ -4,7 +4,6 @@
 /* Registry of types.
  */
  
-extern const struct hostio_video_type hostio_video_type_dummy;
 extern const struct hostio_video_type hostio_video_type_xegl;
 extern const struct hostio_video_type hostio_video_type_glx;
 extern const struct hostio_video_type hostio_video_type_drmgx;
@@ -50,7 +49,6 @@ static const struct hostio_video_type *hostio_video_typev[]={
 #if USE_mswin
   &hostio_video_type_mswm,
 #endif
-  &hostio_video_type_dummy,
 };
 
 static const struct hostio_audio_type *hostio_audio_typev[]={

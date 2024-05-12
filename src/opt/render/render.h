@@ -33,6 +33,9 @@ void render_draw_rect(struct render *render,int texid,int x,int y,int w,int h,ui
 
 void render_draw_line(struct render *render,int texid,const struct egg_draw_line *v,int c);
 
+// Triangle strip.
+void render_draw_trig(struct render *render,int texid,const struct egg_draw_line *v,int c);
+
 void render_draw_decal(
   struct render *render,
   int dsttexid,int srctexid,
@@ -40,6 +43,15 @@ void render_draw_decal(
   int srcx,int srcy,
   int w,int h,
   int xform
+);
+
+void render_draw_decal_mode7(
+  struct render *render,
+  int dsttexid,int srctexid,
+  int dstx,int dsty, // center
+  int srcx,int srcy,
+  int w,int h,
+  double rotation,double xscale,double yscale
 );
 
 void render_draw_tile(

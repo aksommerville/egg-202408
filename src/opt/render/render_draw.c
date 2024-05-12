@@ -1,4 +1,5 @@
 #include "render_internal.h"
+#include <math.h>
 
 /* raw
  */
@@ -274,10 +275,10 @@ void render_draw_rect(struct render *render,int texid,int x,int y,int w,int h,ui
   glDisableVertexAttribArray(1);
 }
 
-/* Line strip.
+/* Line strip and triangle strip.
  */
  
-void render_draw_line(struct render *render,int texid,const struct egg_draw_line *v,int c) {
+static void render_draw_raw(struct render *render,int texid,int mode,const struct egg_draw_line *v,int c) {
   if (c<1) return;
   if ((texid<1)||(texid>render->texturec)) return;
   struct render_texture *texture=render->texturev+texid-1;
@@ -291,9 +292,17 @@ void render_draw_line(struct render *render,int texid,const struct egg_draw_line
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(0,2,GL_SHORT,0,sizeof(struct egg_draw_line),&v[0].x);
   glVertexAttribPointer(1,4,GL_UNSIGNED_BYTE,1,sizeof(struct egg_draw_line),&v[0].r);
-  glDrawArrays(GL_LINE_STRIP,0,c);
+  glDrawArrays(mode,0,c);
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
+}
+
+void render_draw_line(struct render *render,int texid,const struct egg_draw_line *v,int c) {
+  render_draw_raw(render,texid,GL_LINE_STRIP,v,c);
+}
+ 
+void render_draw_trig(struct render *render,int texid,const struct egg_draw_line *v,int c) {
+  render_draw_raw(render,texid,GL_TRIANGLE_STRIP,v,c);
 }
 
 /* Decal.
@@ -352,6 +361,57 @@ void render_draw_decal(
       vtx->ty=ty0+ty1*vtx->ty;
     }
   }
+  glBindFramebuffer(GL_FRAMEBUFFER,dsttex->fbid);
+  glViewport(0,0,dsttex->w,dsttex->h);
+  glUseProgram(render->pgm_decal);
+  glUniform2f(render->u_decal_screensize,dsttex->w,dsttex->h);
+  glBindTexture(GL_TEXTURE_2D,srctex->texid);
+  glUniform4f(render->u_decal_tint,(render->tint>>24)/255.0f,((render->tint>>16)&0xff)/255.0f,((render->tint>>8)&0xff)/255.0f,(render->tint&0xff)/255.0f);
+  glUniform1f(render->u_decal_alpha,render->alpha/255.0f);
+  glEnableVertexAttribArray(0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(0,2,GL_SHORT,0,sizeof(struct render_vertex_decal),&vtxv[0].x);
+  glVertexAttribPointer(1,2,GL_FLOAT,0,sizeof(struct render_vertex_decal),&vtxv[0].tx);
+  glDrawArrays(GL_TRIANGLE_STRIP,0,4);
+  glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);
+}
+
+/* Decal with free scale and rotation.
+ */
+
+void render_draw_decal_mode7(
+  struct render *render,
+  int dsttexid,int srctexid,
+  int dstx,int dsty,
+  int srcx,int srcy,
+  int w,int h,
+  double rotation,double xscale,double yscale
+) {
+  if (dsttexid==srctexid) return;
+  if ((dsttexid<1)||(dsttexid>render->texturec)) return;
+  if ((srctexid<1)||(srctexid>render->texturec)) return;
+  struct render_texture *dsttex=render->texturev+dsttexid-1;
+  struct render_texture *srctex=render->texturev+srctexid-1;
+  if ((srctex->w<1)||(srctex->h<1)) return;
+  if (render_texture_require_fb(dsttex)<0) return;
+  
+  // Transform the output vertices right here, CPU-side.
+  double cost=cos(-rotation);
+  double sint=sin(-rotation);
+  double halfw=w*xscale*0.5;
+  double halfh=h*yscale*0.5;
+  int nwx=lround( cost*halfw+sint*halfh);
+  int nwy=lround(-sint*halfw+cost*halfh);
+  int swx=lround( cost*halfw-sint*halfh);
+  int swy=lround(-sint*halfw-cost*halfh);
+  struct render_vertex_decal vtxv[]={
+    {dstx-nwx,dsty-nwy,0.0f,0.0f},
+    {dstx-swx,dsty-swy,0.0f,1.0f},
+    {dstx+swx,dsty+swy,1.0f,0.0f},
+    {dstx+nwx,dsty+nwy,1.0f,1.0f},
+  };
+  
   glBindFramebuffer(GL_FRAMEBUFFER,dsttex->fbid);
   glViewport(0,0,dsttex->w,dsttex->h);
   glUseProgram(render->pgm_decal);

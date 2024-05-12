@@ -154,8 +154,19 @@ static void egg_wasm_draw_line(wasm_exec_env_t ee,int dsttexid,int vp,int c) {
   render_draw_line(egg.render,dsttexid,v,c);
 }
 
+static void egg_wasm_draw_trig(wasm_exec_env_t ee,int dsttexid,int vp,int c) {
+  if (c<1) return;
+  const struct egg_draw_line *v=wamr_validate_pointer(egg.wamr,1,vp,sizeof(struct egg_draw_line)*c);
+  if (!v) return;
+  render_draw_trig(egg.render,dsttexid,v,c);
+}
+
 static void egg_wasm_draw_decal(wasm_exec_env_t ee,int dsttexid,int srctexid,int dstx,int dsty,int srcx,int srcy,int w,int h,int xform) {
   render_draw_decal(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,xform);
+}
+
+static void egg_wasm_draw_decal_mode7(wasm_exec_env_t ee,int dsttexid,int srctexid,int dstx,int dsty,int srcx,int srcy,int w,int h,double r,double xs,double ys) {
+  render_draw_decal_mode7(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,r,xs,ys);
 }
 
 static void egg_wasm_draw_tile(wasm_exec_env_t ee,int dsttexid,int srctexid,int vp,int c) {
@@ -331,7 +342,9 @@ static NativeSymbol egg_wasm_exports[]={
   {"egg_render_alpha",egg_wasm_render_alpha,"(i)"},
   {"egg_draw_rect",egg_wasm_draw_rect,"(iiiiii)"},
   {"egg_draw_line",egg_wasm_draw_line,"(iii)"},
+  {"egg_draw_trig",egg_wasm_draw_trig,"(iii)"},
   {"egg_draw_decal",egg_wasm_draw_decal,"(iiiiiiiii)"},
+  {"egg_draw_decal_mode7",egg_wasm_draw_decal_mode7,"(iiiiiiiiFFF)"},
   {"egg_draw_tile",egg_wasm_draw_tile,"(iiii)"},
   {"egg_image_get_header",egg_wasm_image_get_header,"(****ii)"},
   {"egg_image_decode",egg_wasm_image_decode,"(*~ii)i"},

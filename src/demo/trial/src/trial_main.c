@@ -1,4 +1,7 @@
 #include "egg/egg.h"
+//#include <math.h>
+
+#define M_PI 3.1415926
 
 int some_other_function();
 
@@ -10,6 +13,10 @@ static double imageClock=0.0;
 #define imageDisplayTime 2.0
 static int screenw,screenh;
 static int texid_glyphsheet;
+static int texid_appicon;
+static double iconrotation=0.0;
+static double iconxs=1.0,icondxs=1.0;
+static double iconys=2.0,icondys=1.0;
 
 void egg_client_quit() {
   egg_log("%s elapsed=%f updatec=%d",__func__,total_elapsed,updatec);
@@ -184,6 +191,7 @@ int egg_client_init() {
   if ((texid=egg_texture_new())<1) return -1;
   
   if (egg_texture_load_image(texid_glyphsheet=egg_texture_new(),0,1)<0) return -1;
+  if (egg_texture_load_image(texid_appicon=egg_texture_new(),0,8)<0) return -1;
   
   return 0;
 }
@@ -324,6 +332,14 @@ void egg_client_update(double elapsed) {
       egg_request_termination();
     }
   }
+  
+  if ((iconrotation+=elapsed*1.5)>M_PI) iconrotation-=M_PI*2.0;
+  iconxs+=elapsed*icondxs;
+  if ((iconxs<0.25)&&(icondxs<0.0)) icondxs=-icondxs;
+  else if ((iconxs>3.0)&&(icondxs>0.0)) icondxs=-icondxs;
+  iconys+=elapsed*icondys;
+  if ((iconys<0.30)&&(icondys<0.0)) icondys=-icondys;
+  else if ((iconys>2.5)&&(icondys>0.0)) icondys=-icondys;
 }
 
 void egg_client_render() {
@@ -359,4 +375,20 @@ void egg_client_render() {
     };
     egg_draw_line(1,vtxv,sizeof(vtxv)/sizeof(vtxv[0]));
   }
+  
+  // Draw a shape with egg_draw_trig that wouldn't be possible otherwise.
+  // Say a trapezoid filled with gradient?
+  {
+    static const struct egg_draw_line vtxv[]={
+      {200, 50,0xff,0xff,0xff,0xff},
+      {250,100,0xff,0x00,0x00,0xff},
+      {250, 50,0x00,0xff,0x00,0xff},
+      {300,100,0x00,0x00,0xff,0xff},
+      {350, 50,0x00,0x00,0x00,0xff},
+    };
+    egg_draw_trig(1,vtxv,sizeof(vtxv)/sizeof(vtxv[0]));
+  }
+  
+  // Draw our app icon scaled up and spinning.
+  egg_draw_decal_mode7(1,texid_appicon,400,80,0,0,16,16,iconrotation,iconxs,iconys);
 }
