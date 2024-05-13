@@ -165,8 +165,8 @@ static void egg_wasm_draw_decal(wasm_exec_env_t ee,int dsttexid,int srctexid,int
   render_draw_decal(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,xform);
 }
 
-static void egg_wasm_draw_decal_mode7(wasm_exec_env_t ee,int dsttexid,int srctexid,int dstx,int dsty,int srcx,int srcy,int w,int h,double r,double xs,double ys) {
-  render_draw_decal_mode7(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,r,xs,ys);
+static void egg_wasm_draw_decal_mode7(wasm_exec_env_t ee,int dsttexid,int srctexid,int dstx,int dsty,int srcx,int srcy,int w,int h,int r,int xs,int ys) {
+  render_draw_decal_mode7(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,r/65536.0,xs/65536.0,ys/65536.0);
 }
 
 static void egg_wasm_draw_tile(wasm_exec_env_t ee,int dsttexid,int srctexid,int vp,int c) {
@@ -302,9 +302,9 @@ static void egg_wasm_audio_play_song(wasm_exec_env_t ee,int qual,int rid,int for
   synth_play_song(egg.synth,qual,rid,force,repeat);
 }
 
-static void egg_wasm_audio_play_sound(wasm_exec_env_t ee,int qual,int rid,double trim,double pan) {
+static void egg_wasm_audio_play_sound(wasm_exec_env_t ee,int qual,int rid,int trim,int pan) {
   if (egg_lock_audio()<0) return;
-  synth_play_sound(egg.synth,qual,rid,trim,pan);
+  synth_play_sound(egg.synth,qual,rid,trim/65536.0,pan/65536.0);
 }
 
 static void egg_wasm_audio_event(wasm_exec_env_t ee,int chid,int opcode,int a,int b) {
@@ -344,7 +344,7 @@ static NativeSymbol egg_wasm_exports[]={
   {"egg_draw_line",egg_wasm_draw_line,"(iii)"},
   {"egg_draw_trig",egg_wasm_draw_trig,"(iii)"},
   {"egg_draw_decal",egg_wasm_draw_decal,"(iiiiiiiii)"},
-  {"egg_draw_decal_mode7",egg_wasm_draw_decal_mode7,"(iiiiiiiiFFF)"},
+  {"egg_draw_decal_mode7",egg_wasm_draw_decal_mode7,"(iiiiiiiiiii)"},
   {"egg_draw_tile",egg_wasm_draw_tile,"(iiii)"},
   {"egg_image_get_header",egg_wasm_image_get_header,"(****ii)"},
   {"egg_image_decode",egg_wasm_image_decode,"(*~ii)i"},
@@ -362,7 +362,7 @@ static NativeSymbol egg_wasm_exports[]={
   {"egg_joystick_get_name",egg_wasm_joystick_get_name,"(*~i)i"},
   {"egg_joystick_for_each_button",egg_wasm_joystick_for_each_button,"(iii)i"},
   {"egg_audio_play_song",egg_wasm_audio_play_song,"(iiii)"},
-  {"egg_audio_play_sound",egg_wasm_audio_play_sound,"(iiFF)"},
+  {"egg_audio_play_sound",egg_wasm_audio_play_sound,"(iiii)"},
   {"egg_audio_event",egg_wasm_audio_event,"(iiii)"},
   {"egg_audio_get_playhead",egg_wasm_audio_get_playhead,"()F"},
   {"egg_audio_set_playhead",egg_wasm_audio_set_playhead,"(F)"},

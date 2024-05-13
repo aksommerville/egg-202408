@@ -390,5 +390,5 @@ void egg_client_render() {
   }
   
   // Draw our app icon scaled up and spinning.
-  egg_draw_decal_mode7(1,texid_appicon,400,80,0,0,16,16,iconrotation,iconxs,iconys);
+  egg_draw_decal_mode7(1,texid_appicon,400,80,0,0,16,16,(int)(iconrotation*65536.0),(int)(iconxs*65536.0),(int)(iconys*65536.0));
 }

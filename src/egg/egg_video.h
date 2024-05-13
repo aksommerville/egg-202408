@@ -99,7 +99,7 @@ void egg_draw_decal_mode7(
   int dstx,int dsty,
   int srcx,int srcy,
   int w,int h,
-  double rotation,double xscale,double yscale
+  int rotation,int xscale,int yscale // all fixed-point s16.16
 );
 
 /* Draw any number of square axis-aligned tiles.

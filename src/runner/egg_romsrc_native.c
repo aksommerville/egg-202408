@@ -122,8 +122,8 @@ void egg_draw_decal(int dsttexid,int srctexid,int dstx,int dsty,int srcx,int src
   render_draw_decal(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,xform);
 }
 
-void egg_draw_decal_mode7(int dsttexid,int srctexid,int dstx,int dsty,int srcx,int srcy,int w,int h,double r,double xs,double ys) {
-  render_draw_decal_mode7(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,r,xs,ys);
+void egg_draw_decal_mode7(int dsttexid,int srctexid,int dstx,int dsty,int srcx,int srcy,int w,int h,int r,int xs,int ys) {
+  render_draw_decal_mode7(egg.render,dsttexid,srctexid,dstx,dsty,srcx,srcy,w,h,r/65536.0,xs/65536.0,ys/65536.0);
 }
 
 void egg_draw_tile(int dsttexid,int srctexid,const struct egg_draw_tile *v,int c) {
@@ -190,9 +190,9 @@ void egg_audio_play_song(int qual,int rid,int force,int repeat) {
   synth_play_song(egg.synth,qual,rid,force,repeat);
 }
 
-void egg_audio_play_sound(int qual,int rid,double trim,double pan) {
+void egg_audio_play_sound(int qual,int rid,int trim,int pan) {
   if (egg_lock_audio()<0) return;
-  synth_play_sound(egg.synth,qual,rid,trim,pan);
+  synth_play_sound(egg.synth,qual,rid,trim/65536.0,pan/65536.0);
 }
 
 void egg_audio_event(int chid,int opcode,int a,int b) {

@@ -585,6 +585,7 @@ void egg_cb_mmotion(struct hostio_video *driver,int x,int y) {
   egg.inmgr->mousex=x;
   egg.inmgr->mousey=y;
   if (!(egg.inmgr->eventmask&(1<<EGG_EVENT_MMOTION))) return;
+  if (egg.inmgr->show_fake_cursor&&!x&&!y) return;
   union egg_event *event=egg_event_push(egg.inmgr);
   event->mmotion.type=EGG_EVENT_MMOTION;
   event->mmotion.x=x;

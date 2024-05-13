@@ -11,9 +11,9 @@
 void egg_audio_play_song(int qual,int songid,int force,int repeat);
 
 /* Play a fire-and-forget sound effect.
- * (trim) in 0..1, (pan) in -1..1 (left..right).
+ * (trim) in 0..1, (pan) in -1..1 (left..right). Both are s16.16.
  */
-void egg_audio_play_sound(int qual,int soundid,double trim,double pan);
+void egg_audio_play_sound(int qual,int soundid,int trim,int pan);
 
 /* Force an event onto the MIDI bus.
  * Beware that one bus is shared between the client and the background song.
