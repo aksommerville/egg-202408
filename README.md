@@ -34,9 +34,6 @@ And some minor ones:
 And some major outstanding questions:
 - GLES2/WebGL exposed directly?
 - Can we get a GLES2 context in Mac and Windows? I've had trouble with this in the past, on Windows especially.
-- What would it take to support MP3 as a song format?
-- - It's no longer under patent, but the spec is paywalled. Should I pay the $200 to be able to know conclusively that we can't support it? Or just assume.
-- - We can come back to this later.
 
 ```
 sudo apt install clang wabt
@@ -63,17 +60,7 @@ sudo apt install clang wabt
 - [ ] clang is inserting calls to memcpy. Can avoid by declaring arrays 'static const'. Or I guess by including libc. But can we tell it not to? I did say "-nostdlib"!
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
 - [ ] Storage access controls.
-- [x] Remove the "fb" hooks from hostio_video. No harm if they exist, but they're misleading and dead weight, we'll never use. video_dummy too
 - [ ] Revisit exposing GLES2/WebGL directly to the game.
-- - [x] If it's a no, add a few more render ops:
-- - - [x] Raw triangle strip.
-- - - [x] Decal with arbitrary scale and rotation.
-- - - xxx Textured triangle strip? ...nah too complicated. If someone needs this, they need something fancier than Egg.
 - - Exposing GL directly would be inconsistently low-level compared to the rest of the public api.
 - - That's not a reason to reject it, but I think even if we implement, we should keep the high-level render api too.
-- - So do proceed with the additional calls.
 - [ ] TOUCH events for native. What would that take? Maybe acquire some tablet thingy and try it out?
-- - https://shop.puri.sm/shop/librem-11/ oooh that looks cool. $1k, don't rush it.
-- - https://pine64.com/product/pinetab2-10-1-8gb-128gb-linux-tablet-with-detached-backlit-keyboard/ about $200, looks low quality
-- - https://raspad.com/products/raspadv3?variant=41161312764080 $300 project kit, pi+touchscreen. looks adorable
-- [ ] When we fake KEY events via hostio_input, should we also attempt TEXT mapping? Determining the user's preferred keyboard layout sounds like a can of rotten worms.

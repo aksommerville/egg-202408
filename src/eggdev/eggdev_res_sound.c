@@ -24,7 +24,7 @@ static int eggrom_sound_expand_cb_sfg(
   res->qual=ctx->qual;
   res->rid=idn;
   romw_res_set_path(res,refname,-1);
-  romw_res_set_name(res,id,idc);
+  if (!idn) romw_res_set_name(res,id,idc);
   res->hint=EGGDEV_HINT_PCMPRINT;
   
   struct sr_encoder bin={0};
