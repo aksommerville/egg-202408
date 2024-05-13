@@ -163,7 +163,6 @@ int egg_lock_cursor(int lock);
 
 /* Examine connected joysticks.
  * (NB These can be any kind of input device, "joystick" is just a word we use).
- * TODO Confirm we can trigger callbacks in both web and wamr.
  */
 int egg_joystick_devid_by_index(int p);
 void egg_joystick_get_ids(int *vid,int *pid,int *version,int devid);

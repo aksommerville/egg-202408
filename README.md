@@ -52,10 +52,11 @@ sudo apt install clang wabt
 - - - Think this thru. We'll need to add some kind of abort option, otherwise the user is stuck for about 2 minutes while it cycles thru.
 - - [ ] egg_audio_get_playhead: Adjust per driver.
 - - [ ] synth_set_playhead
+- - [ ] synth wrap playhead
 - [ ] Raspberry Pi.
 - [ ] MS Windows
 - [ ] MacOS
-- [ ] Some amount of libc for games. At least need memory and math functions.
+- [x] Some amount of libc for games. At least need memory and math functions.
 - - It's OK (advisable!) to do that purely client-side, but we should supply a library or something.
 - [ ] clang is inserting calls to memcpy. Can avoid by declaring arrays 'static const'. Or I guess by including libc. But can we tell it not to? I did say "-nostdlib"!
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
@@ -64,3 +65,4 @@ sudo apt install clang wabt
 - - Exposing GL directly would be inconsistently low-level compared to the rest of the public api.
 - - That's not a reason to reject it, but I think even if we implement, we should keep the high-level render api too.
 - [ ] TOUCH events for native. What would that take? Maybe acquire some tablet thingy and try it out?
+- [ ] Looks like egg_log %p is popping 8 bytes even if sourced from Wasm, where that's always 4 bytes.

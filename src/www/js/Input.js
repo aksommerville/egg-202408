@@ -140,8 +140,8 @@ export class Input {
    ******************************************************************************/
    
   _updateGamepads() {
-    if (!this.window.navigator.getGamepads) return;
-    for (const gamepad of this.window.navigator.getGamepads()) {
+    if (!window.navigator.getGamepads) return;
+    for (const gamepad of window.navigator.getGamepads()) {
       if (!gamepad) continue;
       const local = this.gamepads[gamepad.index];
       if (!local) continue;
@@ -151,7 +151,7 @@ export class Input {
         const nx = gamepad.axes[i] ? Math.floor(gamepad.axes[i] * 127) : 0;
         if (pv === nx) continue;
         local.axes[i] = nx;
-        this.pushEvent([Input.EGG_EVENT_INPUT, local.devid, local.axisBase + i, nx]);
+        this.pushEvent([Input.EGG_EVENT_JOY, local.devid, local.axisBase + i, nx]);
       }
       
       for (let i=local.buttons.length; i-->0; ) {
@@ -159,7 +159,7 @@ export class Input {
         const nx = gamepad.buttons[i].value;
         if (pv === nx) continue;
         local.buttons[i] = nx;
-        this.pushEvent([Input.EGG_EVENT_INPUT, local.devid, local.buttonBase + i, nx]);
+        this.pushEvent([Input.EGG_EVENT_JOY, local.devid, local.buttonBase + i, nx]);
       }
     }
   }
@@ -170,8 +170,8 @@ export class Input {
       case "gamepadconnected": {
           let axisBase, buttonBase;
           if (e.gamepad.mapping === "standard") {
-            axisBase = 0x80;
-            buttonBase = 0x40;
+            axisBase = 0x40;
+            buttonBase = 0x80;
           } else {
             axisBase = 0x100;
             buttonBase = 0x200;
@@ -186,10 +186,6 @@ export class Input {
             axisBase,
             buttonBase,
           };
-          let mapping = 0; // RAW
-          switch (e.gamepad.mapping) {
-            case "standard": mapping = 1; break;
-          }
           this.pushEvent([Input.EGG_EVENT_JOY, e.gamepad.index + 1, 0, 1]);
         } break;
         
@@ -197,7 +193,7 @@ export class Input {
           const local = this.gamepads[e.gamepad.index];
           if (local) {
             delete this.gamepads[e.gamepad.index];
-            this.pushEvent([Input.EGG_EVENT_DISCONNECT, local.devid, 0, 0]);
+            this.pushEvent([Input.EGG_EVENT_JOY, local.devid, 0, 0]);
           }
         } break;
     }
@@ -542,18 +538,14 @@ export class Input {
   }
   
   egg_lock_cursor(lock) {
-    console.log(`TODO egg_lock_cursor`, { lock });
     if (!this.canvas || !this.canvas.requestPointerLock) return 0;
     if (lock) {
       if (this.mouseLocked) return 1;
       this.mouseLocked = true;
-      console.log(`requesting...`);
       this.canvas.requestPointerLock(/*{
         unadjustedMovement: true, // Not supported in Chrome/Linux, and the whole request gets rejected for it.
       }*/).then(rsp => {
-        console.log(`...locked`, rsp);
       }).catch(e => {
-        console.error(`...denied`, e);
         this.mouseLocked = false;
       });
     } else if (this.mouseLocked) {

@@ -105,6 +105,7 @@ export class Egg {
   stop() {
     if (!this.running) return;
     this.audio.stop();
+    this.input.detach();
     this.running = false;
     if (this.loaded) {
       this.exec.egg_client_quit();
@@ -123,6 +124,7 @@ export class Egg {
     this.pendingFrame = null;
     if (!this.running) return;
     this.audio.update();
+    this.input.update();
     const elapsed = this.tick();
     if (elapsed >= 0) {
       this.exec.egg_client_update(elapsed);
