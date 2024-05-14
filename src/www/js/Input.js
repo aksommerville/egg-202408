@@ -131,8 +131,14 @@ export class Input {
     for (const touch of e.changedTouches) {
       const x = ((touch.clientX - bounds.x) * this.canvas.width) / bounds.width;
       const y = ((touch.clientY - bounds.y) * this.canvas.height) / bounds.height;
-      this.pushEvent([Input.EGG_EVENT_TOUCH, touch.identifier, state, x, y]);
+      this.pushEvent([Input.EGG_EVENT_TOUCH, this.eggSafeTouchId(touch.identifier), state, x, y]);
     }
+  }
+  
+  // The spec doesn't constain Touch.identifier beyond saying it must be an integer.
+  // For Egg, it must be a *positive* integer. I've seen zero.
+  eggSafeTouchId(id) {
+    return (id < 1) ? ((id & 0x7fffffff) | 0x00001000) : id;
   }
   
   /* Gamepad.

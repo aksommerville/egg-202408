@@ -206,6 +206,7 @@ static int render_force_valid_png(struct render *render,struct png_image *image)
  */
 
 int render_texture_load(struct render *render,int texid,int w,int h,int stride,int fmt,const void *src,int srcc) {
+  if (!srcc) src=0;
   if ((texid<1)||(texid>render->texturec)) return -1;
   struct render_texture *texture=render->texturev+texid-1;
   

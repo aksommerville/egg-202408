@@ -66,3 +66,5 @@ sudo apt install clang wabt
 - - That's not a reason to reject it, but I think even if we implement, we should keep the high-level render api too.
 - [ ] TOUCH events for native. What would that take? Maybe acquire some tablet thingy and try it out?
 - [ ] Looks like egg_log %p is popping 8 bytes even if sourced from Wasm, where that's always 4 bytes.
+- [ ] eggdev: tmp-egg-rom.s lingers sometimes, i think only after errors
+- [ ] video api: Rect, line, and trig are subject to global alpha but not tint. That's how I defined it and it works, but it's inconsistent. Can we apply tint too?

@@ -411,6 +411,17 @@ void render_draw_decal_mode7(
     {dstx+swx,dsty+swy,1.0f,0.0f},
     {dstx+nwx,dsty+nwy,1.0f,1.0f},
   };
+  {
+    GLfloat tx0=((GLfloat)srcx+0.5f)/(GLfloat)srctex->w;
+    GLfloat tx1=((GLfloat)w-1.0f)/(GLfloat)srctex->w;
+    GLfloat ty0=((GLfloat)srcy+0.5f)/(GLfloat)srctex->h;
+    GLfloat ty1=((GLfloat)h-1.0f)/(GLfloat)srctex->h;
+    struct render_vertex_decal *vtx=vtxv;
+    int i=4; for (;i-->0;vtx++) {
+      vtx->tx=tx0+tx1*vtx->tx;
+      vtx->ty=ty0+ty1*vtx->ty;
+    }
+  }
   
   glBindFramebuffer(GL_FRAMEBUFFER,dsttex->fbid);
   glViewport(0,0,dsttex->w,dsttex->h);

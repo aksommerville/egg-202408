@@ -324,6 +324,9 @@ export class Render {
     const srctex = this.textures[srctexid - 1];
     if (!dsttex || !srctex) return;
     this.requireFramebuffer(dsttex);
+    rotation /= 65536;
+    xscale /= 65536;
+    yscale /= 65536;
     
     const aposv = this.vbufs16;
     const tcv = this.vbuff32;
@@ -339,10 +342,10 @@ export class Render {
     aposv[ 6] = dstx - swx; aposv[ 7] = dsty - swy; tcv[ 4] = 0.0; tcv[ 5] = 1.0;
     aposv[12] = dstx + swx; aposv[13] = dsty + swy; tcv[ 7] = 1.0; tcv[ 8] = 0.0;
     aposv[18] = dstx + nwx; aposv[19] = dsty + nwy; tcv[10] = 1.0; tcv[11] = 1.0;
-    const tx0 = srcx / srctex.w;
-    const tx1 = w / srctex.w;
-    const ty0 = srcy / srctex.h;
-    const ty1 = h / srctex.h;
+    const tx0 = (srcx + 0.5) / srctex.w;
+    const tx1 = (w - 1) / srctex.w;
+    const ty0 = (srcy + 0.5) / srctex.h;
+    const ty1 = (h - 1) / srctex.h;
     for (let i=1; i<12; i+=3) {
       tcv[i] = tx0 + tx1 * tcv[i];
       tcv[i+1] = ty0 + ty1 * tcv[i+1];
@@ -548,7 +551,7 @@ Render.fsrc_raw = `
   uniform float alpha;
   varying vec4 vcolor;
   void main() {
-    gl_FragColor=vec4(vcolor.rgb,alpha);
+    gl_FragColor=vec4(vcolor.rgb,vcolor.a*alpha);
   }
 `;
  

@@ -77,6 +77,8 @@ export class Audio {
   
   egg_audio_play_sound(qual, soundid, trim, pan, when) {
     if (!this.context) return;
+    trim /= 65536;
+    pan /= 65536;
     if (!when) when = this.context.currentTime;
     const pcm = this.acquireSound(qual, soundid);
     if (!pcm) return;

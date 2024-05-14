@@ -7,6 +7,7 @@
 struct hostio_video_xegl {
   struct hostio_video hdr;
   struct xegl *xegl;
+  int show_cursor_after_unlock;
 };
 
 #define DRIVER ((struct hostio_video_xegl*)driver)
@@ -59,9 +60,15 @@ static void _xegl_show_cursor(struct hostio_video *driver,int show) {
 }
 
 static void _xegl_lock_cursor(struct hostio_video *driver,int lock) {
+  if (lock) DRIVER->show_cursor_after_unlock=driver->cursor_visible;
   xegl_lock_cursor(DRIVER->xegl,lock);
-  driver->cursor_visible=0;
   driver->cursor_locked=DRIVER->xegl->cursor_locked;
+  if (lock) {
+    driver->cursor_visible=0;
+  } else {
+    xegl_show_cursor(DRIVER->xegl,DRIVER->show_cursor_after_unlock);
+    driver->cursor_visible=DRIVER->xegl->cursor_visible;
+  }
 }
 
 static void _xegl_set_fullscreen(struct hostio_video *driver,int fullscreen) {
