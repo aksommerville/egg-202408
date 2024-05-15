@@ -170,31 +170,43 @@ export class ImageDecoder {
     };
     while (dstp < dst.length) {
       const filter = src[srcp++];
-      if (!filter || !dstp) {
-        if (dstp) dstppv += dststride;
-        for (let i=dststride; i-->0; dstp++, srcp++) dst[dstp] = src[srcp];
-      } else {
-        switch (filter) {
-          case 1: {
-              let i=0;
-              for (; i<xstride; i++, dstp++, srcp++) dst[dstp] = src[srcp];
-              for (; i<dststride; i++, dstp++, srcp++) dst[dstp] = src[srcp] + dst[dstp-xstride];
-              dstppv += dststride;
-            } break;
-          case 2: {
+      if (dstp) dstppv = dstp - dststride;
+      switch (filter) {
+        case 0: {
+            for (let i=dststride; i-->0; dstp++, srcp++) dst[dstp] = src[srcp];
+          } break;
+        case 1: {
+            let i=0;
+            for (; i<xstride; i++, dstp++, srcp++) dst[dstp] = src[srcp];
+            for (; i<dststride; i++, dstp++, srcp++) dst[dstp] = src[srcp] + dst[dstp-xstride];
+          } break;
+        case 2: {
+            if (dstp) {
               for (let i=dststride; i-->0; dstp++, dstppv++, srcp++) dst[dstp] = src[srcp] + dst[dstppv];
-            } break;
-          case 3: {
-              let i=0;
+            } else {
+              for (let i=dststride; i-->0; dstp++, srcp++) dst[dstp] = src[srcp];
+            }
+          } break;
+        case 3: {
+            let i=0;
+            if (dstp) {
               for (; i<xstride; i++, dstp++, srcp++, dstppv++) dst[dstp] = src[srcp] + (dst[dstppv] >> 1);
               for (; i<dststride; i++, dstp++, srcp++, dstppv++) dst[dstp] = src[srcp] + ((dst[dstp-xstride] + dst[dstppv]) >> 1);
-            } break;
-          case 4: {
-              let i=0;
+            } else {
+              for (; i<xstride; i++, dstp++, srcp++) dst[dstp] = src[srcp];
+              for (; i<dststride; i++, dstp++, srcp++) dst[dstp] = src[srcp] + (dst[dstp-xstride] >> 1);
+            }
+          } break;
+        case 4: {
+            let i=0;
+            if (dstp) {
               for (; i<xstride; i++, dstp++, srcp++, dstppv++) dst[dstp] = src[srcp] + dst[dstppv];
               for (; i<dststride; i++, dstp++, srcp++, dstppv++) dst[dstp] = src[srcp] + paeth(dst[dstp-xstride], dst[dstppv], dst[dstppv-xstride]);
-            } break;
-        }
+            } else { // PAETH is exactly SUB on the first row, but it is legal.
+              for (; i<xstride; i++, dstp++, srcp++) dst[dstp] = src[srcp];
+              for (; i<dststride; i++, dstp++, srcp++) dst[dstp] = src[srcp] + dst[dstp-xstride];
+            }
+          } break;
       }
     }
   }

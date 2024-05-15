@@ -47,6 +47,7 @@ sudo apt install clang wabt
 - - [ ] Audio: Shut down faster, at least drop events that haven't started yet.
 - - [ ] Audio: egg_audio_event
 - - [ ] incfg: First, is it worth the effort? How much coverage does Standard Mapping give us? And then.... how?
+- - [ ] Send RAW events from gamepad. Whether standard mapping or not.
 - [ ] Native runtime for Linux
 - - [ ] Invoke incfg via client too.
 - - - Think this thru. We'll need to add some kind of abort option, otherwise the user is stuck for about 2 minutes while it cycles thru.

@@ -173,11 +173,11 @@ export class SysExtra {
     if (src.length >= 2) {
       let a = src.charCodeAt(0);
       let b = src.charCodeAt(1);
-      if ((a >= 0x61) && (a <= 0x7a)) a -= 0x61;
-      else if ((a >= 0x31) && (a <= 0x36)) a = a - 0x31 + 26;
+      if ((a >= 0x61) && (a <= 0x7a)) a = a - 0x61 + 6;
+      else if ((a >= 0x30) && (a <= 0x35)) a = a - 0x30;
       else return 0;
-      if ((b >= 0x61) && (b <= 0x7a)) b -= 0x61;
-      else if ((b >= 0x31) && (b <= 0x36)) b = b - 0x31 + 26;
+      if ((b >= 0x61) && (b <= 0x7a)) b = b - 0x61 + 6;
+      else if ((b >= 0x30) && (b <= 0x35)) b = b - 0x30;
       else return 0;
       return (a << 5) | b;
     }

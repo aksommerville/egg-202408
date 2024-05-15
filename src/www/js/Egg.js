@@ -39,6 +39,7 @@ export class Egg {
     terminate.setAttribute("type", "button");
     terminate.setAttribute("value", "Terminate");
     terminate.addEventListener("click", () => this.stop());
+    terminate.style.display = "block";
     body.appendChild(terminate);
     
     this.canvas = document.createElement("CANVAS");
