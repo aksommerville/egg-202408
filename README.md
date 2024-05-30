@@ -46,6 +46,7 @@ sudo apt install clang wabt
 - - [ ] Audio playhead
 - - [ ] Audio: Shut down faster, at least drop events that haven't started yet.
 - - [ ] Audio: egg_audio_event
+- - [ ] Audio: I'm not hearing drums in music (see hardboiled)
 - - [ ] incfg: First, is it worth the effort? How much coverage does Standard Mapping give us? And then.... how?
 - - [ ] Send RAW events from gamepad. Whether standard mapping or not.
 - [ ] Native runtime for Linux
@@ -69,3 +70,9 @@ sudo apt install clang wabt
 - [ ] Looks like egg_log %p is popping 8 bytes even if sourced from Wasm, where that's always 4 bytes.
 - [ ] eggdev: tmp-egg-rom.s lingers sometimes, i think only after errors
 - [ ] video api: Rect, line, and trig are subject to global alpha but not tint. That's how I defined it and it works, but it's inconsistent. Can we apply tint too?
+- [x] Declare USB HID keysyms in a header
+- [ ] xegl cursor lock on startup seems to be reporting absolute when we start in fullscreen? Try eggsamples/shmup.egg, it's haywire in fullscreen.
+- [ ] eggdev: Better reporting for string ID conflict. We get a generic: !!! Resource ID conflict: (3:339:3), expecting rid 4.
+- [ ] Notify of motion outside window. Platform might only be able to supply enter/exit, but that's enough. (see lingerful cursor in eggsamples/hardboiled).
+- [ ] Tooling for synth playback and sound effects editing.
+- [ ] Compiling metadata: Fail if key but no value present. eg I said "framebuffer 640x630" instead of "framebuffer=640x360" and got no useful diagnostics.

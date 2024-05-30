@@ -224,12 +224,13 @@ static int eggdev_main_tocflag() {
     fprintf(stderr,"%s: Please specify flag file path '-oPATH'\n",eggdev.exename);
     return 1;
   }
+  int missing=0;
   void *prior=0;
   int priorc=file_read(&prior,eggdev.dstpath);
-  if (priorc<0) priorc=0; // No harm if it doesn't exist yet.
+  if (priorc<0) { priorc=0; missing=1; } // No harm if it doesn't exist yet.
   struct sr_encoder current={0};
   if (eggdev_tocflag_generate(&current)<0) return 1;
-  if ((current.c==priorc)&&!memcmp(current.v,prior,priorc)) return 0; // Unchanged.
+  if (!missing&&(current.c==priorc)&&!memcmp(current.v,prior,priorc)) return 0; // Unchanged.
   if ((dir_mkdirp_parent(eggdev.dstpath)<0)||(file_write(eggdev.dstpath,current.v,current.c)<0)) {
     fprintf(stderr,"%s: Failed to write file.\n",eggdev.dstpath);
     return 1;
