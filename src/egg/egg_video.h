@@ -4,6 +4,31 @@
 #ifndef EGG_VIDEO_H
 #define EGG_VIDEO_H
 
+/* OpenGL ES 2 helpers.
+ * If your metdata resource contains "framebuffer=WIDTHxHEIGHT gl", the platform
+ * provides a raw GLES2 context and does not initialize Egg's bespoke render API.
+ * Use the helpers in this section, and ignore the rest of this header.
+ * Your declared framebuffer size in this case is only a hint for the preferred aspect ratio.
+ * Include <GLES2/gl2.h> and work from that.
+ *****************************************************************/
+
+/* For glGetString(), you must supply a buffer in client memory where we can write the strings.
+ */
+void egg_video_set_string_buffer(char *v,int c);
+
+/* Direct OpenGL, you are drawing into the main output, which can change size between frames.
+ * Egg doesn't send events on video size changes (because our preferred video API wouldn't need them).
+ * Recommend to call this at the start of each render.
+ */
+void egg_video_get_size(int *w,int *h);
+ 
+/* Egg Video API.
+ * If you don't want the complexity of coding to GLES2 from scratch,
+ * we provide a nice simple API for primitives and blitters.
+ * Under this regime, the framebuffer size you declare in metadata is what you get, exactly.
+ * This can also be abused as a software framebuffer: Upload pixels to texture 1.
+ *********************************************************************/
+
 #define EGG_TEX_FMT_RGBA 1 /* 32-bit RGBA, red first. */
 #define EGG_TEX_FMT_A8   2 /* 8-bit alpha. */
 #define EGG_TEX_FMT_A1   3 /* 1-bit alpha. Big-endian (ie first pixel is 0x80). */
@@ -18,6 +43,7 @@
 /* Valid texid are >0.
  * There is always a texture ID 1, which represents the main output.
  * You can read its bounds and draw to it, but you can't load images or change its dimensions.
+ * DO NOT assume that Egg texid are actual OpenGL texture IDs -- that's up to the platform.
  */
 void egg_texture_del(int texid);
 int egg_texture_new();
@@ -116,9 +142,6 @@ struct egg_draw_tile {
   uint8_t xform;
 };
 void egg_draw_tile(int dsttexid,int srctexid,const struct egg_draw_tile *v,int c);
-
-//TODO Try again to support more direct access to GLES/WebGL. I'm sure it can be done, and that would be so cool.
-// If successful with that, keep the high-level API above. I don't want to *force* clients to use GL directly.
 
 /* Access to image decoder for software rendering.
  * For ordinary rendering, use egg_texture_load_image(), it's much more efficient.

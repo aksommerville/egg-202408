@@ -93,6 +93,7 @@ int egg_rom_startup_props(struct egg_rom_startup_props *props) {
   }
   
   if (((tmpc=egg_rom_get_metadata(tmp,sizeof(tmp),"framebuffer",11,0))>0)&&(tmpc<=sizeof(tmp))) {
+    // Must start "WIDTHxHEIGHT".
     int tmpp=0;
     while ((tmpp<tmpc)&&((unsigned char)tmp[tmpp]<=0x20)) tmpp++;
     const char *token=tmp+tmpp;
@@ -101,8 +102,20 @@ int egg_rom_startup_props(struct egg_rom_startup_props *props) {
     if (sr_int_eval(&props->fbw,token,tokenc)<2) props->fbw=0;
     token=tmp+tmpp;
     tokenc=0;
-    while ((tmpp<tmpc)&&(tmp[tmpp]>='0')&&(tmp[tmpp]<='9')) { tmpp++; tokenc++; }
+    while ((tmpp<tmpc)&&((unsigned char)tmp[tmpp]>0x20)) { tmpp++; tokenc++; }
     if (sr_int_eval(&props->fbh,token,tokenc)<2) props->fbh=0;
+    // Followed optionally by space-delimited extra tokens.
+    while (tmpp<tmpc) {
+      if ((unsigned char)tmp[tmpp]<=0x20) { tmpp++; continue; }
+      token=tmp+tmpp;
+      tokenc=0;
+      while ((tmpp<tmpc)&&((unsigned char)tmp[tmpp]>0x20)) { tmpp++; tokenc++; }
+      if ((tokenc==2)&&!memcmp(token,"gl",2)) {
+        props->directgl=1;
+      } else {
+        fprintf(stderr,"%s: Ignoring unexpected framebuffer tag '%.*s'\n",egg.exename,tokenc,token);
+      }
+    }
   }
   // TODO Should we have a default framebuffer size?
   if ((props->fbw<1)||(props->fbh<1)||(props->fbw>0x7fff)||(props->fbh>0x7fff)) {

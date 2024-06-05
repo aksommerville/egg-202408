@@ -94,6 +94,17 @@ sudo apt install clang wabt
 
 Decision: try it.
 
+There's three different things in play:
+1. True native. Trivial. Just link against libGLES2, which you're already doing.
+2. Native. Wrappers and length checks. Some pain points but perfectly doable.
+3. Web. Map everything from GLES2 to WebGL 1. Painful.
+
+- [x] Add something to metadata to declare the intent to use direct GL. Per game it has to be one or the other. Maybe a "gl" token after framebuffer?
+- [x] Must allow client to observe real window size.
+- [x] Must report mouse and touch events in real pixels, if directgl.
+- [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
+- [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?
+
 OpenGL ES is 142 functions:
 ```
 GL_APICALL void GL_APIENTRY glActiveTexture (GLenum texture);

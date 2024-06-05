@@ -35,6 +35,9 @@ extern struct egg {
   int storec;
   int store_dirty;
   int audio_locked; // Sticky lock that pops back open after the client update.
+  int directgl;
+  char *glstr; // For glGetString, circular buffer.
+  int glstrp,glstra;
 } egg;
 
 extern const int egg_romsrc;
@@ -59,6 +62,7 @@ struct egg_rom_startup_props {
   void *iconrgba;
   int iconw,iconh;
   int fbw,fbh;
+  int directgl;
 };
 int egg_rom_startup_props(struct egg_rom_startup_props *props);
 void egg_rom_startup_props_cleanup(struct egg_rom_startup_props *props);

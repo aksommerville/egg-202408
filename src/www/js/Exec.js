@@ -29,6 +29,7 @@ export class Exec {
       egg_time_local: (v, a) => this.egg.egg_time_local(v, a),
       egg_request_termination: () => this.egg.stop(),
       egg_get_user_languages: (v, a) => this.egg.egg_get_user_languages(v, a),
+      egg_video_get_size: (wp, hp) => this.egg.render.egg_video_get_size(wp, hp),
       egg_texture_del: (texid) => this.egg.render.egg_texture_del(texid),
       egg_texture_new: () => this.egg.render.egg_texture_new(),
       egg_texture_get_header: (w, h, fmt, texid) => this.egg.render.egg_texture_get_header(w, h, fmt, texid),

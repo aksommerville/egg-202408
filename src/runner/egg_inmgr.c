@@ -580,7 +580,9 @@ void egg_cb_text(struct hostio_video *driver,int codepoint) {
 }
  
 void egg_cb_mmotion(struct hostio_video *driver,int x,int y) {
-  render_coords_fb_from_screen(egg.render,&x,&y);
+  if (!egg.directgl) {
+    render_coords_fb_from_screen(egg.render,&x,&y);
+  }
   if ((x==egg.inmgr->mousex)&&(y==egg.inmgr->mousey)) return;
   egg.inmgr->mousex=x;
   egg.inmgr->mousey=y;

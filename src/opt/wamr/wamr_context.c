@@ -162,6 +162,20 @@ void *wamr_validate_pointer(struct wamr *wamr,int modid,uint32_t waddr,int reqc)
   return 0;
 }
 
+/* Translate pointer to client space.
+ */
+ 
+int wamr_host_to_client_pointer(struct wamr *wamr,int modid,const void *src) {
+  if (!src) return 0;
+  struct wamr_module *module=wamr->modulev;
+  int modulei=wamr->modulec;
+  for (;modulei-->0;module++) {
+    if (module->modid!=modid) continue;
+    return wasm_runtime_addr_native_to_app(module->instance,(void*)src);
+  }
+  return 0;
+}
+
 /* Call something in the function table.
  */
                            

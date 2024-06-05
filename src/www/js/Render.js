@@ -99,6 +99,11 @@ export class Render {
   
   /*------------------------ Public API entry points ---------------------------------*/
   
+  egg_video_get_size(wp, hp) {
+    if (wp) this.egg.exec.mem32[wp >> 2] = this.canvas.width;
+    if (hp) this.egg.exec.mem32[hp >> 2] = this.canvas.height;
+  }
+  
   egg_texture_del(texid) {
     if ((texid < 2) || (texid > this.textures.length)) return; // sic "<2". You can't delete the main framebuffer.
     const texture = this.textures[texid - 1];

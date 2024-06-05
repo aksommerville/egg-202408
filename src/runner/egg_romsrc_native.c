@@ -71,6 +71,15 @@ void egg_request_termination() {
   egg.terminate=1;
 }
 
+void egg_video_set_string_buffer(char *v,int c) {
+  // No need to do anything; it's only for faking glGetString, and native builds will use the real thing.
+}
+
+void egg_video_get_size(int *w,int *h) {
+  if (w) *w=egg.hostio->video->w;
+  if (h) *h=egg.hostio->video->h;
+}
+
 void egg_texture_del(int texid) {
   render_texture_del(egg.render,texid);
 }

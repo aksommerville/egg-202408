@@ -70,4 +70,4 @@ $(linux_SCRIPT_NATIVE):etc/tool/gen-egg-native.sh;$(PRECMD) LD="$(linux_LD)" LDP
 all:$(linux_SCRIPT_BUNDLED) $(linux_SCRIPT_NATIVE)
 all-tools:$(linux_SCRIPT_BUNDLED) $(linux_SCRIPT_NATIVE)
 
-linux-run:$(linux_EXE) demo-trial;$(linux_EXE) out/demo/trial.egg $(linux_RUN_ARGS)
+linux-run:$(linux_EXE) demo-realgl;$(linux_EXE) out/demo/realgl.egg $(linux_RUN_ARGS)

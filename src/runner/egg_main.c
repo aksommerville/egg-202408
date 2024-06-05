@@ -34,6 +34,7 @@ static int egg_init_video() {
     err=egg_rom_startup_props(&props);
   }
   if (err<0) return err;
+  egg.directgl=props.directgl;
 
   // Find a driver and start it up.
   struct hostio_video_setup setup={
@@ -72,13 +73,17 @@ static int egg_init_video() {
     fprintf(stderr,"%s: Failed to initialize GLES2 context.\n",egg.exename);
     return -2;
   }
-  if (render_texture_new(egg.render)!=1) {
-    fprintf(stderr,"%s: Failed to allocate main framebuffer.\n",egg.exename);
-    return -2;
-  }
-  if (render_texture_load(egg.render,1,props.fbw,props.fbh,0,EGG_TEX_FMT_RGBA,0,0)<0) {
-    fprintf(stderr,"%s: Failed to initialize %dx%d framebuffer.\n",egg.exename,props.fbw,props.fbh);
-    return -2;
+  if (egg.directgl&&!egg.config.configure_input) {
+    // Don't create the framebuffer in a direct-render situation.
+  } else {
+    if (render_texture_new(egg.render)!=1) {
+      fprintf(stderr,"%s: Failed to allocate main framebuffer.\n",egg.exename);
+      return -2;
+    }
+    if (render_texture_load(egg.render,1,props.fbw,props.fbh,0,EGG_TEX_FMT_RGBA,0,0)<0) {
+      fprintf(stderr,"%s: Failed to initialize %dx%d framebuffer.\n",egg.exename,props.fbw,props.fbh);
+      return -2;
+    }
   }
   
   return 0;
@@ -283,15 +288,19 @@ static int egg_update() {
     fprintf(stderr,"%s: Video driver failed to begin frame.\n",egg.exename);
     return -2;
   }
-  render_tint(egg.render,0);
-  render_alpha(egg.render,0xff);
-  if (egg.config.configure_input) {
-    incfg_render(egg.incfg);
-  } else {
+  if (egg.directgl&&!egg.config.configure_input) {
     egg_romsrc_call_client_render();
+  } else {
+    render_tint(egg.render,0);
+    render_alpha(egg.render,0xff);
+    if (egg.config.configure_input) {
+      incfg_render(egg.incfg);
+    } else {
+      egg_romsrc_call_client_render();
+    }
+    egg_inmgr_render(egg.inmgr);
+    render_draw_to_main(egg.render,egg.hostio->video->w,egg.hostio->video->h,1);
   }
-  egg_inmgr_render(egg.inmgr);
-  render_draw_to_main(egg.render,egg.hostio->video->w,egg.hostio->video->h,1);
   if (egg.hostio->video->type->gx_end(egg.hostio->video)<0) {
     fprintf(stderr,"%s: Error submitting video frame.\n",egg.exename);
     return -2;
