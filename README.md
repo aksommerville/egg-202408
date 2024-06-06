@@ -104,6 +104,10 @@ There's three different things in play:
 - [x] Must report mouse and touch events in real pixels, if directgl.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?
+- [x] web: Report raw mouse and touch locations when in gl mode. ...we're actually producing the right answer already -- canvas.width,height get updated now.
+- [x] web: Resize canvas to element size when in gl mode.
+- [x] Find source code for Doom.
+- - https://github.com/id-Software/DOOM ; It actually doesn't use any GX, wow. Use this as a test case for soft render instead :)
 
 OpenGL ES is 142 functions:
 ```

@@ -2,12 +2,14 @@
  */
  
 import { Rom } from "./Rom.js";
+import { Webgl } from "./Webgl.js";
  
 export class Render {
   constructor(egg) {
     this.canvas = egg.canvas;
     this.egg = egg;
     this.gl = this.canvas.getContext("webgl");
+    this.webgl = new Webgl(this.egg, this.gl);
     
     // (texid) exposed to client is the index in this array, plus one.
     this.textures = []; // {texid,fbid,w,h,fmt}
@@ -52,22 +54,34 @@ export class Render {
     ) throw new Error(`Failed to create main framebuffer.`);
     
     this.compileShaders();
+    
+    this.sizeDirty = false;
+    this.resizeObserver = new ResizeObserver(e => this.sizeDirty = true);
+    this.resizeObserver.observe(this.canvas);
   }
   
   /*---------------------------- Entry points for Egg platform ------------------------------*/
   
   // Notify that the runtime is shutting down.
   stop() {
+    this.resizeObserver.disconnect();
     this.egg_draw_rect(1, 0, 0, this.canvas.width, this.canvas.height, 0x808080ff);
-    this.end();
+    this.end(true);
   }
   
   begin() {
     this.egg_render_tint(0x00000000);
     this.alpha = 1;
+    if (this.sizeDirty) {
+      this.sizeDirty = false;
+      const bounds = this.canvas.getBoundingClientRect();
+      this.canvas.width = bounds.width;
+      this.canvas.height = bounds.height;
+    }
   }
   
-  end() {
+  end(override) {
+    if (this.egg.directgl && !override) return;
     const srctex = this.textures[0];
     if (!srctex) return;
 
@@ -98,6 +112,11 @@ export class Render {
   }
   
   /*------------------------ Public API entry points ---------------------------------*/
+  
+  egg_video_set_string_buffer(vp, a) {
+    this.webgl.glstrp = vp;
+    this.webgl.glstra = a;
+  }
   
   egg_video_get_size(wp, hp) {
     if (wp) this.egg.exec.mem32[wp >> 2] = this.canvas.width;

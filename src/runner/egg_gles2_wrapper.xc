@@ -6,6 +6,8 @@
  
 #include <GLES2/gl2.h>
 
+static int egg_gles2_buffer_bound=0;
+
 /* How many elements in a glGet or glSet of this parameter?
  * glTexParameter are also accepted here.
  */
@@ -146,7 +148,7 @@ static int egg_gl_measure_image(int format,int type,int w,int h) {
   }
   if (chanc<1) return 0;
   int wordlen=0;
-  switch (format) {
+  switch (type) {
     // GL_HALF_FLOAT is legal here. Not sure wasm has such a thing.
     case GL_UNSIGNED_BYTE:
     case GL_BYTE:
@@ -511,7 +513,7 @@ static void glGetShaderInfoLog_wasm(wasm_exec_env_t ee,int shader,int bufSize,in
 }
 
 static void glGetShaderPrecisionFormat_wasm(wasm_exec_env_t ee,int shadertype,int precisiontype,int range_addr,int precision_addr) {
-  int *rangep=wamr_validate_pointer(egg.wamr,1,range_addr,sizeof(int));
+  int *rangep=wamr_validate_pointer(egg.wamr,1,range_addr,sizeof(int)*2);
   int *precisionp=wamr_validate_pointer(egg.wamr,1,precision_addr,sizeof(int));
   if (!rangep||!precisionp) return;
   glGetShaderPrecisionFormat(shadertype,precisiontype,rangep,precisionp);
@@ -645,9 +647,13 @@ static void glVertexAttrib4fv_wasm(wasm_exec_env_t ee,int index,int addr) {
 }
 
 static void glVertexAttribPointer_wasm(wasm_exec_env_t ee,int index,int size,int type,int normalized,int stride,int addr) {
-  void *p=wamr_validate_pointer(egg.wamr,1,addr,stride*VTXATTR_VERTEX_COUNT);
-  if (!p) return;
-  glVertexAttribPointer(index,size,type,normalized,stride,p);
+  if (egg_gles2_buffer_bound) {
+    glVertexAttribPointer(index,size,type,normalized,stride,(void*)(uintptr_t)addr);
+  } else {
+    void *p=wamr_validate_pointer(egg.wamr,1,addr,stride*VTXATTR_VERTEX_COUNT);
+    if (!p) return;
+    glVertexAttribPointer(index,size,type,normalized,stride,p);
+  }
 }
 
 /* All functions below here are dead simple, straight pass-thru to GLES.
@@ -667,6 +673,8 @@ static void glBindAttribLocation_wasm(wasm_exec_env_t ee,int program,int index,c
 
 static void glBindBuffer_wasm(wasm_exec_env_t ee,int target,int buffer) {
   glBindBuffer(target,buffer);
+  if (buffer) egg_gles2_buffer_bound=1;
+  else egg_gles2_buffer_bound=0;
 }
 
 static void glBindFramebuffer_wasm(wasm_exec_env_t ee,int target,int framebuffer) {

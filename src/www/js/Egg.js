@@ -28,6 +28,7 @@ export class Egg {
     this.pvtime = 0;
     this.pendingFrame = null;
     this.restoreTitle = document.title;
+    this.directgl = false;
   }
   
   attachToDom() {
@@ -51,10 +52,14 @@ export class Egg {
   }
   
   setCanvasSize() {
-    const match = this.data.getMetadata("framebuffer").match(/^(\d+)x(\d+)/);
+    const match = this.data.getMetadata("framebuffer").match(/^(\d+)x(\d+)\s?(.*)/);
     if (!match) throw new Error("ROM does not declare its framebuffer size.");
     this.canvas.width = +match[1];
     this.canvas.height = +match[2];
+    this.directgl = false;
+    for (const token of match[3].split(/\s+/)) {
+      if (token === "gl") this.directgl = true;
+    }
     this.input.canvasChanged();
   }
   

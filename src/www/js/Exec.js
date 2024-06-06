@@ -29,6 +29,7 @@ export class Exec {
       egg_time_local: (v, a) => this.egg.egg_time_local(v, a),
       egg_request_termination: () => this.egg.stop(),
       egg_get_user_languages: (v, a) => this.egg.egg_get_user_languages(v, a),
+      egg_video_set_string_buffer: (v, a) => this.egg.render.egg_video_set_string_buffer(v, a),
       egg_video_get_size: (wp, hp) => this.egg.render.egg_video_get_size(wp, hp),
       egg_texture_del: (texid) => this.egg.render.egg_texture_del(texid),
       egg_texture_new: () => this.egg.render.egg_texture_new(),
@@ -64,6 +65,7 @@ export class Exec {
       egg_audio_event: (c, o, a, b) => this.egg.audio.egg_audio_event(c, o, a, b),
       egg_audio_get_playhead: () => this.egg.audio.egg_audio_get_playhead(),
       egg_audio_set_playhead: (b) => this.egg.audio.egg_audio_set_playhead(b),
+      ...this.egg.render.webgl.generatePublicApi(),
     }};
     return WebAssembly.instantiate(serial, options).then(result => {
       const yoink = name => {

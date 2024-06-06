@@ -10,6 +10,9 @@
  * Use the helpers in this section, and ignore the rest of this header.
  * Your declared framebuffer size in this case is only a hint for the preferred aspect ratio.
  * Include <GLES2/gl2.h> and work from that.
+ *
+ * You must use VBOs for vertex data.
+ * Passing pointers directly to glVertexAttribPointer() will work for native hosts, but not on the web.
  *****************************************************************/
 
 /* For glGetString(), you must supply a buffer in client memory where we can write the strings.

@@ -8,6 +8,7 @@ static char glstrbuf[8192];
  
 static int pid=0;
 static int u_screensize=0;
+static int bufid=0;
  
 static const char raw_vsrc[]=
   "#version 100\n"
@@ -35,26 +36,43 @@ static const char raw_fsrc[]=
 static int raw_init() {
   GLint sidv=glCreateShader(GL_VERTEX_SHADER);
   GLint sidf=glCreateShader(GL_FRAGMENT_SHADER);
-  if (!sidv||!sidf) return -1;
+  if (!sidv||!sidf) {
+    egg_log("glCreateShader failed");
+    return -1;
+  }
   GLint raw_vsrcc=sizeof(raw_vsrc)-1;
   const GLchar *src=raw_vsrc;
   glShaderSource(sidv,1,&src,(void*)&raw_vsrcc);
   glCompileShader(sidv);
   GLint status=0;
   glGetShaderiv(sidv,GL_COMPILE_STATUS,&status);
-  if (!status) return -1;
+  if (!status) {
+    egg_log("GL_COMPILE_STATUS zero (vertex shader)");
+    return -1;
+  }
   GLint raw_fsrcc=sizeof(raw_fsrc)-1;
   src=raw_fsrc;
   glShaderSource(sidf,1,&src,&raw_fsrcc);
   glCompileShader(sidf);
+  status=0;
   glGetShaderiv(sidf,GL_COMPILE_STATUS,&status);
-  if (!status) return -1;
-  if (!(pid=glCreateProgram())) return -1;
+  if (!status) {
+    egg_log("GL_COMPILE_STATUS zero (fragment shader)");
+    return -1;
+  }
+  if (!(pid=glCreateProgram())) {
+    egg_log("glCreateProgram failed");
+    return -1;
+  }
   glAttachShader(pid,sidv);
   glAttachShader(pid,sidf);
   glLinkProgram(pid);
+  status=0;
   glGetProgramiv(pid,GL_LINK_STATUS,&status);
-  if (!status) return -1;
+  if (!status) {
+    egg_log("GL_LINK_STATUS zero");
+    return -1;
+  }
   glDeleteShader(sidv);
   glDeleteShader(sidf);
   return 0;
@@ -67,18 +85,23 @@ void egg_client_quit() {
 }
 
 int egg_client_init() {
+  egg_log("%s...",__func__);
   egg_video_set_string_buffer(glstrbuf,sizeof(glstrbuf));
-  if (raw_init()<0) return -1;
+  if (raw_init()<0) {
+    egg_log("raw_init failed");
+    return -1;
+  }
   glUseProgram(pid);
   u_screensize=glGetUniformLocation(pid,"screensize");
   glBindAttribLocation(pid,0,"apos");
   glBindAttribLocation(pid,1,"acolor");
+  glGenBuffers(1,(GLuint*)&bufid);
   
   egg_log("GL_VENDOR: %s",glGetString(GL_VENDOR));
   egg_log("GL_RENDERER: %s",glGetString(GL_RENDERER));
   egg_log("GL_VERSION: %s",glGetString(GL_VERSION));
   egg_log("GL_SHADING_LANGUAGE_VERSION: %s",glGetString(GL_SHADING_LANGUAGE_VERSION));
-  const char *extensions=glGetString(GL_EXTENSIONS);
+  const char *extensions=(const char*)glGetString(GL_EXTENSIONS);
   if (extensions) {
     egg_log("GL_EXTENSIONS:");
     for (;*extensions;) {
@@ -118,10 +141,12 @@ void egg_client_render() {
     {cx,ay,0x00,0x00,0xff,0xff},
   };
   
+  glBindBuffer(GL_ARRAY_BUFFER,bufid);
+  glBufferData(GL_ARRAY_BUFFER,sizeof(vtxv),vtxv,GL_STREAM_DRAW);
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(0,2,GL_SHORT,0,sizeof(struct egg_draw_line),&vtxv[0].x);
-  glVertexAttribPointer(1,4,GL_UNSIGNED_BYTE,1,sizeof(struct egg_draw_line),&vtxv[0].r);
+  glVertexAttribPointer(0,2,GL_SHORT,0,sizeof(struct egg_draw_line),(void*)(uintptr_t)0);
+  glVertexAttribPointer(1,4,GL_UNSIGNED_BYTE,1,sizeof(struct egg_draw_line),(void*)(uintptr_t)4);
   glDrawArrays(GL_TRIANGLE_STRIP,0,sizeof(vtxv)/sizeof(vtxv[0]));
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
