@@ -63,7 +63,7 @@ export class Rom {
           } break;
         case 0xc0: { // QUAL, RID, or Reserved
             if (lead & 0x10) { // RID
-              rid += lead & 0x0f;
+              rid += (lead & 0x0f) + 1;
             } else if (lead & 0x0c) { // Reserved
               throw "Invalid ROM";
             } else { // QUAL

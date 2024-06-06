@@ -186,6 +186,15 @@ int egg_client_init() {
   if (1) { // Play a song.
     egg_audio_play_song(0, 4, 0, 1);
   }
+  if (1) { // Dump two strings known to have discontiguous IDs.
+    char twenty[16],thirty[16],one[16];
+    int twentyc=egg_res_get(twenty,sizeof(twenty),EGG_RESTYPE_string,10*32+19,20);
+    int thirtyc=egg_res_get(thirty,sizeof(thirty),EGG_RESTYPE_string,10*32+19,30);
+    int onec=egg_res_get(one,sizeof(one),EGG_RESTYPE_string,10*32+19,1);
+    egg_log("twenty: '%.*s'",twentyc,twenty);
+    egg_log("thirty: '%.*s'",thirtyc,thirty);
+    egg_log("one: '%.*s'",onec,one);
+  }
   
   egg_texture_get_header(&screenw,&screenh,0,1);
   if ((texid=egg_texture_new())<1) return -1;

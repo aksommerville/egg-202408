@@ -11,7 +11,8 @@ sudo apt install clang wabt
 - - [ ] Audio playhead
 - - [ ] Audio: Shut down faster, at least drop events that haven't started yet.
 - - [ ] Audio: egg_audio_event
-- - [ ] Audio: I'm not hearing drums in music (see hardboiled)
+- - [x] Audio: I'm not hearing drums in music (see hardboiled) (trial does it too)
+- - [x] Audio seems to be selecting the wrong sound ids!
 - - [ ] incfg: First, is it worth the effort? How much coverage does Standard Mapping give us? And then.... how?
 - - [ ] Send RAW events from gamepad. Whether standard mapping or not.
 - [ ] Native runtime for Linux

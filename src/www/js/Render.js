@@ -74,9 +74,11 @@ export class Render {
     this.alpha = 1;
     if (this.sizeDirty) {
       this.sizeDirty = false;
-      const bounds = this.canvas.getBoundingClientRect();
-      this.canvas.width = bounds.width;
-      this.canvas.height = bounds.height;
+      if (this.egg.directgl) {
+        const bounds = this.canvas.getBoundingClientRect();
+        this.canvas.width = bounds.width;
+        this.canvas.height = bounds.height;
+      }
     }
   }
   

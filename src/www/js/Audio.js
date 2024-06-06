@@ -159,6 +159,7 @@ export class Audio {
   // (velocity) in 0..127 like MIDI. (when) in AudioContext time.
   playNote(chid, noteid, velocity, durs, when) {
     const channel = this.channels[chid];
+    //console.log(`Audio.playNote`, { chid, noteid, velocity, durs, when, channel });
     if (!channel) return;
     channel.playNote(this, noteid, velocity / 127.0, durs, when);
   }
@@ -370,7 +371,7 @@ class Channel {
       case "drum": {
           const soundid = this.drumBase + noteid;
           const trim = 0.200 + (this.volume * this.master * velocity) * 0.900;
-          audio.egg_audio_play_sound(0, soundid, trim, this.pan, when);
+          audio.egg_audio_play_sound(0, soundid, trim * 65536.0, this.pan, when);
         } break;
         
       case "blip": {
