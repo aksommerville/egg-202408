@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html><head>
+<title>Egg Guide</title>
+<link rel="stylesheet" href="./egg-guide.css"/>
+</head><body>
+
+<h1>Egg Guide: Sales Pitch</h1>
+
+<ul>
+  <li><a href="00-toc.html">Table of Contents</a></li>
+  <li><a href="02-installation.html">Next: Installation</a></li>
+</ul>
+
+<h2>What is Egg good at?</h2>
+
+<ul>
+  <li>Retro style sprite based games.</li>
+  <li>Point-and-click visual novels.</li>
+  <li>Very small deliverable size, and simple packaging.</li>
+  <li>Good performance on low-spec hardware.</li>
+  <li>Very portable.</li>
+  <li>Multiple languages, as long as they read left-to-right and don't require combining glyphs.</li>
+</ul>
+
+<h2>Unsupported features</h2>
+
+<ul>
+  <li>Networking.</li>
+  <li>Recorded audio. You get synth only.</li>
+  <li>Filesystem access. You get a simple key/value store only, and the user can disable that too.</li>
+</ul>
+
+<h2>Questionable</h2>
+
+<ul>
+  <li>3D graphics. We do provide direct OpenGL ES access, but you have to work from scratch there.</li>
+  <li>Very large games. The entire ROM gets loaded at startup. Fine in normal cases, but if you really push it there could be performance issues.</li>
+  <li>High-level virtual languages (Python, Ruby, Javascript, ...). In theory, you could bring your own interpretter. But by that point, you're probably better off with a different platform.</li>
+</ul>
+
+</body></html>

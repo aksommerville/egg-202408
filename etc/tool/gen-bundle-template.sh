@@ -13,6 +13,11 @@ cat - >"$DSTPATH" <<EOF
 <!DOCTYPE html>
 <html>
 <head>
+<style>
+canvas {
+INSERT CANVAS STYLE HERE
+}
+</style>
 <egg-rom style="display:none">
 INSERT ROM HERE
 </egg-rom>

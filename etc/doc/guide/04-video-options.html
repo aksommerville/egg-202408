@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html><head>
+<title>Egg Guide</title>
+<link rel="stylesheet" href="./egg-guide.css"/>
+</head><body>
+
+<h1>Egg Guide: Video Options</h1>
+
+<ul>
+  <li><a href="00-toc.html">Table of Contents</a></li>
+  <li><a href="03-first-game.html">Previous: First Game</a></li>
+  <li><a href="05-input.html">Next: Input</a></li>
+</ul>
+
+<p>
+There's three basic ways to do video in Egg:
+<ul>
+  <li>Egg Video API</li>
+  <li>Software framebuffer</li>
+  <li>OpenGL ES 2</li>
+</ul>
+</p>
+
+<h2>Egg Video API</h2>
+
+<p>
+I recommend this approach. It provides simple primitives, blit operations, and very convenient to load images from resources.
+</p>
+
+<p>
+Declare the framebuffer size in your metadata file, eg: <tt>framebuffer=640x360</tt><br/>
+Whatever size you ask for, you will get exactly.
+</p>
+
+<p>
+There's always a texture ID 1, which is a proxy for the main output.
+Each draw operation takes a destination texture ID. This will usually be 1.
+If you need to dynamically read the framebuffer size: <tt>egg_texture_get_header(&w,&h,0,1);</tt><br/>
+But bear in mind that it's constant and you declared it in metadata, you probably don't need to ask.
+</p>
+
+<p>
+To draw an image resource, or portion of it, you must first load it into a texture slot.
+<pre>
+int my_tex_id = egg_texture_new();
+if (egg_texture_load_image(my_tex_id, 0, image_res_id) < 0) ...handle error...
+egg_draw_decal(
+  1, my_tex_id, /* to texid, from texid */
+  10, 10,       /* output position */
+  0, 0,         /* input position */
+  128, 128,     /* size */
+  0             /* transform */
+);
+</pre>
+</p>
+
+<p>
+If you have less than a dozen or so images, it makes sense to load them all into textures during init.
+</p>
+
+<p>
+Copying images takes an argument <tt>xform</tt> which is a bitwise OR of <tt>EGG_XFORM_XREV</tt>, <tt>EGG_XFORM_YREV</tt>, and <tt>EGG_XFORM_SWAP</tt>.
+With those three things, you can draw every possible axis-aligned transform.
+For decals, the output position you state is always the top-left corner of output, and the size is always exactly so in the source image.
+For tiles, output is always centered on the position you state.
+</p>
+
+<p>
+See <tt>egg/egg_video.h</tt> for details about all of the render options.
+</p>
+
+<h2>Software Framebuffer</h2>
+
+<p>
+As an edge case of the Egg Video API, you can call <tt>egg_texture_upload()</tt> on texture 1, and provide a complete output image.
+</p>
+
+<p>
+This might be useful if you're implementing something crazy like a 90s-era 3D engine?
+I do intend to port Doom to Egg, and will most likely use this approach. TODO.
+</p>
+
+<h2>OpenGL ES 2</h2>
+
+<p>
+To enable direct OpenGL access, you must declare it in metadata: <tt>framebuffer=640x360 gl</tt>
+</p>
+
+<p>
+The framebuffer size you declare is only a hint; it guides the window's initial aspect ratio.
+</p>
+
+<p>
+Include OpenGL headers (there's a set in the egg repo).
+</p>
+
+<p>
+You must provide storage for strings, if you're going to call <tt>glGetString()</tt>.
+Call <tt>egg_video_set_string_buffer()</tt> with some static storage during init.
+</p>
+
+<p>
+Get the main output's size at the start of each render with <tt>egg_video_get_size(&w, &h);</tt>
+It can change any time between frames.
+</p>
+
+<p>
+You must use VBOs! Do not call <tt>glVertexAttribPointer()</tt> with a pointer to client memory.
+That would work for native hosts, but it can't work in web browsers.
+Aside from that, I believe everything works consistently desktop vs web.
+</p>
+
+<p>
+...but I really haven't tested much
+</p>
+
+</body></html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html><head>
+<title>Egg Guide</title>
+<link rel="stylesheet" href="./egg-guide.css"/>
+</head><body>
+
+<h1>Egg Guide: Installation</h1>
+
+<ul>
+  <li><a href="00-toc.html">Table of Contents</a></li>
+  <li><a href="01-sales-pitch.html">Previous: Sales Pitch</a></li>
+  <li><a href="03-first-game.html">Next: First Game</a></li>
+</ul>
+
+<h2>Prerequisites</h2>
+
+<p>
+Clone wasm-micro-runtime: <tt>https://github.com/bytecodealliance/wasm-micro-runtime</tt> , and build with cmake.
+</p>
+
+<p>
+You'll need a WebAssembly compiler. I recommend clang.
+</p>
+
+<p>
+Strongly recommend the WebAssembly Binary Tools. Clone from <tt>https://github.com/WebAssembly/wabt</tt> or check your package manager.
+</p>
+
+<h2>First Build</h2>
+
+<p>
+Clone Egg: <tt>https://github.com/aksommerville/egg</tt>
+</p>
+
+<p>
+<tt>make</tt>, and it will generate a config file and abort. That happens only the very first time.
+</p>
+
+<p>
+Edit <tt>etc/config.mk</tt> with paths to your wamr and wabt installations, and the targets you want to build for.
+</p>
+
+<p>
+<tt>make</tt> again, and it should build the whole project.
+A full build from scratch takes about 8 seconds on my 2021 PC running Linux.
+</p>
+
+<p>
+Anything fails during <tt>make</tt>, check your settings in config.mk, maybe you can fix it.
+Anything you can't fix, please open an issue in Egg's Github repo.
+</p>
+
+<p>
+Now that it's built, try running the included example ROM: `make run`
+</p>
+
+<h2>Build the Eggsamples</h2>
+
+<p>
+I provide a set of example games, many with extensive client-side utilities that you'll probably find helpful.
+You can use these as starting points for your game, or cannibalize them bit-by-bit, or just read as a reference, whatever suits you.
+</p>
+
+<p>
+Clone: <tt>https://github.com/aksommerville/eggsamples</tt><br/>
+Best to clone it right next to egg, it will look there by default.
+</p>
+
+<p>
+`make` from the root of that repo will build all the games.
+</p>
+
+<p>
+Then you can `make run-NAME` to try them.
+The current list:
+<ul>
+  <li>lightson: Tests platform features.</li>
+  <li>shmup: Tiny space shooter.</li>
+  <li>hardboiled: Point-and-click detective story.</li>
+  <li>leggend: Zelda style adventure.</li>
+</ul>
+</p>
+
+<p>
+Each Eggsample project has pretty much the same Makefile, and you'd be wise to copy it verbatim for new projects.
+</p>
+
+</body></html>

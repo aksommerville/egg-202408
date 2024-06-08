@@ -39,6 +39,9 @@ sudo apt install clang wabt
 - [ ] Port Doom: https://github.com/id-Software/DOOM
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?
+- [ ] What would it take to provide a raw PCM out interface? Easy for native, obviously, but under WebAudio....?
+- - If we had that, it would potentially save a ton of effort in porting existing games to Egg.
+- - And would enable some really interesting use cases, like running console emulators.
 
 ## Major changes since 202405 (which is a separate repo)
 

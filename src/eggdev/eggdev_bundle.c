@@ -156,6 +156,148 @@ static int eggdev_bundle_rewrite_rom(struct sr_encoder *dst,const struct rom *ro
   return 0;
 }
 
+/* Generate CSS for the main canvas.
+ */
+ 
+static void eggdev_bundle_read_framebuffer_size(int *w,int *h,const uint8_t *src,int srcc) {
+  if ((srcc<2)||memcmp(src,"\xeeM",2)) return;
+  int srcp=2;
+  int stopp=srcc-2;
+  while (srcp<=stopp) {
+    int kc=src[srcp++];
+    int vc=src[srcp++];
+    if (srcp>srcc-vc-kc) break;
+    const char *k=(char*)(src+srcp);
+    srcp+=kc;
+    const char *v=(char*)(src+srcp);
+    srcp+=vc;
+    if ((kc==11)&&!memcmp(k,"framebuffer",11)) {
+      int vp=0;
+      while ((vp<vc)&&((unsigned char)v[vp]<=0x20)) vp++;
+      int _w=0,_h=0;
+      while ((vp<vc)&&(v[vp]>='0')&&(v[vp]<='9')) {
+        _w*=10;
+        _w+=v[vp]-'0';
+        vp++;
+      }
+      if ((vp<vc)&&(v[vp++]=='x')) {
+        while ((vp<vc)&&(v[vp]>='0')&&(v[vp]<='9')) {
+          _h*=10;
+          _h+=v[vp]-'0';
+          vp++;
+        }
+      }
+      if ((_w>0)&&(_w<=4096)&&(_h>0)&&(_h<=4096)) {
+        *w=_w;
+        *h=_h;
+      }
+      return;
+    }
+  }
+}
+ 
+static int eggdev_bundle_generate_canvas_style(struct sr_encoder *dst,const struct rom *rom) {
+
+  /* Locate the "framebuffer" declaration in metadata:0:1, or make something up.
+   * metadata:0:1 has to be the first resource; that's not a coincidence and it's actually impossible not to be.
+   */
+  int fbw=360,fbh=180;
+  if ((rom->resc>=1)&&(rom->resv[0].fqrid==((EGG_RESTYPE_metadata<<26)|1))) {
+    eggdev_bundle_read_framebuffer_size(&fbw,&fbh,rom->resv[0].v,rom->resv[0].c);
+  }
+  
+  /* Make an arbitrary target size range that ought to fit in sane browser windows.
+   * Determine whether it's possible to scale up by some integer to fit in that range.
+   */
+  const int targetwlo=640,targetwhi=1280;
+  const int targethlo=480,targethhi=720;
+  int scale=0;
+  if ((fbw<targetwlo)&&(fbh<targethlo)) {
+    scale=targetwhi/fbw;
+    if ((scale>0)&&(fbh*scale>=targethlo)&&(fbh*scale<=targethhi)) {
+      // cool
+    } else {
+      scale=targetwlo/fbw;
+      if (fbw*scale<targetwlo) scale++;
+      if ((scale>0)&&(fbh*scale>=targethlo)&&(fbh*scale<=targethhi)) {
+        // cool
+      } else {
+        scale=0;
+      }
+    }
+  }
+  
+  /* If we found a reasonable scale-up factor, force an explicit width and nearest-neighbor filtering.
+   * If not, just leave (width,image-rendering) unset and let the browser figure it out. Linear filtering is the default, everywhere I've seen.
+   */
+  if (scale>0) {
+    if (sr_encode_fmt(dst,"width: %dpx;\n",fbw*scale)<0) return -1;
+    if (sr_encode_fmt(dst,"image-rendering: pixelated;\n")<0) return -1;
+  }
+  
+  return 0;
+}
+
+/* Split the HTML template into sections, on its insertion points.
+ * All insertion points are single complete lines. So we can process the text linewise.
+ * Fails if you don't provide enough output.
+ */
+ 
+#define EGGDEV_HTML_REPLACE_LITERAL 0
+#define EGGDEV_HTML_REPLACE_ROM 1
+#define EGGDEV_HTML_REPLACE_CANVAS_STYLE 2
+ 
+struct eggdev_html_section {
+  const char *src;
+  int srcc;
+  int replacement;
+};
+
+static int eggdev_html_split(struct eggdev_html_section *sectionv,int sectiona,const char *src,int srcc,const char *path) {
+  const char *raw=0;
+  int rawc=0;
+  struct sr_decoder decoder={.v=src,.c=srcc};
+  int linec;
+  const char *line;
+  int sectionc=0;
+  while ((linec=sr_decode_line(&line,&decoder))>0) {
+    const char *inner=line;
+    int innerc=linec;
+    while (innerc&&((unsigned char)inner[innerc-1]<=0x20)) innerc--;
+    while (innerc&&((unsigned char)inner[0]<=0x20)) { inner++; innerc--; }
+    
+    int replacement=EGGDEV_HTML_REPLACE_LITERAL;
+    if ((innerc==15)&&!memcmp(inner,"INSERT ROM HERE",15)) replacement=EGGDEV_HTML_REPLACE_ROM;
+    else if ((innerc==24)&&!memcmp(inner,"INSERT CANVAS STYLE HERE",24)) replacement=EGGDEV_HTML_REPLACE_CANVAS_STYLE;
+    
+    if (replacement) {
+      if (rawc) {
+        if (sectionc>=sectiona) return -1;
+        sectionv[sectionc].src=raw;
+        sectionv[sectionc].srcc=rawc;
+        sectionv[sectionc].replacement=EGGDEV_HTML_REPLACE_LITERAL;
+        sectionc++;
+        raw=0;
+        rawc=0;
+      }
+      if (sectionc>=sectiona) return -1;
+      sectionv[sectionc].replacement=replacement;
+      sectionc++;
+    } else {
+      if (!raw) raw=line;
+      rawc+=linec;
+    }
+  }
+  if (rawc) {
+    if (sectionc>=sectiona) return -1;
+    sectionv[sectionc].src=raw;
+    sectionv[sectionc].srcc=rawc;
+    sectionv[sectionc].replacement=EGGDEV_HTML_REPLACE_LITERAL;
+    sectionc++;
+  }
+  return sectionc;
+}
+
 /* Generate bundled HTML from live ROM store.
  */
  
@@ -178,39 +320,49 @@ static int eggdev_bundle_html_from_rom(struct sr_encoder *dst,const struct rom *
     return -2;
   }
   
-  // Find the ROM insertion point in template.
-  int insp=-1,stopp=tmc-15;
-  int i=0; for (;i<=stopp;i++) {
-    if (!memcmp(tm+i,"INSERT ROM HERE",15)) {
-      insp=i;
-      break;
-    }
-  }
-  if (insp<0) {
-    fprintf(stderr,"%s: Template does not contain the marker 'INSERT ROM HERE'\n",tmpath);
+  // Split into sections. There will always be five. But when that eventually changes, we shouldn't have to.
+  struct eggdev_html_section sectionv[16];
+  int sectiona=sizeof(sectionv)/sizeof(sectionv[0]);
+  int sectionc=eggdev_html_split(sectionv,sectiona,tm,tmc,tmpath);
+  if ((sectionc<0)||(sectionc>sectiona)) {
+    if (sectionc!=-2) fprintf(stderr,"%s: Unspecified error splitting HTML template.\n",tmpath);
     free(tm);
-    return -1;
-  }
-  
-  // Emit everything before the insertion point.
-  if (sr_encode_raw(dst,tm,insp)<0) {
-    free(tm);
-    return -1;
-  }
-  
-  // Reformat and emit the ROM file.
-  int err=eggdev_bundle_rewrite_rom(dst,rom,srcpath);
-  if (err<0) {
-    free(tm);
-    if (err!=-2) fprintf(stderr,"%s: Unspecified error rewriting ROM file\n",srcpath);
     return -2;
   }
   
-  // Emit the rest.
-  const char *tail=tm+insp+15;
-  int tailc=tmc-insp-15;
-  err=sr_encode_raw(dst,tail,tailc);
+  // Emit each section.
+  const struct eggdev_html_section *section=sectionv;
+  int i=sectionc;
+  int err=0;
+  for (;i-->0;section++) {
+    switch (section->replacement) {
+    
+      case EGGDEV_HTML_REPLACE_LITERAL: {
+          if ((err=sr_encode_raw(dst,section->src,section->srcc))<0) goto _done_;
+        } break;
+        
+      case EGGDEV_HTML_REPLACE_ROM: {
+          if ((err=eggdev_bundle_rewrite_rom(dst,rom,srcpath))<0) goto _done_;
+        } break;
+        
+      case EGGDEV_HTML_REPLACE_CANVAS_STYLE: {
+          if ((err=eggdev_bundle_generate_canvas_style(dst,rom))<0) goto _done_;
+        } break;
+        
+      default: {
+          fprintf(stderr,"%s: Unknown HTML template section '%d'\n",tmpath,section->replacement);
+          err=-2;
+          goto _done_;
+        }
+    }
+  }
+  
+ _done_:
   free(tm);
+  if ((err<0)&&(err!=-2)) {
+    fprintf(stderr,"%s: Unspecified error applying HTML template.\n",tmpath);
+    err=-2;
+  }
   return err;
 }
 
