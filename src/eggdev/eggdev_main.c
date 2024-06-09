@@ -14,6 +14,7 @@ static int eggdev_main_pack() {
   }
   int err;
   struct romw romw={0};
+  romw.tid_repr=eggdev_type_repr_static;
   int i=0; for (;i<eggdev.srcpathc;i++) {
     if ((err=eggdev_pack_add_file(&romw,eggdev.srcpathv[i]))<0) {
       if (err!=-2) fprintf(stderr,"%s: Unspecified error adding file.\n",eggdev.srcpathv[i]);
@@ -191,6 +192,7 @@ static int eggdev_main_list() {
 static int eggdev_main_toc() {
   int err;
   struct romw romw={0};
+  romw.tid_repr=eggdev_type_repr_static;
   int i=0; for (;i<eggdev.srcpathc;i++) {
     if ((err=eggdev_pack_add_file(&romw,eggdev.srcpathv[i]))<0) {
       if (err!=-2) fprintf(stderr,"%s: Unspecified error adding file.\n",eggdev.srcpathv[i]);

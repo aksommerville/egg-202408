@@ -40,6 +40,7 @@ int rom_qual_eval(const char *src,int srcc);
  **************************************************************/
  
 struct romw {
+  const char *(*tid_repr)(int tid); // Only needed for custom types; we'll print numeric if you don't return something.
   struct romw_res {
     int tid,qual,rid; // If (0,0,0), we'll quietly ignore at encode.
     char *name; // Names don't persist in the archive.

@@ -39,7 +39,7 @@ int eggdev_strings_slice(struct romw *romw,const char *src,int srcc,const struct
     res->rid=rid;
     res->lineno0=lineno;
     romw_res_set_name(res,name,namec);
-    romw_res_set_path(res,rpath->path,-1); // TODO Seems excessive... are we ever going to need path set?
+    romw_res_set_path(res,rpath->path,-1);
     
     if ((linec>=2)&&(line[0]=='"')) {
       char tmp[1024];

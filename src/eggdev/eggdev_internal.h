@@ -48,6 +48,7 @@ int eggdev_configure(int argc,char **argv);
 void eggdev_print_help(const char *topic,int topicc);
 
 int eggdev_type_repr(char *dst,int dsta,int tid);
+const char *eggdev_type_repr_static(int tid);
 int eggdev_type_eval(const char *src,int srcc);
 
 int eggdev_pack_add_file(struct romw *romw,const char *path);

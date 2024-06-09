@@ -129,6 +129,7 @@ int eggdev_unbundle_html(void *dstpp,const char *srcpath) {
     return -2;
   }
   struct romw romw={0};
+  romw.tid_repr=eggdev_type_repr_static;
   int err=eggdev_unbundle_html_to_romw(&romw,src,srcc,srcpath);
   free(src);
   if (err<0) {

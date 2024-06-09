@@ -27,6 +27,7 @@ export class Render {
   
     this.u_raw_screensize = 0;
     this.u_raw_alpha = 0;
+    this.u_raw_tint = 0;
     this.u_decal_screensize = 0;
     this.u_decal_sampler = 0;
     this.u_decal_alpha = 0;
@@ -232,6 +233,7 @@ export class Render {
     this.gl.viewport(0, 0, texture.w, texture.h);
     this.gl.uniform2f(this.u_raw_screensize, texture.w, texture.h);
     this.gl.uniform1f(this.u_raw_alpha, this.alpha);
+    this.gl.uniform4f(this.u_raw_tint, this.tr, this.tg, this.tb, this.ta);
     
     const aposv = this.vbufs16;
     const colorv = this.vbufu8;
@@ -260,6 +262,7 @@ export class Render {
     this.gl.viewport(0, 0, texture.w, texture.h);
     this.gl.uniform2f(this.u_raw_screensize, texture.w, texture.h);
     this.gl.uniform1f(this.u_raw_alpha, this.alpha);
+    this.gl.uniform4f(this.u_raw_tint, this.tr, this.tg, this.tb, this.ta);
     
     const len = c * 8;
     const srcview = this.egg.exec.getView(v, len);
@@ -496,6 +499,7 @@ export class Render {
     this.gl.useProgram(this.pgm_raw);
     this.u_raw_screensize = this.gl.getUniformLocation(this.pgm_raw, "screensize");
     this.u_raw_alpha = this.gl.getUniformLocation(this.pgm_raw, "alpha");
+    this.u_raw_tint = this.gl.getUniformLocation(this.pgm_raw, "tint");
     this.gl.bindAttribLocation(this.pgm_raw, 0, "apos");
     this.gl.bindAttribLocation(this.pgm_raw, 1, "acolor");
   
@@ -563,23 +567,24 @@ Render.vsrc_raw = `
   #version 100
   precision mediump float;
   uniform vec2 screensize;
+  uniform vec4 tint;
+  uniform float alpha;
   attribute vec2 apos;
   attribute vec4 acolor;
   varying vec4 vcolor;
   void main() {
     vec2 npos=(apos*2.0)/screensize-1.0;
     gl_Position=vec4(npos,0.0,1.0);
-    vcolor=acolor;
+    vcolor=vec4(mix(acolor.rgb,tint.rgb,tint.a),acolor.a*alpha);
   }
 `;
 
 Render.fsrc_raw = `
   #version 100
   precision mediump float;
-  uniform float alpha;
   varying vec4 vcolor;
   void main() {
-    gl_FragColor=vec4(vcolor.rgb,vcolor.a*alpha);
+    gl_FragColor=vcolor;
   }
 `;
  

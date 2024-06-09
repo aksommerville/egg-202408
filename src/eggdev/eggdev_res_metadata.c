@@ -24,6 +24,11 @@ int eggdev_metadata_compile(struct romw *romw,struct romw_res *res) {
     int linep=0;
     while ((linep<linec)&&(line[linep]!='=')&&(line[linep]!=':')) { linep++; kc++; }
     while (kc&&((unsigned char)k[kc-1]<=0x20)) kc--;
+    if (linep>=linec) {
+      fprintf(stderr,"%s:%d: Expected '=' or ':' after key '%.*s'.\n",res->path,lineno,kc,k);
+      sr_encoder_cleanup(&dst);
+      return -2;
+    }
     const char *v=0;
     int vc=0;
     if (linep<linec) {

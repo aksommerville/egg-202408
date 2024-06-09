@@ -8,23 +8,24 @@ static const char render_raw_vsrc[]=
   "#version 100\n"
   "precision mediump float;\n"
   "uniform vec2 screensize;\n"
+  "uniform vec4 tint;\n"
+  "uniform float alpha;\n"
   "attribute vec2 apos;\n"
   "attribute vec4 acolor;\n"
   "varying vec4 vcolor;\n"
   "void main() {\n"
     "vec2 npos=(apos*2.0)/screensize-1.0;\n"
     "gl_Position=vec4(npos,0.0,1.0);\n"
-    "vcolor=acolor;\n"
+    "vcolor=vec4(mix(acolor.rgb,tint.rgb,tint.a),acolor.a*alpha);\n"
   "}\n"
 "";
 
 static const char render_raw_fsrc[]=
   "#version 100\n"
   "precision mediump float;\n"
-  "uniform float alpha;\n"
   "varying vec4 vcolor;\n"
   "void main() {\n"
-    "gl_FragColor=vec4(vcolor.rgb,vcolor.a*alpha);\n"
+    "gl_FragColor=vcolor;\n"
   "}\n"
 "";
 
@@ -199,6 +200,7 @@ int render_init_programs(struct render *render) {
   
   glUseProgram(render->pgm_raw);
   render->u_raw_screensize=glGetUniformLocation(render->pgm_raw,"screensize");
+  render->u_raw_tint=glGetUniformLocation(render->pgm_raw,"tint");
   render->u_raw_alpha=glGetUniformLocation(render->pgm_raw,"alpha");
   glBindAttribLocation(render->pgm_raw,0,"apos");
   glBindAttribLocation(render->pgm_raw,1,"acolor");
@@ -259,6 +261,7 @@ void render_draw_rect(struct render *render,int texid,int x,int y,int w,int h,ui
   glUseProgram(render->pgm_raw);
   glViewport(0,0,texture->w,texture->h);
   glUniform2f(render->u_raw_screensize,texture->w,texture->h);
+  glUniform4f(render->u_raw_tint,(render->tint>>24)/255.0f,((render->tint>>16)&0xff)/255.0f,((render->tint>>8)&0xff)/255.0f,(render->tint&0xff)/255.0f);
   glUniform1f(render->u_raw_alpha,render->alpha/255.0f);
   struct egg_draw_line vtxv[]={
     {x  ,y  ,r,g,b,a},
@@ -287,6 +290,7 @@ static void render_draw_raw(struct render *render,int texid,int mode,const struc
   glUseProgram(render->pgm_raw);
   glViewport(0,0,texture->w,texture->h);
   glUniform2f(render->u_raw_screensize,texture->w,texture->h);
+  glUniform4f(render->u_raw_tint,(render->tint>>24)/255.0f,((render->tint>>16)&0xff)/255.0f,((render->tint>>8)&0xff)/255.0f,(render->tint&0xff)/255.0f);
   glUniform1f(render->u_raw_alpha,render->alpha/255.0f);
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);

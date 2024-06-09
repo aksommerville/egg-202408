@@ -39,6 +39,7 @@ const char *eggdev_rewrite_rom_if_wasm(const char *path) {
     return 0;
   }
   struct romw romw={0};
+  romw.tid_repr=eggdev_type_repr_static;
   for (res=rom.resv,i=rom.resc;i-->0;res++) {
     int tid=0,qual=0,rid=0;
     rom_unpack_fqrid(&tid,&qual,&rid,res->fqrid);

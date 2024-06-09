@@ -78,6 +78,13 @@ int eggdev_type_repr(char *dst,int dsta,int tid) {
   return sr_decsint_repr(dst,dsta,tid);
 }
 
+const char *eggdev_type_repr_static(int tid) {
+  // We don't need to handle standard or really-unknown types.
+  eggdev_types_require();
+  if (!eggdev.name_by_tid) return 0;
+  return eggdev.name_by_tid[tid];
+}
+
 /* Evaluate type.
  */
  

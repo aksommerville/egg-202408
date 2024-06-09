@@ -40,6 +40,7 @@ struct render {
   
   GLuint u_raw_screensize;
   GLuint u_raw_alpha;
+  GLuint u_raw_tint;
   GLuint u_decal_screensize;
   GLuint u_decal_sampler;
   GLuint u_decal_alpha;

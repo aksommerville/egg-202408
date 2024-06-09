@@ -1,9 +1,29 @@
 #include "rom.h"
 #include "opt/serial/serial.h"
+#include "egg/egg_store.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+
+/* Type names.
+ */
+ 
+static char romw_tid_repr_buf[32];
+ 
+static const char *romw_tid_repr(const struct romw *romw,int tid) {
+  if (romw->tid_repr) {
+    const char *name=romw->tid_repr(tid);
+    if (name&&name[0]) return name;
+  }
+  switch (tid) {
+    #define _(tag) case EGG_RESTYPE_##tag: return #tag;
+    EGG_RESTYPE_FOR_EACH
+    #undef _
+  }
+  sr_decsint_repr(romw_tid_repr_buf,sizeof(romw_tid_repr_buf),tid);
+  return romw_tid_repr_buf;
+}
 
 /* Cleanup.
  */
@@ -179,7 +199,8 @@ static int romw_encode_toc(struct sr_encoder *dst,const struct romw *romw) {
     if (!res->tid&&!res->qual&&!res->rid) continue; // Skip if ids are straight zero.
     if (!res->serialc) continue; // Skip empties. Empty and absent are the same thing at runtime.
     if ((res->tid<1)||(res->tid>63)||(res->qual<0)||(res->qual>1023)||(res->rid<1)||(res->rid>65535)) {
-      fprintf(stderr,"Invalid resource ID: %d:%d:%d (%s)\n",res->tid,res->qual,res->rid,res->path);
+      char qstr[2]; rom_qual_repr(qstr,res->qual);
+      fprintf(stderr,"Invalid resource ID: %s:%.2s:%d (%s:%d)\n",romw_tid_repr(romw,res->tid),qstr,res->rid,res->path,res->lineno0);
       return -2;
     }
     
@@ -209,7 +230,8 @@ static int romw_encode_toc(struct sr_encoder *dst,const struct romw *romw) {
     
     // Advance rid if needed.
     if (res->rid<xrid) {
-      fprintf(stderr,"!!! Resource ID conflict: (%d:%d:%d), expecting rid %d.\n",res->tid,res->qual,res->rid,xrid);
+      char qstr[2]; rom_qual_repr(qstr,res->qual);
+      fprintf(stderr,"!!! Resource ID conflict: (%s:%.2s:%d), expecting rid %d. %s:%d\n",romw_tid_repr(romw,res->tid),qstr,res->rid,xrid,res->path,res->lineno0);
       return -1;
     }
     if (res->rid>xrid) {
@@ -225,7 +247,8 @@ static int romw_encode_toc(struct sr_encoder *dst,const struct romw *romw) {
     // Emit the resource.
     int c=res->serialc;
     if ((c<0)||(c>=538968190)) {
-      fprintf(stderr,"!!! Unreasonable size %d for resource %d:%d:%d !!!\n",c,res->tid,res->qual,res->rid);
+      char qstr[2]; rom_qual_repr(qstr,res->qual);
+      fprintf(stderr,"!!! Unreasonable size %d for resource %s:%.2s:%d !!! %s:%d\n",c,romw_tid_repr(romw,res->tid),qstr,res->rid,res->path,res->lineno0);
       return -1;
     }
     if (c>=2097279) {

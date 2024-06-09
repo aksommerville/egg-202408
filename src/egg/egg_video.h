@@ -82,7 +82,6 @@ void egg_texture_clear(int texid);
 /* Global tint and alpha.
  * These reset to 0x00000000 and 0xff at the start of each render cycle.
  * The alpha channel of tint controls how much tinting.
- * These do not apply to egg_draw_rect or egg_draw_line.
  */
 void egg_render_tint(uint32_t rgba);
 void egg_render_alpha(uint8_t a);
@@ -108,7 +107,6 @@ void egg_draw_trig(int dsttexid,const struct egg_draw_line *v,int c);
 /* Copy some portion of one image onto another.
  * (dstx,dsty) is the top-left corner of output, regardless of (xform).
  * Output bounds are (h,w) if EGG_XFORM_SWAP in play. Input bounds are always (w,h).
- * Global tint and alpha are in play.
  */
 void egg_draw_decal(
   int dsttexid,int srctexid,
@@ -137,7 +135,6 @@ void egg_draw_decal_mode7(
  *   0 1 ... 15
  *   ...
  *   240 ... 255
- * Global tint and alpha are in play.
  */
 struct egg_draw_tile {
   int16_t x,y;
