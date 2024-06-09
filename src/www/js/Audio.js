@@ -90,6 +90,7 @@ export class Audio {
     node.connect(gain);
     gain.connect(this.context.destination);
     node.start(when);
+    node.eggStartTime = when;
     this.soundEffects.push(node);
     node.onended = () => {
       const p = this.soundEffects.indexOf(node);
@@ -98,14 +99,23 @@ export class Audio {
   }
   
   egg_audio_event(chid, opcode, a, b) {
-    console.log(`TODO egg_audio_event`, { chid, opcode, a, b });
+    switch (opcode) {
+      case 0x80: this.endNote(chid, a, b); break;
+      case 0x90: this.playNote(chid, a, b, 5.0, 0/*this.context.currentTime*/); break;
+    }
   }
   
-  egg_audio_get_playhead() {//TODO
-    return -1;
+  egg_audio_get_playhead() {
+    if (!this.song) return -1;
+    let elapsed = this.context.currentTime - this.song.startTime;
+    if (this.song.durations) elapsed %= this.song.durations;
+    return (elapsed * 1000) / this.song.msperqnote;
   }
   
-  egg_audio_set_playhead(beat) {//TODO
+  egg_audio_set_playhead(beat) {
+    if (!this.song) return;
+    this.stopVoices();
+    //TODO Set playhead. This is actually pretty tough to manage. Punt.
   }
   
   /* Internals.
@@ -114,6 +124,10 @@ export class Audio {
   endSong() {
     if (!this.song) return;
     this.song = null;
+    this.stopVoices();
+  }
+  
+  stopVoices() {
     for (const voice of this.voices) voice.release();
     for (let chid=0; chid<8; chid++) {
       if (this.channels[chid]) {
@@ -121,7 +135,14 @@ export class Audio {
         this.channels[chid] = null;
       }
     }
-    //TODO Cancel scheduled notes.
+    const now = this.context.currentTime;
+    for (let i=this.soundEffects.length; i-->0; ) {
+      const node = this.soundEffects[i];
+      if (node.eggStartTime && (node.eggStartTime >= now)) {
+        node.disconnect();
+        this.soundEffects.splice(i, 1);
+      }
+    }
   }
   
   beginSong() {
@@ -156,12 +177,27 @@ export class Audio {
     return v;
   }
   
+  endNote(chid, noteid, velocity) {
+    const p = this.voices.findIndex(v => ((v.eggChid === chid) && (v.eggNoteid = noteid)));
+    if (p < 0) return;
+    const voice = this.voices[p];
+    voice.eggChid = -1;
+    voice.eggNoteid = -1;
+    voice.release();
+  }
+  
   // (velocity) in 0..127 like MIDI. (when) in AudioContext time.
   playNote(chid, noteid, velocity, durs, when) {
-    const channel = this.channels[chid];
+    let channel = this.channels[chid];
     //console.log(`Audio.playNote`, { chid, noteid, velocity, durs, when, channel });
-    if (!channel) return;
-    channel.playNote(this, noteid, velocity / 127.0, durs, when);
+    if (!channel) {
+      if ((chid < 0) || (chid >= 16)) return;
+      channel = this.channels[chid] = new Channel(this, 0x00, 0x80, 0x80);
+    }
+    const voice = channel.playNote(this, noteid, velocity / 127.0, durs, when);
+    if (!voice) return;
+    voice.eggChid = chid;
+    voice.eggNoteid = noteid;
   }
   
   // (v) in 0..0x3fff like MIDI. (when) in AudioContext time.
@@ -220,6 +256,8 @@ class Song {
     this.startTime = audio.context.currentTime;
     this.readp = this.startp;
     this.readTime = this.startTime;
+    this.durations = 0; // Zero until the first loop.
+    this.durationPending = 0;
   }
   
   isResource(qual, songid) {
@@ -241,6 +279,7 @@ class Song {
       // Delay?
       if (typeof(event) === "number") {
         this.readTime += event;
+        if (!this.durations) this.durationPending += event;
         continue;
       }
       
@@ -258,6 +297,7 @@ class Song {
     
     // Zero or end of input is End of Song.
     if (!lead) {
+      if (!this.durations) this.durations = this.durationPending;
       if (!this.repeat) return null;
       this.readp = this.loopp;
       // Must delay a little, in case the song has no explicit delays, so we don't loop forever.
@@ -382,46 +422,52 @@ class Channel {
           voice.oscillateShape("square", audio.hzByNoteid[noteid], this.wheelCents);
           voice.plateauLevel(when, attackTime, level, durs, releaseTime);
           voice.begin();
-        } break;
+          return voice;
+        }
         
       case "wave": {
           const voice = new Voice(audio);
           voice.oscillateWave(this.wave, audio.hzByNoteid[noteid], this.wheelCents);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
-        } break;
+          return voice;
+        }
         
       case "rock": {
           const voice = new Voice(audio);
           voice.oscillateMix(this.wave, this.mix, audio.hzByNoteid[noteid], this.wheelCents);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
-        } break;
+          return voice;
+        }
         
       case "fmrel": {
           const voice = new Voice(audio);
           voice.oscillateFmRelative(audio.hzByNoteid[noteid], this.wheelCents, this.fmRate, this.fmRangeScale, this.fmRangeEnv);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
-        } break;
+          return voice;
+        }
         
       case "fmabs": {
           const voice = new Voice(audio);
           voice.oscillateFmAbsolute(audio.hzByNoteid[noteid], this.wheelCents, this.fmRate, this.fmRangeScale, this.fmRangeEnv);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
-        } break;
+          return voice;
+        }
         
       case "sub": {
           const voice = new Voice(audio);
           voice.oscillateSubtractive(audio.hzByNoteid[noteid], this.wheelCents, this.subQ1, this.subQ2, this.subGain);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
-        } break;
+          return voice;
+        }
         
       case "fx": {
-          this.fxNote(audio, when, noteid, velocity, durs);
-        } break;
+          return this.fxNote(audio, when, noteid, velocity, durs);
+        }
     }
   }
   
@@ -535,6 +581,7 @@ class Channel {
     voice.oscillateFmRelative(this.audio.hzByNoteid[noteid], this.wheelCents, this.fmRate, this.fmRangeScale, this.fmRangeEnv, this.fmLfoOut);
     voice.tinyEnv(when, this.levelTiny, durs, velocity, 1);
     voice.begin(this.fxAttach);
+    return voice;
   }
 }
 
@@ -591,6 +638,21 @@ class Voice {
   }
   
   release() {
+    if (!this.audio || !this.audio.context) {
+      this.terminate();
+      return;
+    }
+    const now = this.audio.context.currentTime;
+    if (this.startTime && (this.startTime <= now)) {
+      this.terminate();
+      return;
+    }
+    const endTime = now + 0.100;
+    if (this.env) {
+      this.env.gain.setValueAtTime(this.env.gain.value, now);
+      this.env.gain.linearRampToValueAtTime(0, endTime);
+    }
+    this.endTime = endTime;
   }
   
   begin(dst) {
@@ -719,6 +781,8 @@ class Voice {
   }
   
   plateauLevel(when, attackTimeRel, peakLevel, sustainTimeRel, releaseTimeRel) {
+    this.startTime = when;
+    if (!when) when = this.audio.context.currentTime;
     this.endTime = when + attackTimeRel + sustainTimeRel + releaseTimeRel;
     this.env = new GainNode(this.audio.context);
     this.env.gain.setValueAtTime(0, 0);
@@ -738,6 +802,8 @@ class Voice {
    *   0x07 Release time: 0x00=Short .. 0x07=Long
    */
   tinyEnv(when, v, durs, velocity, trim) {
+    this.startTime = when;
+    if (!when) when = this.audio.context.currentTime;
     let attackTimeHi;
     switch (v & 0x38) {
       case 0x00: attackTimeHi = 0.005; break;

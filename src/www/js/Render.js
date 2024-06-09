@@ -104,6 +104,7 @@ export class Render {
     this.gl.bindTexture(this.gl.TEXTURE_2D, srctex.texid);
     this.gl.uniform4f(this.u_decal_tint, 0.0, 0.0, 0.0, 0.0);
     this.gl.uniform1f(this.u_decal_alpha, 1.0);
+    this.gl.disable(this.gl.BLEND);
     this.gl.enableVertexAttribArray(0);
     this.gl.enableVertexAttribArray(1);
     this.gl.vertexAttribPointer(0, 2, this.gl.SHORT, false, 12, 0);
@@ -111,6 +112,7 @@ export class Render {
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     this.gl.disableVertexAttribArray(0);
     this.gl.disableVertexAttribArray(1);
+    this.gl.enable(this.gl.BLEND);
   }
   
   /*------------------------ Public API entry points ---------------------------------*/

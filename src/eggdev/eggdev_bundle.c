@@ -235,6 +235,11 @@ static int eggdev_bundle_generate_canvas_style(struct sr_encoder *dst,const stru
     if (sr_encode_fmt(dst,"image-rendering: pixelated;\n")<0) return -1;
   }
   
+  /* Must also have a black background, otherwise some framebuffer transfers show artifacts.
+   * (when portions of the framebuffer end up less than fully opaque or something).
+   */
+  if (sr_encode_fmt(dst,"background-color: #000;\n")<0) return -1;
+  
   return 0;
 }
 

@@ -1,6 +1,6 @@
 // Do not edit! Generated from src/opt/synth/synth_builtin.c.
 export const Instruments = [
-{"mode":"sub","subQ1":0,"subQ2":0,"subGain":1,"levelTiny":12},
+{"mode":"fmrel","fmRate":2,"fmRangeScale":4,"fmRangeEnv":36808,"levelTiny":132},
 0,
 {"mode":"fmrel","fmRate":2,"fmRangeScale":4,"fmRangeEnv":36808,"levelTiny":132},
 {"mode":"fmrel","fmRate":1.5,"fmRangeScale":4,"fmRangeEnv":65410,"levelTiny":139},
