@@ -12,7 +12,14 @@ export class Input {
       (1 << Input.EGG_EVENT_TOUCH)|
       // MMOTION, MBUTTON, MWHEEL, TEXT, ACCEL: off by default
     0;
-    // TODO Turn off JOY, KEY, and TOUCH if we can tell they aren't supported.
+    this.gamepadSupported = !!window.navigator.getGamepads;
+    this.keyboardSupported = true; // TODO Is this knowable? (eg are we on a smartphone?)
+    this.touchSupported = true; // ''
+    this.mouseSupported = true; // ''
+    this.accelerometerSupported = true; // ''
+    if (!this.gamepadSupported) this.evtmask &= ~(1 << Input.EGG_EVENT_JOY);
+    if (!this.keyboardSupported) this.evtmask &= ~(1 << Input.EGG_EVENT_KEY);
+    if (!this.touchSupported) this.evtmask &= ~(1 << Input.EGG_EVENT_TOUCH);
     
     this.cursorVisible = false;
     this.cursorDesired = true; // Should be visible when enabled. (egg_show_cursor())
@@ -158,6 +165,7 @@ export class Input {
         if (pv === nx) continue;
         local.axes[i] = nx;
         this.pushEvent([Input.EGG_EVENT_JOY, local.devid, local.axisBase + i, nx]);
+        this.pushEvent([Input.EGG_EVENT_RAW, local.devid, local.axisBase + i, nx]);
       }
       
       for (let i=local.buttons.length; i-->0; ) {
@@ -166,6 +174,7 @@ export class Input {
         if (pv === nx) continue;
         local.buttons[i] = nx;
         this.pushEvent([Input.EGG_EVENT_JOY, local.devid, local.buttonBase + i, nx]);
+        this.pushEvent([Input.EGG_EVENT_RAW, local.devid, local.buttonBase + i, nx]);
       }
     }
   }
@@ -193,6 +202,7 @@ export class Input {
             buttonBase,
           };
           this.pushEvent([Input.EGG_EVENT_JOY, e.gamepad.index + 1, 0, 1]);
+          this.pushEvent([Input.EGG_EVENT_RAW, e.gamepad.index + 1, 0, 1]);
         } break;
         
       case "gamepaddisconnected": {
@@ -200,6 +210,7 @@ export class Input {
           if (local) {
             delete this.gamepads[e.gamepad.index];
             this.pushEvent([Input.EGG_EVENT_JOY, local.devid, 0, 0]);
+            this.pushEvent([Input.EGG_EVENT_RAW, local.devid, 0, 0]);
           }
         } break;
     }
@@ -513,20 +524,27 @@ export class Input {
       if (!(this.evtmask & bit)) return 0;
       this.evtmask &= ~bit;
     }
-    //TODO Reject changes if we can tell they aren't supported.
     switch (type) {
       case Input.EGG_EVENT_RAW: break;
-      case Input.EGG_EVENT_JOY: break;
-      case Input.EGG_EVENT_KEY: break;
-      case Input.EGG_EVENT_TEXT: break;
+      case Input.EGG_EVENT_JOY: {
+          if (!this.gamepadSupported) return 0;
+        } break;
+      case Input.EGG_EVENT_KEY:
+      case Input.EGG_EVENT_TEXT: {
+          if (!this.keyboardSupported) return 0;
+        } break;
       case Input.EGG_EVENT_MMOTION:
       case Input.EGG_EVENT_MBUTTON:
       case Input.EGG_EVENT_MWHEEL: {
+          if (!this.mouseSupported) return 0;
           const mouseEvents = (1 << Input.EGG_EVENT_MMOTION) | (1 << Input.EGG_EVENT_MBUTTON) | (1 << Input.EGG_EVENT_MWHEEL);
           this._checkCursorVisibility(this.evtmask & mouseEvents);
         } break;
-      case Input.EGG_EVENT_TOUCH: break;
+      case Input.EGG_EVENT_TOUCH: {
+          if (!this.touchSupported) return 0;
+        } break;
       case Input.EGG_EVENT_ACCEL: {
+          if (!this.accelerometerSupported) return 0;
           if (enable) {
             this.accelerometerEnable();
           } else {

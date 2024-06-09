@@ -7,22 +7,16 @@ sudo apt install clang wabt
 ## TODO
 
 - [ ] Web runtime
-- - [ ] Reject event enablement if we know it's not supported. eg Gamepad and Accelerometer are easy to know. Does anything tell us about touch or keyboard?
+- - [x] Reject event enablement if we know it's not supported. eg Gamepad and Accelerometer are easy to know. Does anything tell us about touch or keyboard?
 - - [ ] Audio set playhead
-- - [x] Audio: Shut down faster, at least drop events that haven't started yet.
-- - [x] Audio: egg_audio_event
-- - [x] Audio: I'm not hearing drums in music (see hardboiled) (trial does it too)
-- - [x] Audio seems to be selecting the wrong sound ids!
 - - [ ] incfg: First, is it worth the effort? How much coverage does Standard Mapping give us? And then.... how?
-- - [ ] Send RAW events from gamepad. Whether standard mapping or not.
-- - [x] Is blending broken? Look at lightson:too-many-sprites
-- - - It's due to the white background color in bundled builds. Also happens in hardboiled, edges of the magazines on newsstand.
+- - [x] Send RAW events from gamepad. Whether standard mapping or not.
 - [ ] Native runtime for Linux
 - - [ ] Invoke incfg via client too.
 - - - Think this thru. We'll need to add some kind of abort option, otherwise the user is stuck for about 2 minutes while it cycles thru.
 - - [ ] egg_audio_get_playhead: Adjust per driver.
 - - [ ] synth_set_playhead
-- - [ ] synth wrap playhead
+- - [x] synth wrap playhead
 - [ ] Raspberry Pi 1 (Broadcom video)
 - [ ] MS Windows
 - [ ] MacOS

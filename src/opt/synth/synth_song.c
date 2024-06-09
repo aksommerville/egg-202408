@@ -98,6 +98,7 @@ int synth_song_update(struct synth *synth,struct synth_song *song) {
       // Looping. Force a tiny delay, just in case the song is invalid and has no delays of its own.
       song->srcp=song->loopp;
       song->delay=1;
+      song->playhead_ms=1;
       song->playhead_ms_next=song->playhead_ms;
       return 1;
     }
