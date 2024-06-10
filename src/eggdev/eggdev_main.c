@@ -258,6 +258,8 @@ static int eggdev_main_bundle() {
   while (eggdev.dstpath[dstpathc]) dstpathc++;
   if ((dstpathc>=5)&&!memcmp(eggdev.dstpath+dstpathc-5,".html",5)) {
     ishtml=1;
+  } else if ((dstpathc>=4)&&!memcmp(eggdev.dstpath+dstpathc-4,".htm",4)) {
+    ishtml=1;
   }
   int err;
   
@@ -324,6 +326,8 @@ static int eggdev_main_unbundle() {
   void *serial=0;
   int serialc=0;
   if ((sfxc==4)&&!memcmp(sfx,"html",4)) {
+    serialc=eggdev_unbundle_html(&serial,srcpath);
+  } else if ((sfxc==3)&&!memcmp(sfx,"htm",3)) {
     serialc=eggdev_unbundle_html(&serial,srcpath);
   } else {
     serialc=eggdev_unbundle_exe(&serial,srcpath);

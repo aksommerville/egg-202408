@@ -1,58 +1,116 @@
 #include "eggdev_internal.h"
 
-/* --help
+/* --help, specific topics.
+ */
+ 
+static void eggdev_print_help_commands() {
+  fprintf(stderr,"\nUsage: %s COMMAND [OPTIONS]\n\n",eggdev.exename);
+  fprintf(stderr,"Try `--help=COMMAND` for more detail.\n\n");
+  fprintf(stderr,"      pack -oROM [--types=PATH] [INPUTS...]\n");
+  fprintf(stderr,"    unpack -oDIR ROM [--types=PATH]\n");
+  fprintf(stderr,"      list ROM [-fFORMAT] [--types=PATH]\n");
+  fprintf(stderr,"       toc [INPUTS...] [--named-only] [--types=PATH]\n");
+  fprintf(stderr,"   tocflag -oPATH [INPUTS...] [--types=PATH]\n");
+  fprintf(stderr,"    bundle -oEXE|HTML --rom=ROM [--code=LIB]\n");
+  fprintf(stderr,"  unbundle -oROM EXE|HTML\n");
+  fprintf(stderr,"     serve [ROMS...] [--port=8080] [--external=0] [--htdocs=PATH]\n");
+  fprintf(stderr,"\n");
+}
+
+static void eggdev_print_help_pack() {
+  fprintf(stderr,"\nUsage: %s pack -oROM [--types=PATH] [INPUTS...]\n\n",eggdev.exename);
+  fprintf(stderr,"Generate an Egg ROM file from loose inputs.\n");
+  fprintf(stderr,"INPUTS can be files or directories to walk recursively.\n");
+  fprintf(stderr,"We expect to find resources named '.../TYPE/ID[-NAME][.FORMAT]', for the most part.\n");
+  fprintf(stderr,"Optional '--types' file contains lines of 'TID NAME' for your custom types.\n");
+  fprintf(stderr,"Use command 'unpack' to reverse the process. Some information will be lost, eg resource names.\n");
+  fprintf(stderr,"string, song, sound, and metadata resources get compiled during pack.\n");
+  fprintf(stderr,"All other types (in particular wasm) must be in their final format before packing.\n");
+  fprintf(stderr,"\n");
+}
+
+static void eggdev_print_help_unpack() {
+  fprintf(stderr,"\nUsage: %s unpack -oDIRECTORY ROM [--types=PATH]\n\n",eggdev.exename);
+  fprintf(stderr,"Extract all resources from a ROM file.\n");
+  fprintf(stderr,"DIRECTORY will be created if it doesn't already exist.\n");
+  fprintf(stderr,"The directory we produce can be given back to 'eggdev pack' and should reproduce the input ROM exactly.\n");
+  fprintf(stderr,"Resource contents are not modified during unpack (eg songs will be in Egg format, not MIDI).\n");
+  fprintf(stderr,"'--types' is entirely optional: We'll use numeric type IDs if necessary.\n");
+  fprintf(stderr,"\n");
+}
+
+static void eggdev_print_help_list() {
+  fprintf(stderr,"\nUsage: %s list ROM [-fFORMAT] [--types=PATH]\n\n",eggdev.exename);
+  fprintf(stderr,"Print content of a ROM file.\n");
+  fprintf(stderr,"FORMAT is 'default', 'machine', or 'summary'.\n");
+  fprintf(stderr,"\n");
+}
+
+static void eggdev_print_help_toc() {
+  fprintf(stderr,"\nUsage: %s toc [INPUTS...] [--named-only] [--types=PATH]\n\n",eggdev.exename);
+  fprintf(stderr,"Generate a machine-readable list of resources, from your source files.\n");
+  fprintf(stderr,"Provide the same INPUTS and '--types' that you would give to 'eggdev pack'.\n");
+  fprintf(stderr,"This output can be used to generate a header mapping resource names to IDs.\n");
+  fprintf(stderr,"\n");
+}
+
+static void eggdev_print_help_tocflag() {
+  fprintf(stderr,"\nUsage: %s tocflag -oFLAGFILE [INPUTS...] [--types=PATH]\n\n",eggdev.exename);
+  fprintf(stderr,"Rewrites the opaque FLAGFILE *only* if the set of resources has changed.\n");
+  fprintf(stderr,"Addition, removal, and renames count as changes; content modification does not.\n");
+  fprintf(stderr,"We do not track multi-resource files like string and sound. You should assume that any change to those is a TOC change.\n");
+  fprintf(stderr,"You can use FLAGFILE as a signal to regenerate your TOC header (see 'eggdev toc').\n");
+  fprintf(stderr,"\n");
+}
+
+static void eggdev_print_help_bundle() {
+  fprintf(stderr,"\nUsage: %s bundle -oEXE|HTML --rom=ROM [--code=LIB]\n\n",eggdev.exename);
+  fprintf(stderr,"Generate a self-contained executable or web page from an Egg ROM.\n");
+  fprintf(stderr,"If output path ends '.html' or '.htm', we produce HTML. Otherwise we produce an executable.\n");
+  fprintf(stderr,"If producing an executable, you may supply native code as a static library: --code=my-game.a\n");
+  fprintf(stderr,"In that case, we strip any wasm from the ROM, do not include wasm-micro-runtime, and produce a 'true-native' executable.\n");
+  fprintf(stderr,"\n");
+}
+
+static void eggdev_print_help_unbundle() {
+  fprintf(stderr,"\nUsage: %s unbundle -oROM EXE|HTML\n\n",eggdev.exename);
+  fprintf(stderr,"Extract the ROM file embedded in an executable or web page.\n");
+  fprintf(stderr,"For true-native executables, the ROM will be invalid due to missing wasm. But you can still pull data out of it.\n");
+  fprintf(stderr,"Don't expect it to work for executables built for some other architecture; only ones that were built by this Egg installation.\n");
+  fprintf(stderr,"\n");
+}
+
+static void eggdev_print_help_serve() {
+  fprintf(stderr,"\nUsage: %s serve [ROMS...] [--port=8080] [--external=0] [--htdocs=PATH]\n\n",eggdev.exename);
+  fprintf(stderr,"Launch an HTTP server for editing data or running the game.\n");
+  fprintf(stderr,"If the working directory contains 'Makefile', we invoke 'make' before serving the ROMs each time.\n");
+  fprintf(stderr,"If make fails, we return its log with status 599.\n");
+  fprintf(stderr,"'--external' to serve on all interfaces instead of just localhost. Use with caution!\n");
+  fprintf(stderr,"\n");
+}
+
+/* --help, dispatch
  */
  
 void eggdev_print_help(const char *topic,int topicc) {
-  fprintf(stderr,"\nUsage: %s COMMAND [OPTIONS]\n\n",eggdev.exename);
-  fprintf(stderr,
-    "%s pack -oROM [--types=PATH] [INPUTS...]\n"
-    "  Generate a ROM file from the provided directories and files.\n"
-    "  '--types=PATH' is a text file of 'TID NAME', for your custom types.\n"
-    "\n",eggdev.exename
-  );
-  fprintf(stderr,
-    "%s unpack -oDIRECTORY ROM [--types=PATH]\n"
-    "  Extract resources each to its own file, under the provided DIRECTORY, which we create.\n"
-    "\n",eggdev.exename
-  );
-  fprintf(stderr,
-    "%s list ROM [-fFORMAT] [--types=PATH]\n"
-    "  List contents of a ROM file.\n"
-    "  FORMAT: default machine summary\n"
-    "\n",eggdev.exename
-  );
-  fprintf(stderr,
-    "%s toc [INPUTS...] [--named-only] [--types=PATH]\n"
-    "  Generate a machine-readable list of resources under the given directories.\n"
-    "  Helpful for generating a header to map resource names to IDs.\n"
-    "\n",eggdev.exename
-  );
-  fprintf(stderr,
-    "%s tocflag -oFLAGFILE [INPUTS...] [--types=PATH]\n"
-    "  Rewrite FLAGFILE *only* if the set of input files has changed.\n"
-    "  This means addition, removal, or renaming. Not changes to file content.\n"
-    "  Intended to produce flag files for make, to ask whether a TOC needs regenerated.\n"
-    "  You'll need to add multi-resource string and sound files as a prereq.\n"
-    "\n",eggdev.exename
-  );
-  fprintf(stderr,
-    "%s bundle -oEXE --rom=ROM [--code=LIB]\n"
-    "  Generate a native executable from a ROM file and optional native code (static library).\n"
-    "  If EXE ends with '.html', generate a web app instead.\n"
-    "\n",eggdev.exename
-  );
-  fprintf(stderr,
-    "%s unbundle -oROM EXE\n"
-    "  Extract ROM file from a bundled executable.\n"
-    "\n",eggdev.exename
-  );
-  fprintf(stderr,
-    "%s serve [ROMS...] [--port=8080] [--external=0] [--htdocs=PATH]\n"
-    "  Launch a web server providing access to the given ROM files.\n"
-    "  If there is a Makefile in the working directory, we invoke 'make' before serving a ROM each time.\n"
-    "\n",eggdev.exename
-  );
+  if (!topic) topicc=0; else if (topicc<0) { topicc=0; while (topic[topicc]) topicc++; }
+  if (!topicc) eggdev_print_help_commands();
+  else if ((topicc==1)&&(topic[0]=='1')) eggdev_print_help_commands(); // generic layer turns empty into "1"
+  #define _(tag) else if ((topicc==sizeof(#tag)-1)&&!memcmp(topic,#tag,topicc)) eggdev_print_help_##tag();
+  _(commands)
+  _(pack)
+  _(unpack)
+  _(list)
+  _(toc)
+  _(tocflag)
+  _(bundle)
+  _(unbundle)
+  _(serve)
+  #undef _
+  else {
+    fprintf(stderr,"%s: Unknown help topic '%.*s'. Printing default instead.\n",eggdev.exename,topicc,topic);
+    eggdev_print_help_commands();
+  }
 }
 
 /* Key=value field.
