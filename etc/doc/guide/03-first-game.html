@@ -12,6 +12,112 @@
   <li><a href="04-video-options.html">Next: Video Options</a></li>
 </ul>
 
-TODO: Full walkthrough, writing everything from scratch.
+<p>
+I'm writing this guide as I start the demo "eggsamples/arrautza".
+Will try to document the whole process here, so anyone can follow along.
+</p>
+
+<h2>Boilerplate</h2>
+
+<p>
+In our new empty project directory, copy or symlink some things from eggsamples/hardboiled:
+</p>
+<ul>
+  <li>Makefile: Change "hardboiled" to "arrautza".</li>
+  <li>src/restypes: Should be empty initially.</li>
+  <li>src/inkeep</li>
+  <li>src/stdlib</li>
+  <li>src/util</li>
+  <li>etc/tool/genhdr.js: Generates the header so we can access resources by name from the C code.</li>
+</ul>
+
+<p>
+Make a new file <tt>src/data/metadata</tt> and fill in a few basic fields:
+</p>
+<pre>
+  title=The Leggend of Arrautza
+  author=AK Sommerville
+  framebuffer=640x352
+  language=en
+  iconImage=1
+</pre>
+<p>
+Draw a 16x16 icon and save as <tt>src/data/image/1-appicon.png</tt>.
+</p>
+
+<p>
+Make a stub general header <tt>src/arrautza.h</tt>:
+</p>
+<pre>
+  #ifndef ARRAUTZA_H
+  #define ARRAUTZA_H
+  
+  #include &lt;egg/egg.h>
+  #include &lt;stdlib/egg-stdlib.h>
+
+  #define SCREENW 640
+  #define SCREENH 352
+  
+  extern struct globals {
+    int TODO;
+  } g;
+  
+  #endif
+</pre>
+
+<p>
+Make our main C file <tt>src/main.c</tt> and implement stubs for the 4 required functions:
+</p>
+<pre>
+  #include "arrautza.h"
+  #include "inkeep/inkeep.h"
+  #include &lt;egg/hid_keycode.h>
+  
+  void egg_client_quit() {
+    inkeep_quit();
+  }
+
+  static void cb_joy(int plrid,int btnid,int value,int state,void *userdata) {
+    egg_log("%s %d.0x%04x=%d [0x%04x]",__func__,plrid,btnid,value,state);
+  }
+
+  static void cb_raw(const union egg_event *event,void *userdata) {
+    switch (event->type) {
+      case EGG_EVENT_KEY: if (event->key.value) switch (event->key.keycode) {
+          case KEY_ESCAPE: egg_request_termination(); break;
+        } break;
+    }
+  }
+  
+  int egg_client_init() {
+
+    // Our hard-coded SCREENW,SCREENH must match the actual main framebuffer.
+    int screenw=0,screenh=0;
+    egg_texture_get_header(&screenw,&screenh,0,1);
+    if ((screenw!=SCREENW)||(screenh!=SCREENH)) {
+      egg_log("Expected framebuffer size %dx%d, found %dx%d",SCREENW,SCREENH,screenw,screenh);
+      return -1;
+    }
+
+    if (inkeep_init()&lt;0) return -1;
+    inkeep_set_player_count(16);
+    inkeep_set_mode(INKEEP_MODE_JOY);
+    inkeep_listen_joy(cb_joy,0);
+    inkeep_listen_raw(cb_raw,0);
+    return 0;
+  }
+  
+  void egg_client_update(double elapsed) {
+    inkeep_update(elapsed);
+  }
+  
+  void egg_client_render() {
+    inkeep_render();
+  }
+</pre>
+
+<p>
+At this point, we have a valid project. Try <tt>make run</tt> or <tt>make serve</tt> to "play" it.
+</p>
 
 </body></html>
