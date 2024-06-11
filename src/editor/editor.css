@@ -149,3 +149,25 @@ body > * {
   width: 90%;
   height: 90%;
 }
+
+.StringEditor {
+  overflow-y: scroll;
+}
+.StringEditor > table {
+  width: 100%;
+}
+.StringEditor th {
+  border-bottom: 1px solid #000;
+  text-align: left;
+}
+.StringEditor th.id {
+  width: 10%;
+}
+.StringEditor tr.res:nth-child(even) {
+  background-color: #282828;
+}
+.StringEditor input[type='text'] {
+  width: calc(100% - 5px);
+  background-color: unset;
+  color: #fff;
+}

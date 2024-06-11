@@ -6,6 +6,7 @@ import { Comm } from "./Comm.js";
 import { Bus } from "./Bus.js";
 import { HexEditor } from "./HexEditor.js";
 import { TextEditor } from "./TextEditor.js";
+import { StringEditor } from "./StringEditor.js";
 
 export class Resmgr {
   static getDependencies() {
@@ -19,6 +20,7 @@ export class Resmgr {
     this.DIRTY_TIMEOUT_MS = 2000;
     this.dirties = []; // {path,encode}
     this.dirtyTimeout = null;
+    this.metadata = null; // {k:v} strings, decoded as needed
   }
   
   /* Get the full resource list and sanitize it.
@@ -36,6 +38,7 @@ export class Resmgr {
    */
   dirty(path, encode) {
     this.bus.setStatus("pending");
+    if (path.endsWith("metadata")) this.metadata = null;
     const rec = this.dirties.find(d => d.path === path);
     if (rec) rec.encode = encode;
     else this.dirties.push({ path, encode });
@@ -48,6 +51,30 @@ export class Resmgr {
         this.bus.setStatus("ok");
       });
     }, this.DIRTY_TIMEOUT_MS);
+  }
+  
+  getMetadata(key) {
+    this.requireMetadata();
+    return this.metadata[key] || "";
+  }
+  
+  requireMetadata() {
+    if (this.metadata) return;
+    const serial = this.bus.toc.files?.find(f => f.name === "metadata")?.serial || [];
+    const src = new this.window.TextDecoder("utf8").decode(serial);
+    this.metadata = {};
+    for (let srcp=0; srcp<src.length; ) {
+      let nlp = src.indexOf("\n", srcp);
+      if (nlp < 0) nlp = src.length;
+      const line = src.substring(srcp, nlp);
+      srcp = nlp + 1;
+      let eqp = line.indexOf('='); if (eqp < 0) eqp = line.length;
+      let clp = line.indexOf(':'); if (clp < 0) clp = line.length;
+      const sepp = (eqp < clp) ? eqp : clp;
+      const k = line.substring(0, sepp).trim();
+      const v = line.substring(sepp + 1).trim();
+      this.metadata[k] = v;
+    }
   }
   
   flushDirties() {
@@ -169,15 +196,48 @@ export class Resmgr {
     return dst;
   }
   
+  tocParentByPath(path) {
+    const names = path.split("/");
+    let node = this.bus.toc;
+    while (names.length > 1) {
+      if (!node || !node.files) return null;
+      const name = names[0];
+      names.splice(0, 1);
+      if (!(node = node.files.find(f => f.name === name))) return null;
+    }
+    return node;
+  }
+  
+  parseResourcePath(path) {
+    let base = "";
+    let type = "";
+    let qual = "";
+    for (const elem of path.split('/')) {
+      base = elem;
+      if (elem.match(/^[a-z]{2}$/)) qual = elem;
+      else if (elem.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) type = elem;
+    }
+    const match = base.match(/^(\d*)(-[0-9a-zA-Z_]*)?.*(\.[^\.]*)$/);
+    let rid = +match?.[1] || 0;
+    let name = match?.[2]?.substring(1) || "";
+    let format = match?.[3]?.substring(1).toLowerCase() || "";
+    return { type, qual, rid, name, format };
+  }
+  
   editorClassForResource(path, serial) {
     console.log(`Resmgr.editorClassForResource path=${JSON.stringify(path)} len=${serial.length}`);
+    const { type, qual, rid, name, format } = this.parseResourcePath(path);
 
     //TODO User-supplied custom classes. How is that going to work?
     //TODO metadata. TextEditor is OK, but it would be much nicer with validation and suggestions.
     //TODO sfg. Very complicated and very necessary. TextEditor is hard to work with, and there needs to be instant feedback too.
     //TODO midi. Or maybe don't.
     //TODO png read-only. Easy.
-    //TODO string. Need a side-by-side view of two languages.
+    
+    // Strings have a very special side-by-side deal to aid translation.
+    if (type === "string") {
+      return StringEditor;
+    }
      
     // If the whole thing is UTF-8 and not empty, use the text editor.
     if (serial.length) {
