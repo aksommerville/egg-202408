@@ -21,7 +21,9 @@ static int http_path_match_inner(const char *pat,int patc,const char *src,int sr
   while (1) {
     
     if (patp>=patc) {
-      if (srcp>=srcc) return 1;
+      if (srcp>=srcc) {
+        return 1;
+      }
       return 0;
     }
     
@@ -29,7 +31,9 @@ static int http_path_match_inner(const char *pat,int patc,const char *src,int sr
       patp++;
       if ((patp<patc)&&(pat[patp]=='*')) {
         patp++;
-        if (patp>=patc) return 1; // Trailing double star matches everything, no need to check.
+        if (patp>=patc) { // Trailing double star matches everything, no need to check.
+          return 1;
+        }
         while (srcp<srcc) {
           if (http_path_match_inner(pat+patp,patc-patp,src+srcp,srcc-srcp)) return 1;
           srcp++;
@@ -37,16 +41,25 @@ static int http_path_match_inner(const char *pat,int patc,const char *src,int sr
       } else {
         while (srcp<srcc) {
           if (http_path_match_inner(pat+patp,patc-patp,src+srcp,srcc-srcp)) return 1;
-          if (src[srcp]=='/') return 0;
+          if (src[srcp]=='/') {
+            return 0;
+          }
           srcp++;
+        }
+        if (patp>=patc) {
+          return 1;
         }
       }
       return 0;
     }
     
-    if (srcp>=srcc) return 0;
+    if (srcp>=srcc) {
+      return 0;
+    }
     
-    if (pat[patp]!=src[srcp]) return 0;
+    if (pat[patp]!=src[srcp]) {
+      return 0;
+    }
     patp++;
     srcp++;
   }

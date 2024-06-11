@@ -81,11 +81,17 @@ static void eggdev_print_help_unbundle() {
 }
 
 static void eggdev_print_help_serve() {
-  fprintf(stderr,"\nUsage: %s serve [ROMS...] [--port=8080] [--external=0] [--htdocs=PATH]\n\n",eggdev.exename);
+  fprintf(stderr,"\nUsage: %s serve [ROMS|OPTIONS...]\n\n",eggdev.exename);
   fprintf(stderr,"Launch an HTTP server for editing data or running the game.\n");
-  fprintf(stderr,"If the working directory contains 'Makefile', we invoke 'make' before serving the ROMs each time.\n");
-  fprintf(stderr,"If make fails, we return its log with status 599.\n");
-  fprintf(stderr,"'--external' to serve on all interfaces instead of just localhost. Use with caution!\n");
+  fprintf(stderr,"Normally you supply one positional argument: The ROM file to play.\n");
+  fprintf(stderr,"If the working directory contains 'Makefile', we invoke 'make' before serving the ROM each time, and respond 599 if make fails.\n");
+  fprintf(stderr,"\nOPTIONS:\n");
+  fprintf(stderr,"  --port=8080\n");
+  fprintf(stderr,"  --external=0       Nonzero to serve on all interfaces instead of just localhost.\n");
+  fprintf(stderr,"  --htdocs=PATH      Files for default service. egg/src/www or egg/src/editor\n");
+  fprintf(stderr,"  --runtime=PATH     If --htdocs=egg/src/editor, supply egg/src/www here to enable the runtime too.\n");
+  fprintf(stderr,"  --data=PATH        Directory of your data files to serve read/write, for editor.\n");
+  fprintf(stderr,"  --types=PATH       Names of custom types.\n");
   fprintf(stderr,"\n");
 }
 
@@ -205,6 +211,34 @@ static int eggdev_config_kv(const char *k,int kc,const char *v,int vc) {
     }
     eggdev.htdocsc=0;
     while (eggdev.htdocs[eggdev.htdocsc]) eggdev.htdocsc++;
+    return 0;
+  }
+  
+  if ((kc==7)&&!memcmp(k,"runtime",7)) {
+    if (eggdev.runtime) {
+      fprintf(stderr,"%s: Multiple runtime\n",eggdev.exename);
+      return -2;
+    }
+    if (!(eggdev.runtime=realpath(v,0))) {
+      fprintf(stderr,"%s: runtime '%s' not found\n",eggdev.exename,v);
+      return -2;
+    }
+    eggdev.runtimec=0;
+    while (eggdev.runtime[eggdev.runtimec]) eggdev.runtimec++;
+    return 0;
+  }
+  
+  if ((kc==4)&&!memcmp(k,"data",4)) {
+    if (eggdev.datapath) {
+      fprintf(stderr,"%s: Multiple data paths\n",eggdev.exename);
+      return -2;
+    }
+    if (!(eggdev.datapath=realpath(v,0))) {
+      fprintf(stderr,"%s: data path '%s' not found\n",eggdev.exename,v);
+      return -2;
+    }
+    eggdev.datapathc=0;
+    while (eggdev.datapath[eggdev.datapathc]) eggdev.datapathc++;
     return 0;
   }
   

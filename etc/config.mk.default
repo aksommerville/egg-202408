@@ -19,6 +19,7 @@ TARGETS:=tools web demo linux
 # Shorthand make commands, these should always alias some target-specific command.
 run:linux-run
 serve:web-serve
+edit:web-edit
 
 #------------------------------------------------------------------------------
 
