@@ -89,6 +89,7 @@ static void eggdev_print_help_serve() {
   fprintf(stderr,"  --port=8080\n");
   fprintf(stderr,"  --external=0       Nonzero to serve on all interfaces instead of just localhost.\n");
   fprintf(stderr,"  --htdocs=PATH      Files for default service. egg/src/www or egg/src/editor\n");
+  fprintf(stderr,"  --override=PATH    Anything under here is served in preference to --htdocs, for per-game overrides.\n");
   fprintf(stderr,"  --runtime=PATH     If --htdocs=egg/src/editor, supply egg/src/www here to enable the runtime too.\n");
   fprintf(stderr,"  --data=PATH        Directory of your data files to serve read/write, for editor.\n");
   fprintf(stderr,"  --types=PATH       Names of custom types.\n");
@@ -200,47 +201,25 @@ static int eggdev_config_kv(const char *k,int kc,const char *v,int vc) {
     return 0;
   }
   
-  if ((kc==6)&&!memcmp(k,"htdocs",6)) {
-    if (eggdev.htdocs) {
-      fprintf(stderr,"%s: Multiple htdocs\n",eggdev.exename);
-      return -2;
+  #define REALPATH_STRING(fldname,optname) \
+    if ((kc==sizeof(optname)-1)&&!memcmp(k,optname,sizeof(optname)-1)) { \
+      if (eggdev.fldname) { \
+        fprintf(stderr,"%s: Multiple --%s\n",eggdev.exename,optname); \
+        return -2; \
+      } \
+      if (!(eggdev.fldname=realpath(v,0))) { \
+        fprintf(stderr,"%s --%s '%s' not found\n",eggdev.exename,optname,v); \
+        return -2; \
+      } \
+      eggdev.fldname##c=0; \
+      while (eggdev.fldname[eggdev.fldname##c]) eggdev.fldname##c++; \
+      return 0; \
     }
-    if (!(eggdev.htdocs=realpath(v,0))) {
-      fprintf(stderr,"%s: htdocs '%s' not found\n",eggdev.exename,v);
-      return -2;
-    }
-    eggdev.htdocsc=0;
-    while (eggdev.htdocs[eggdev.htdocsc]) eggdev.htdocsc++;
-    return 0;
-  }
-  
-  if ((kc==7)&&!memcmp(k,"runtime",7)) {
-    if (eggdev.runtime) {
-      fprintf(stderr,"%s: Multiple runtime\n",eggdev.exename);
-      return -2;
-    }
-    if (!(eggdev.runtime=realpath(v,0))) {
-      fprintf(stderr,"%s: runtime '%s' not found\n",eggdev.exename,v);
-      return -2;
-    }
-    eggdev.runtimec=0;
-    while (eggdev.runtime[eggdev.runtimec]) eggdev.runtimec++;
-    return 0;
-  }
-  
-  if ((kc==4)&&!memcmp(k,"data",4)) {
-    if (eggdev.datapath) {
-      fprintf(stderr,"%s: Multiple data paths\n",eggdev.exename);
-      return -2;
-    }
-    if (!(eggdev.datapath=realpath(v,0))) {
-      fprintf(stderr,"%s: data path '%s' not found\n",eggdev.exename,v);
-      return -2;
-    }
-    eggdev.datapathc=0;
-    while (eggdev.datapath[eggdev.datapathc]) eggdev.datapathc++;
-    return 0;
-  }
+  REALPATH_STRING(htdocs,"htdocs")
+  REALPATH_STRING(override,"override")
+  REALPATH_STRING(runtime,"runtime")
+  REALPATH_STRING(datapath,"data")
+  #undef REALPATH_STRING
   
   if ((kc==5)&&!memcmp(k,"types",5)) {
     if (eggdev.typespath) {

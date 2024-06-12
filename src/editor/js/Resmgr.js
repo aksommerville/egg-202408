@@ -10,6 +10,7 @@ import { StringEditor } from "./StringEditor.js";
 import { ImageEditor } from "./ImageEditor.js";
 import { MetadataEditor } from "./MetadataEditor.js";
 import { SfgEditor } from "./audio/SfgEditor.js";
+import { selectCustomEditor } from "./selectCustomEditor.js";
 
 export class Resmgr {
   static getDependencies() {
@@ -229,12 +230,12 @@ export class Resmgr {
   }
   
   editorClassForResource(path, serial) {
-    console.log(`Resmgr.editorClassForResource path=${JSON.stringify(path)} len=${serial.length}`);
     const { type, qual, rid, name, format } = this.parseResourcePath(path);
-
-    //TODO User-supplied custom classes. How is that going to work?
-    //TODO midi. Or maybe don't.
     
+    // First, let the client override any editor selection.
+    let clazz = selectCustomEditor(path, serial, type, qual, rid, name, format);
+    if (clazz) return clazz;
+
     // Sound effects in our text format use SfgEditor.
     // Check for WAV and SFG-binary signatures; let those fall thru to HexEditor.
     if (type === "sound") {

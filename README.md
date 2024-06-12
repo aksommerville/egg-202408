@@ -26,8 +26,9 @@ sudo apt install clang wabt
 - - [ ] Record UI state in URL, so refreshing keeps you looking at the same thing.
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
 - - [ ] Synth receiver (I want to run midevil against this server).
-- - [ ] Plug-in framework for custom editors.
+- - [x] Plug-in framework for custom editors.
 - - [ ] Custom global operations, eg "validate my resources"
+- - [ ] Add and delete files.
 - [ ] eggdev bundle html: Minify platform Javascript.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?

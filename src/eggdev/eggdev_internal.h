@@ -26,6 +26,8 @@ extern struct eggdev {
   int external;
   const char *htdocs;
   int htdocsc;
+  const char *override;
+  int overridec;
   const char *runtime;
   int runtimec;
   const char *datapath;

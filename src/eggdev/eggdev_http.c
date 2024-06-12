@@ -124,6 +124,63 @@ static const char *eggdev_get_rom_path_for_request(struct http_xfer *req) {
   return 0;
 }
 
+/* Local path for a request.
+ * Caller provides the local prefix.
+ * If (trim) matches the request prefix, we trim that off first.
+ * If (must_exist), we realpath it.
+ * If (autoindex), "/" becomes "/index.html". (after trim)
+ * Caller must free the returned string if not null.
+ */
+ 
+static int contains_double_dot(const char *src,int srcc) {
+  int srcp=0;
+  while (srcp<srcc) {
+    const char *elem=src+srcp;
+    int elemc=0;
+    while ((srcp<srcc)&&(src[srcp++]!='/')) elemc++;
+    if ((elemc==2)&&(elem[0]=='.')&&(elem[1]=='.')) return 1;
+  }
+  return 0;
+}
+ 
+static char *eggdev_http_local_path(struct http_xfer *req,const char *pfx,int pfxc,int must_exist,const char *trim,int autoindex) {
+  const char *rpath=0;
+  int rpathc=http_xfer_get_path(&rpath,req);
+  if ((rpathc<1)||(rpath[0]!='/')) return 0;
+  if (trim) {
+    int trimc=0; while (trim[trimc]) trimc++;
+    if ((rpathc>trimc)&&!memcmp(rpath,trim,trimc)&&(rpath[trimc]=='/')) { rpath+=trimc; rpathc-=trimc; }
+    else if ((rpathc==trimc)&&!memcmp(rpath,trim,trimc)) rpathc=1;
+  }
+  if (autoindex&&(rpathc==1)) {
+    rpath="/index.html";
+    rpathc=11;
+  }
+  if (!pfx) pfxc=0; else if (pfxc<0) { pfxc=0; while (pfx[pfxc]) pfxc++; }
+  char tmp[1024];
+  int tmpc=snprintf(tmp,sizeof(tmp),"%.*s%.*s",pfxc,pfx,rpathc,rpath);
+  if ((tmpc<1)||(tmpc>=sizeof(tmp))) return 0;
+  char *lpath=0;
+  if (must_exist) {
+    // This is ideal, let libc figure out what the path really is.
+    // But unfortunately, it requires the file to already exist, and that won't always be the case for us.
+    lpath=realpath(tmp,0);
+  } else {
+    // We aren't going to handle symlinks like realpath does. Too complicated, and I just don't see that coming up.
+    // But we must prevent ".." from the request path. A simple cudgel: Assume the path is kosher, but fail if there's any ".."
+    if (contains_double_dot(tmp,tmpc)) return 0;
+    if (!(lpath=malloc(tmpc+1))) return 0;
+    memcpy(lpath,tmp,tmpc+1);
+  }
+  if (!lpath) return 0;
+  if (memcmp(lpath,pfx,pfxc)||(lpath[pfxc]!='/')) {
+    // lpath escapes the prefix jail. Nice try, Ivan!
+    free(lpath);
+    return 0;
+  }
+  return lpath;
+}
+
 /* GET *
  */
  
@@ -145,29 +202,14 @@ static int eggdev_http_get_default(struct http_xfer *req,struct http_xfer *rsp) 
     return eggdev_serve_static(rsp,rompath);
   }
   
-  if (eggdev.htdocs) {
-    const char *rpath=0;
-    int rpathc=http_xfer_get_path(&rpath,req);
-    if ((rpathc<1)||(rpath[0]!='/')) return http_xfer_set_status(rsp,404,"Not found");
-    if (rpathc==1) {
-      rpath="/index.html";
-      rpathc=11;
-    }
-    char prepath[1024];
-    int prepathc=snprintf(prepath,sizeof(prepath),"%s%.*s",eggdev.htdocs,rpathc,rpath);
-    if ((prepathc<1)||(prepathc>=sizeof(prepath))) return http_xfer_set_status(rsp,404,"Not found");
-    char *lpath=realpath(prepath,0);
-    if (!lpath) return http_xfer_set_status(rsp,404,"Not found");
-    if (memcmp(lpath,eggdev.htdocs,eggdev.htdocsc)||(lpath[eggdev.htdocsc]!='/')) {
-      free(lpath);
-      return http_xfer_set_status(rsp,404,"Not found");
-    }
-    int err=eggdev_serve_static(rsp,lpath);
-    free(lpath);
-    return err;
-  }
+  char *lpath=0;
+  if (lpath=eggdev_http_local_path(req,eggdev.override,eggdev.overridec,1,0,1)) ;
+  else if (lpath=eggdev_http_local_path(req,eggdev.htdocs,eggdev.htdocsc,1,0,1)) ;
+  else return http_xfer_set_status(rsp,404,"Not found");
   
-  return http_xfer_set_status(rsp,404,"Not found");
+  int err=eggdev_serve_static(rsp,lpath);
+  free(lpath);
+  return err;
 }
 
 /* GET /rt/*
@@ -191,29 +233,13 @@ static int eggdev_http_get_rt(struct http_xfer *req,struct http_xfer *rsp) {
     return eggdev_serve_static(rsp,rompath);
   }
   
-  if (eggdev.runtime) {
-    const char *rpath=0;
-    int rpathc=http_xfer_get_path(&rpath,req);
-    if ((rpathc>=4)&&!memcmp(rpath,"/rt/",4)) { rpath+=3; rpathc-=3; }
-    if ((rpathc<1)||(rpath[0]!='/')) return http_xfer_set_status(rsp,404,"Not found");
-    if (rpathc==1) {
-      rpath="/index.html";
-      rpathc=11;
-    }
-    char prepath[1024];
-    int prepathc=snprintf(prepath,sizeof(prepath),"%s%.*s",eggdev.runtime,rpathc,rpath);
-    if ((prepathc<1)||(prepathc>=sizeof(prepath))) return http_xfer_set_status(rsp,404,"Not found");
-    char *lpath=realpath(prepath,0);
-    if (!lpath) return http_xfer_set_status(rsp,404,"Not found");
-    if (memcmp(lpath,eggdev.runtime,eggdev.runtimec)||(lpath[eggdev.runtimec]!='/')) {
-      free(lpath);
-      return http_xfer_set_status(rsp,404,"Not found");
-    }
-    int err=eggdev_serve_static(rsp,lpath);
-    free(lpath);
-    return err;
-  }
-  return http_xfer_set_status(rsp,404,"Not found");
+  char *lpath=0;
+  if (lpath=eggdev_http_local_path(req,eggdev.runtime,eggdev.runtimec,1,"/rt",1)) ;
+  else return http_xfer_set_status(rsp,404,"Not found");
+  
+  int err=eggdev_serve_static(rsp,lpath);
+  free(lpath);
+  return err;
 }
 
 /* GET /res/** -- Directories are supported; they'll return a JSON array of basenames.
@@ -275,20 +301,8 @@ static int eggdev_http_res(struct http_xfer *req,struct http_xfer *rsp) {
   int methodc=http_xfer_get_method(method,sizeof(method),req);
   if ((methodc<1)||(methodc>=sizeof(method))) return http_xfer_set_status(rsp,405,"Method not supported");
   
-  const char *path=0;
-  int pathc=http_xfer_get_path(&path,req);
-  if (pathc<1) return http_xfer_set_status(rsp,404,"Not found");
-  if ((pathc>=5)&&!memcmp(path,"/res/",5)) { path+=4; pathc-=4; }
-  else if ((pathc==4)&&!memcmp(path,"/res",4)) { path="/"; pathc=1; }
-  char prepath[1024];
-  int prepathc=snprintf(prepath,sizeof(prepath),"%s%.*s",eggdev.datapath,pathc,path);
-  if ((prepathc<1)||(prepathc>=sizeof(prepath))) return http_xfer_set_status(rsp,404,"Not found");
-  char *lpath=realpath(prepath,0);//TODO I think this will prevent us from PUTting a new file. We need a way to do that.
+  char *lpath=eggdev_http_local_path(req,eggdev.datapath,eggdev.datapathc,0,"/res",0);
   if (!lpath) return http_xfer_set_status(rsp,404,"Not found");
-  if (memcmp(lpath,eggdev.datapath,eggdev.datapathc)||(lpath[eggdev.datapathc]&&(lpath[eggdev.datapathc]!='/'))) {
-    free(lpath);
-    return http_xfer_set_status(rsp,404,"Not found");
-  }
   
   int err=-1;
   if ((methodc==3)&&!memcmp(method,"GET",3)) err=eggdev_serve_res_get(rsp,lpath);
