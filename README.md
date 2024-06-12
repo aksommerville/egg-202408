@@ -27,7 +27,7 @@ sudo apt install clang wabt
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
 - - [ ] Synth receiver (I want to run midevil against this server).
 - - [x] Plug-in framework for custom editors.
-- - [ ] Custom global operations, eg "validate my resources"
+- - [x] Custom global operations, eg "validate my resources"
 - - [x] Add and delete files.
 - - [ ] More fs ops: Rename file, rename directory, move file, make directory, remove directory. Low priority; user can always do this odd stuff in her filesystem directly.
 - [ ] eggdev bundle html: Minify platform Javascript.
