@@ -213,6 +213,18 @@ export class Resmgr {
     return node;
   }
   
+  tocEntryByPath(path) {
+    const names = path.split("/");
+    let node = this.bus.toc;
+    while (names.length > 0) {
+      if (!node || !node.files) return null;
+      const name = names[0];
+      names.splice(0, 1);
+      if (!(node = node.files.find(f => f.name === name))) return null;
+    }
+    return node;
+  }
+  
   /* Adjusts global TOC as needed, including intermediate directories.
    * The new file will have empty serial.
    * Throws if the file already exists, or if there's a regular file among the intermediates.

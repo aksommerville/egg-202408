@@ -22,6 +22,7 @@ window.addEventListener("load", () => {
   resmgr.fetchAll().then(toc => {
     bus.setToc(toc);
     bus.setStatus("ok");
+    rootUi.openInitialResource();
   }).catch(error => {
     bus.broadcast({ type: "error", error });
     bus.setStatus("dead");

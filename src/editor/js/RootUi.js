@@ -11,13 +11,14 @@ import { Resmgr } from "./Resmgr.js";
 
 export class RootUi {
   static getDependencies() {
-    return [HTMLElement, Dom, Bus, Resmgr];
+    return [HTMLElement, Dom, Bus, Resmgr, Window];
   }
-  constructor(element, dom, bus, resmgr) {
+  constructor(element, dom, bus, resmgr, window) {
     this.element = element;
     this.dom = dom;
     this.bus = bus;
     this.resmgr = resmgr;
+    this.window = window;
     
     this.sidebarUi = null;
     this.editor = null;
@@ -25,6 +26,13 @@ export class RootUi {
     this.buildUi();
     
     this.bus.listen(["open"], e => this.onOpen(e));
+    
+    this.hashListener = e => this.onHashChange(e.newURL?.split('#')[1] || "");
+    this.window.addEventListener("hashchange", this.hashListener);
+  }
+  
+  onRemoveFromDom() {
+    this.window.removeEventListener("hashchange", this.hashListener);
   }
   
   buildUi() {
@@ -33,26 +41,32 @@ export class RootUi {
     this.dom.spawn(this.element, "DIV", ["workspace"]);
   }
   
+  // Our bootstrap will call this after the TOC is loaded. It is not loaded when our ctor runs.
+  openInitialResource() {
+    const hash = this.window.location.hash?.substring(1) || "";
+    this.onHashChange(hash);
+  }
+  
   onOpen(event) {
-    const path = event.path;
-    const serial = event.serial;
-    let clazz = null;
-    if (path) {
-      clazz = this.resmgr.editorClassForResource(path, serial);
-      if (!clazz) {
-        this.dom.modalError(`Unable to determine editor class for resource ${JSON.stringify(path)}`);
+    this.window.location = "#" + event.path;
+  }
+  
+  onHashChange(path) {
+    const res = this.resmgr.tocEntryByPath(path);
+    if (res && res.serial) {
+      const clazz = this.resmgr.editorClassForResource(path, res.serial);
+      if (clazz) {
+        const workspace = this.element.querySelector(".workspace");
+        workspace.innerHTML = "";
+        this.editor = this.dom.spawnController(workspace, clazz);
+        this.editor.setup(res.serial, path);
+        this.sidebarUi.focusPath(path);
         return;
       }
     }
-    if (this.editor) {
-      //TODO Cleanup for outgoing editor?
-      this.editor = null;
-    }
     const workspace = this.element.querySelector(".workspace");
     workspace.innerHTML = "";
-    if (clazz) {
-      this.editor = this.dom.spawnController(workspace, clazz);
-      this.editor.setup(serial, path);
-    }
+    this.editor = null;
+    this.sidebarUi.focusPath("");
   }
 }

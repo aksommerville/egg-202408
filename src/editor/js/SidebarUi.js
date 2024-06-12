@@ -151,6 +151,20 @@ export class SidebarUi {
     li.click();
   }
   
+  focusPath(path) {
+    if (path === this.currentPath) return;
+    for (const elem of this.element.querySelectorAll(".file.open")) elem.classList.remove("open");
+    this.currentPath = path;
+    const li = this.element.querySelector(`li.file[data-path='${path}']`);
+    if (!li) return;
+    li.classList.add("open");
+    for (let parent=li.parentNode; parent; parent=parent.parentNode) {
+      if ((parent.tagName === "LI") && parent.classList.contains("dir")) {
+        parent.classList.add("open");
+      }
+    }
+  }
+  
   onRomsChanged(event) {
     const button = this.element.querySelector("input[type='button'][value='Play']");
     if (event.roms.length) {

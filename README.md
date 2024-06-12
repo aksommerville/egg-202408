@@ -23,7 +23,8 @@ sudo apt install clang wabt
 - [ ] xegl cursor lock on startup seems to be reporting absolute when we start in fullscreen? Try eggsamples/shmup.egg, it's haywire in fullscreen.
 - [ ] Notify of motion outside window. Platform might only be able to supply enter/exit, but that's enough. (see lingerful cursor in eggsamples/hardboiled).
 - [ ] Editor
-- - [ ] Record UI state in URL, so refreshing keeps you looking at the same thing.
+- - [x] Record UI state in URL, so refreshing keeps you looking at the same thing.
+- - - I think we can be satisfied with just the selected file's path. Not the full workbench state.
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
 - - [ ] Synth receiver (I want to run midevil against this server).
 - - [x] Plug-in framework for custom editors.
