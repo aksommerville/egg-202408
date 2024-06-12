@@ -20,6 +20,7 @@ export class Injector {
   }
   
   getInstance(clazz, overrides) {
+    //console.log(`Injector.getInstance ${clazz} ${new Error().stack}`);
     if (clazz === "nonce") return (this.nextNonce++).toString();
     let instance = this.singletons[clazz.name];
     if (instance) return instance;

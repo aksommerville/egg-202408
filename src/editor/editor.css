@@ -18,6 +18,10 @@ body > * {
   flex: 1;
 }
 
+.hidden {
+  display: none;
+}
+
 .modal::backdrop {
   background-color: #000;
   opacity: 0.75;
@@ -31,17 +35,17 @@ body > * {
 }
 
 .RootUi > .workspace {
-  flex: 1;
+  width: calc(100vw - 300px);
   display: flex;
   align-items: stretch;
   justify-content: stretch;
 }
 .RootUi > .workspace > * {
-  flex: 1;
+  width: 100%;
 }
 
 .SidebarUi {
-  min-width: 300px;
+  width: 300px;
   border-right: 1px solid #000;
   display: flex;
   flex-direction: column;
@@ -170,4 +174,235 @@ body > * {
   width: calc(100% - 5px);
   background-color: unset;
   color: #fff;
+}
+
+.ImageEditor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ImageEditor > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.MetadataEditor > table {
+  width: 100%;
+}
+.MetadataEditor td.key {
+  text-align: right;
+  width: 150px;
+}
+.MetadataEditor td.help {
+  width: 1em;
+  cursor: pointer;
+}
+.MetadataEditor td.value > input {
+  width: calc(100% - 10px);
+}
+.MetadataEditor .validationError {
+  height: 1lh;
+  font-size: 8pt;
+  color: #fcc;
+}
+
+/* From egg-202405/synthwerk.
+ **************************************************************/
+ 
+.SfgEditor {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.SfgEditor > .ChooseSoundUi {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #111;
+  overflow-y: scroll;
+}
+
+.ChooseSoundUi .card {
+  display: inline-block;
+  vertical-align: top;
+  margin: 0.5em;
+  padding: 0.5em;
+  border: 1px solid #000;
+  border-radius: 0.5em;
+  background-color: #444;
+}
+
+.ChooseSoundUi .card .buttonRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.InputUi {
+  flex: 1;
+}
+
+.OutputUi {
+  height: 200px;
+  display: flex;
+  flex-direction: row;
+  border-top: 1px solid #000;
+}
+
+.OutputUi > .buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+.WaveVisualUi {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.WaveVisualUi > canvas {
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Modals.
+ **********************************************************/
+ 
+.TextModal > textarea {
+  width: 50vw;
+  height: 50vh;
+}
+
+.TextModal.dirty > textarea {
+  background-color: #eda;
+}
+
+/* InputUi
+ ******************************************************/
+ 
+.InputUi {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: stretch;
+  max-height: calc(100% - 200px);
+}
+
+.InputUi > .controls {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  border-right: 1px solid #000;
+}
+
+.InputUi > .voicesContainer {
+  display: flex;
+  flex-direction: row;
+  overflow-x: scroll;
+  overflow-y: hidden;
+}
+
+.VoiceUi {
+  background-color: #111;
+  border: 1px solid #000;
+  margin: 0.5em;
+/*  height: calc(100% - 20px); /* accomodate scroll bar */
+  overflow-y: scroll;
+  width: 480px;
+  min-width: 480px;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+}
+
+.VoiceFieldUi {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  background-color: #444;
+  border-top: 1px solid #666;
+  border-bottom: 1px solid #222;
+}
+
+.VoiceFieldUi > .upper {
+  height: 2em;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: stretch;
+}
+
+.VoiceFieldUi > .upper > .key {
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+.VoiceFieldUi > .upper > .spacer {
+  flex: 1;
+}
+
+.VoiceFieldUi > .upper > input[type="number"] {
+  width: 60px;
+}
+
+/* SliderUi
+ *************************************************************/
+ 
+.SliderUi {
+  position: relative;
+  min-width: 50px;
+  flex: 1;
+  user-select: none;
+}
+
+.SliderUi > .groove {
+  position: absolute;
+  border: 1px solid #444;
+  background-color: #666;
+  left: 40%;
+  right: 40%;
+  top: 16px;
+  bottom: 16px;
+}
+
+.SliderUi > .thumb {
+  position: absolute;
+  border: 1px solid #000;
+  background-color: #aaa;
+  width: 75%;
+  left: 12.5%;
+  height: 20px;
+  top: 0px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.SliderUi > .thumb > .display {
+  font-family: sans-serif;
+  font-size: 8pt;
+  color: #000;
+}
+
+/* HarmonicsUi, EnvUi
+ *******************************************************/
+ 
+.HarmonicsUi {
+  cursor: pointer;
+  user-select: none;
+}
+
+.EnvUi {
+  cursor: pointer;
+  user-select: none;
 }

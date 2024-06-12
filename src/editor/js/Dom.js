@@ -14,6 +14,7 @@ export class Dom {
     this.document = document;
     this.injector = injector;
     
+    this.removalIgnored = [];
     this.mutationObserver = new MutationObserver(e => this.onMutation(e));
     this.mutationObserver.observe(document.body, { childList: true, subtree: true });
   }
@@ -121,6 +122,23 @@ export class Dom {
     return controller;
   }
   
+  modalMessage(text) {
+    const controller = this.spawnModal(GenericModal);
+    controller.setupMessage(text);
+    return controller.result.catch(() => {});
+  }
+  
+  modalInput(prompt, preset) {
+    const controller = this.spawnModal(GenericModal);
+    controller.setupInput(prompt, preset);
+    return controller.result;
+  }
+  
+  // Stupid hack to prevent onRemoveFromDom firing when elements are only being shuffled in the order.
+  ignoreNextRemoval(element) {
+    this.removalIgnored.push(element);
+  }
+  
   tagNameForControllerClass(clazz) {
     if (clazz.getDependencies) {
       for (const dcls of clazz.getDependencies()) {
@@ -151,6 +169,11 @@ export class Dom {
   }
   
   checkRemovedNodesRecursively(parent) {
+    const p = this.removalIgnored.indexOf(parent);
+    if (p >= 0) {
+      this.removalIgnored.splice(p, 1);
+      return;
+    }
     if (parent.childNodes) {
       for (const child of parent.childNodes) {
         this.checkRemovedNodesRecursively(child);

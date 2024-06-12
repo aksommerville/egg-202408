@@ -1,7 +1,7 @@
 title=Trial
-titleString=2
-author=AK Sommerville
+language=en
 framebuffer=640x360
 iconImage=8
-require=
-language=en
+author=AK Sommerville
+players=1
+titleString=2

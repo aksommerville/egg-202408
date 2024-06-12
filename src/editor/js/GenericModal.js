@@ -35,4 +35,26 @@ export class GenericModal {
     this.element.innerHTML = "";
     const iframe = this.dom.spawn(this.element, "IFRAME", { src: url });
   }
+  
+  setupMessage(text) {
+    this.element.innerHTML = "";
+    this.element.innerText = text;
+  }
+  
+  setupInput(prompt, preset) {
+    this.element.innerHTML = "";
+    this.dom.spawn(this.element, "DIV", ["prompt"], prompt);
+    const form = this.dom.spawn(this.element, "FORM", { action: "POST", href: "javascript:0", "on-submit": event => {
+      event.preventDefault();
+      // This would be the right place to handle it, but somehow we get removed from the DOM before the event reaches us?
+      // Whatever. Handling on click of submit also works.
+    }});
+    const input = this.dom.spawn(form, "INPUT", { type: "text", value: preset || "" });
+    this.dom.spawn(form, "INPUT", { type: "submit", value: "OK", "on-click": (event) => {
+      this.resolve(this.element.querySelector("input").value);
+      event.stopPropagation();
+      event.preventDefault();
+    }});
+    input.focus();
+  }
 }

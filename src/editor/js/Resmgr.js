@@ -7,6 +7,9 @@ import { Bus } from "./Bus.js";
 import { HexEditor } from "./HexEditor.js";
 import { TextEditor } from "./TextEditor.js";
 import { StringEditor } from "./StringEditor.js";
+import { ImageEditor } from "./ImageEditor.js";
+import { MetadataEditor } from "./MetadataEditor.js";
+import { SfgEditor } from "./audio/SfgEditor.js";
 
 export class Resmgr {
   static getDependencies() {
@@ -37,6 +40,7 @@ export class Resmgr {
    * (encode) is a no-arg function that returns the encoded resource as Uint8Array, just like you received it.
    */
   dirty(path, encode) {
+    if (!path || !encode) throw new Error("Resmgr.dirty with null path or encode");
     this.bus.setStatus("pending");
     if (path.endsWith("metadata")) this.metadata = null;
     const rec = this.dirties.find(d => d.path === path);
@@ -229,15 +233,24 @@ export class Resmgr {
     const { type, qual, rid, name, format } = this.parseResourcePath(path);
 
     //TODO User-supplied custom classes. How is that going to work?
-    //TODO metadata. TextEditor is OK, but it would be much nicer with validation and suggestions.
-    //TODO sfg. Very complicated and very necessary. TextEditor is hard to work with, and there needs to be instant feedback too.
     //TODO midi. Or maybe don't.
-    //TODO png read-only. Easy.
+    
+    // Sound effects in our text format use SfgEditor.
+    // Check for WAV and SFG-binary signatures; let those fall thru to HexEditor.
+    if (type === "sound") {
+      if ((serial.length >= 4) && (serial[0] === 0x52) && (serial[1] === 0x49) && (serial[2] === 0x46) && (serial[3] === 0x46)) ;
+      else if ((serial.length >= 2) && (serial[0] === 0xeb) && (serial[1] === 0xeb)) ;
+      else return SfgEditor;
+    }
+    
+    // TextEditor would suffice for metadata, but we can do better.
+    if (type === "metadata") return MetadataEditor;
+    
+    // We have a read-only viewer for image resources.
+    if (type === "image") return ImageEditor;
     
     // Strings have a very special side-by-side deal to aid translation.
-    if (type === "string") {
-      return StringEditor;
-    }
+    if (type === "string") return StringEditor;
      
     // If the whole thing is UTF-8 and not empty, use the text editor.
     if (serial.length) {
