@@ -128,7 +128,7 @@ export class Resmgr {
     };
     if (file.serial) return {
       name,
-      serial: this.decodeBase64(file.serial),
+      serial: (typeof(file.serial) === "string") ? this.decodeBase64(file.serial) : file.serial,
     };
     return {
       name,
@@ -211,6 +211,48 @@ export class Resmgr {
       if (!(node = node.files.find(f => f.name === name))) return null;
     }
     return node;
+  }
+  
+  /* Adjusts global TOC as needed, including intermediate directories.
+   * The new file will have empty serial.
+   * Throws if the file already exists, or if there's a regular file among the intermediates.
+   * Our request to create the file will not be sent yet, it's queued in our dirty backlog.
+   * If we don't throw, we recommend the caller proceed on the assumption that it's saved.
+   */
+  createFile(path) {
+    // Create TOC nodes for each directory leading to the file, if they don't exist yet.
+    const names = path.split("/");
+    let node = this.bus.toc;
+    while (names.length > 1) {
+      const name = names[0];
+      names.splice(0, 1);
+      if (!node || !node.files) throw new Error(`Unable to create file ${path}`); // Regular file in path, or TOC not initialized?
+      let nextNode = node.files.find(f => f.name === name);
+      if (!nextNode) { // Add directory.
+        nextNode = { name, files: [] };
+        node.files.push(nextNode);
+      }
+      node = nextNode;
+    }
+    // Now we're pointing at the immediate parent node, with the basename queued up.
+    if (!node || !node.files) throw new Error(`Unable to create file ${path}`); // Regular file in path, or TOC not initialized?
+    const name = names[0];
+    if (node.files.find(f => f.name === name)) throw new Error(`File already exists: ${path}`);
+    const fnode = { name, serial: new Uint8Array(0) };
+    node.files.push(fnode);
+    this.bus.toc = this.sanitizeToc(this.bus.toc);
+    this.dirty(path, () => new Uint8Array(0));
+  }
+  
+  deleteFile(path) {
+    const parent = this.tocParentByPath(path);
+    if (!parent || !parent.files) throw new Error(`File not found: ${path}`);
+    const name = path.replace(/^.*\//, "");
+    const p = parent.files.findIndex(f => f.name === name);
+    if (p < 0) throw new Error(`File not found: ${path}`);
+    parent.files.splice(p, 1);
+    this.comm.httpBinary("DELETE", "/res/" + path).then(() => {
+    }).catch(error => this.bus.broadcast({ type: "error", error }));
   }
   
   parseResourcePath(path) {

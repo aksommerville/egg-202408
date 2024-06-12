@@ -280,6 +280,7 @@ static int eggdev_serve_res_get(struct http_xfer *rsp,const char *path) {
  
 static int eggdev_serve_res_put(struct http_xfer *rsp,const char *path,struct http_xfer *req) {
   const struct sr_encoder *body=http_xfer_get_body(req);
+  if (dir_mkdirp_parent(path)<0) return http_xfer_set_status(rsp,500,"mkdir failed");
   if (file_write(path,body->v,body->c)<0) return http_xfer_set_status(rsp,500,"Write failed");
   return http_xfer_set_status(rsp,200,"OK");
 }

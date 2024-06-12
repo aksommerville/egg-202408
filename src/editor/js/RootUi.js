@@ -36,17 +36,23 @@ export class RootUi {
   onOpen(event) {
     const path = event.path;
     const serial = event.serial;
-    const clazz = this.resmgr.editorClassForResource(path, serial);
-    if (!clazz) {
-      this.dom.modalError(`Unable to determine editor class for resource ${JSON.stringify(path)}`);
-      return;
+    let clazz = null;
+    if (path) {
+      clazz = this.resmgr.editorClassForResource(path, serial);
+      if (!clazz) {
+        this.dom.modalError(`Unable to determine editor class for resource ${JSON.stringify(path)}`);
+        return;
+      }
     }
     if (this.editor) {
       //TODO Cleanup for outgoing editor?
+      this.editor = null;
     }
     const workspace = this.element.querySelector(".workspace");
     workspace.innerHTML = "";
-    this.editor = this.dom.spawnController(workspace, clazz);
-    this.editor.setup(serial, path);
+    if (clazz) {
+      this.editor = this.dom.spawnController(workspace, clazz);
+      this.editor.setup(serial, path);
+    }
   }
 }
