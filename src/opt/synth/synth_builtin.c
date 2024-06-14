@@ -93,7 +93,7 @@ const struct synth_builtin synth_builtin[0x80]={
     .range=0x8ff4,
     .level=IMPULSE|ATTACK(0)|RELEASE(5),
   )
-  FMREL(0x0c, // Xylophone
+  FMREL(0x0d, // Xylophone
     .rate=0x80,
     .scale=0x30,
     .range=0xfff4,
@@ -269,12 +269,6 @@ const struct synth_builtin synth_builtin[0x80]={
     .scale=0x20,
     .range=0x4f80,
     .level=TONE|ATTACK(3)|RELEASE(4),
-  )
-  FMREL(0x20,
-    .rate=0x08,
-    .scale=0x40,
-    .range=0xf888,
-    .level=BOW|ATTACK(3)|RELEASE(5),
   )
   FMREL(0x24, // Slap Bass 1
     .rate=0x08,
@@ -731,7 +725,7 @@ const struct synth_builtin synth_builtin[0x80]={
     .level=TONE|ATTACK(1)|RELEASE(5),
   )
   BLIP(0x7e) // Applause. There will be none.
-  SUB(0x00, // Gunshot
+  SUB(0x7f, // Gunshot
     .width1=400,
     .width2=400,
     .gain=1,

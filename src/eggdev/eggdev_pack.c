@@ -202,7 +202,7 @@ static int eggdev_assign_missing_ids(struct romw *romw) {
     int major=0; for (;major<sizeof(tmpbits);major++) {
       if (tmpbits[major]==0xff) continue;
       int minor=0,mask=1;
-      for (;minor<8;minor++,mask<<1) {
+      for (;minor<8;minor++,mask<<=1) {
         if (!(tmpbits[major]&mask)) {
           res->rid=(major<<3)+minor;
           break;
