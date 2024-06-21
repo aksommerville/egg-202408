@@ -174,9 +174,12 @@ static char *eggdev_http_local_path(struct http_xfer *req,const char *pfx,int pf
   }
   if (!lpath) return 0;
   if (memcmp(lpath,pfx,pfxc)||(lpath[pfxc]!='/')) {
-    // lpath escapes the prefix jail. Nice try, Ivan!
-    free(lpath);
-    return 0;
+    // lpath escapes the prefix jail. This is actually OK sometimes; an editor might symlink to some file outside the jail.
+    // Reject if the request path had any double-dots. That's suspicious behavior.
+    if (contains_double_dot(rpath,rpathc)) {
+      free(lpath);
+      return 0;
+    }
   }
   return lpath;
 }

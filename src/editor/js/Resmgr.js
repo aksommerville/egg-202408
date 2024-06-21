@@ -276,7 +276,7 @@ export class Resmgr {
       if (elem.match(/^[a-z]{2}$/)) qual = elem;
       else if (elem.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) type = elem;
     }
-    const match = base.match(/^(\d*)(-[0-9a-zA-Z_]*)?.*(\.[^\.]*)$/);
+    const match = base.match(/^(\d*)(-[0-9a-zA-Z_]*)?.*(\.[^\.]*)?$/);
     let rid = +match?.[1] || 0;
     let name = match?.[2]?.substring(1) || "";
     let format = match?.[3]?.substring(1).toLowerCase() || "";
