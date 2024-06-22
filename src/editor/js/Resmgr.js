@@ -25,6 +25,7 @@ export class Resmgr {
     this.dirties = []; // {path,encode}
     this.dirtyTimeout = null;
     this.metadata = null; // {k:v} strings, decoded as needed
+    this.images = []; // Sparse, indexed by rid. DOM Image objects. One can assume they are constant.
   }
   
   /* Get the full resource list and sanitize it.
@@ -225,6 +226,16 @@ export class Resmgr {
     return node;
   }
   
+  tocEntryById(type, rid) {
+    // One level deep only.
+    if (!this.bus.toc?.files) return null;
+    const dir = this.bus.toc.files.find(f => f.name === type);
+    if (!dir?.files) return null;
+    const pfx = rid.toString();
+    const file = dir.files.find(f => f.name.startsWith(pfx) && (!f.name[pfx.length] || (f.name[pfx.length] === '-') || (f.name[pfx.length] === '.')));
+    return file;
+  }
+  
   /* Adjusts global TOC as needed, including intermediate directories.
    * The new file will have empty serial.
    * Throws if the file already exists, or if there's a regular file among the intermediates.
@@ -281,6 +292,86 @@ export class Resmgr {
     let name = match?.[2]?.substring(1) || "";
     let format = match?.[3]?.substring(1).toLowerCase() || "";
     return { type, qual, rid, name, format };
+  }
+  
+  ridFromString(src, type, rtnserial) {
+    // If it's a path with ID in the basename, go with that.
+    let match = src.match(/(\d+)(-[^\/]*)?$/);
+    if (match) {
+      const rid = +match[1];
+      if (rtnserial) {
+        const entry = this.tocEntryById(type, rid);
+        if (entry) rtnserial.push(entry.serial);
+      }
+      return rid;
+    }
+    // Otherwise it's a name or maybe "type:name".
+    const split = src.split(':');
+    if (split.length === 2) {
+      type = split[0];
+      src = split[1];
+    }
+    // Or maybe it's an integer at this point, that would be convenient.
+    let rid = +src;
+    if (!isNaN(rid)) {
+      if (rtnserial) {
+        const entry = this.tocEntryById(type, rid);
+        if (entry) rtnserial.push(entry.serial);
+      }
+      return rid;
+    }
+    // Search only in the top directory of this type.
+    // I haven't actually declared as a requirement that resources be exactly two levels deep, but might do.
+    if (!type) return null;
+    let dir = this.bus.toc?.files?.find(f => f.name === type);
+    if (!dir?.files) return null;
+    for (const f of dir.files) {
+      const match = f.name.match(/^(\d*)(-[0-9a-zA-Z_]*)?.*(\.[^\.]*)?$/);
+      let rid = +match?.[1] || 0;
+      let name = match?.[2]?.substring(1) || "";
+      if (name === src) {
+        if (rtnserial) rtnserial.push(f.serial);
+        return rid;
+      }
+    }
+    return null;
+  }
+  
+  /* Returns null or an Image object.
+   * (id) can be rid, path, name, "image:NAME", we're flexible.
+   * TODO This should also work for images with no explicit ID. But how???
+   */
+  getImage(id) {
+    const rtnserial = [];
+    if (typeof(id) === "string") {
+      id = this.ridFromString(id, "image", rtnserial);
+    }
+    if (typeof(id) !== "number") return null;
+    let img = this.images[id];
+    if (img) return img;
+    if (img === false) return null; // false is an indicator that we've already tried
+    if (!rtnserial.length) {
+      const entry = this.tocEntryById("image", id);
+      if (entry) rtnserial.push(entry.serial);
+    }
+    if (!rtnserial.length) {
+      this.images[id] = false;
+      return null;
+    }
+    const blob = new Blob([rtnserial[0]]);
+    const url = URL.createObjectURL(blob);
+    const image = new Image();
+    image.addEventListener("load", () => {
+      URL.revokeObjectURL(url);
+      this.images[id] = image;
+    });
+    image.addEventListener("error", (e) => {
+      URL.revokeObjectURL(url);
+      this.images[id] = false;
+    });
+    image.src = url;
+    this.images[id] = image;
+    return image;
   }
   
   editorClassForResource(path, serial) {
