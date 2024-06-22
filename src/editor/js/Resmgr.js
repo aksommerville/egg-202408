@@ -1,5 +1,6 @@
 /* Resmgr.js
  * Maintains the list of resources.
+ * But it's actually owned by Bus: Bus.toc: {path,type,qual,rid,name,format,serial}[]
  */
  
 import { Comm } from "./Comm.js";
@@ -29,11 +30,12 @@ export class Resmgr {
   }
   
   /* Get the full resource list and sanitize it.
-   * This is a tree of entries {name, files} or {name, serial}.
-   * serial are Uint8Array.
+   * Returns the format expected by Bus.toc, but does not install there.
    */
   fetchAll() {
-    return this.comm.httpJson("GET", "/res-all").then(rsp => this.sanitizeToc(rsp));
+    return this.comm.httpJson("GET", "/res-all")
+      .then(rsp => this.sanitizeToc(rsp))
+      .then(toc => this.loadAllImages(toc));
   }
   
   /* Editors should call this immediately when something changes.
@@ -59,6 +61,41 @@ export class Resmgr {
     }, this.DIRTY_TIMEOUT_MS);
   }
   
+  resByPath(path) {
+    return this.bus.toc.find(r => r.path === path);
+  }
+  
+  // Name, ID, basename, path. If it starts with "TYPE:", we assert that as type. Otherwise the one you provide, if you do.
+  resByString(q, type) {
+    if (!q || (typeof(q) !== "string")) return null;
+    const match = q.match(/^([a-zA-Z0-9_]+):/);
+    if (match) {
+      type = match[1];
+      q = q.substring(type.length + 1);
+    }
+    const rid = +q;
+    if (type && rid) { // If the string is a nonzero integer, and a type was provided, it can only be rid.
+      return this.bus.toc.find(res => (res.rid === rid) && (res.type === type));
+    }
+    for (const res of this.bus.toc) {
+      if (type && (type !== res.type)) continue;
+      if (q === res.name) return res;
+      if (q === res.path) return res;
+      if (res.path.endsWith(q) && (res.path[res.path.length - q.length - 1] === "/")) return res;
+    }
+    return null;
+  }
+  
+  resById(type, rid) {
+    return this.bus.toc.find(r => ((r.type === type) && (r.rid === rid)));
+  }
+  
+  getImage(name) {
+    const res = this.resByString(name, "image");
+    if (!res) return null;
+    return res.image;
+  }
+  
   getMetadata(key) {
     this.requireMetadata();
     return this.metadata[key] || "";
@@ -66,7 +103,8 @@ export class Resmgr {
   
   requireMetadata() {
     if (this.metadata) return;
-    const serial = this.bus.toc.files?.find(f => f.name === "metadata")?.serial || [];
+    const res = this.bus.toc.find(r => r.path === "metadata");
+    const serial = res?.serial || new Uint8Array(0);
     const src = new this.window.TextDecoder("utf8").decode(serial);
     this.metadata = {};
     for (let srcp=0; srcp<src.length; ) {
@@ -90,7 +128,8 @@ export class Resmgr {
     for (const { path, encode } of old) {
       try {
         const serial = encode();
-        this.replaceSerialInToc(path, serial);
+        const res = this.bus.toc.find(r => r.path === path);
+        if (res) res.serial = serial;
         promises.push(this.comm.httpText("PUT", "/res/" + path, null, null, serial));
       } catch (error) {
         this.bus.broadcast({ type: "error", error });
@@ -99,42 +138,45 @@ export class Resmgr {
     return Promise.all(promises).catch(error => this.bus.broadcast({ type: "error", error }));
   }
   
-  replaceSerialInToc(path, serial) {
-    const names = path.split("/");
-    let node = this.bus.toc;
-    while (names.length) {
-      if (!node || !node.files) return;
-      const name = names[0];
-      names.splice(0, 1);
-      if (!(node = node.files.find(f => f.name === name))) return;
-    }
-    node.serial = serial;
-  }
-  
   sanitizeToc(input) {
-    if (!input) return { name: "", files: [] };
-    if (!input.files) return { name: "", files: [] };
-    return {
-      name: "",
-      files: input.files.map(f => this._sanitizeToc(f)).filter(v => v).sort((a, b) => this.tocCmp(a, b)),
-    };
+    const dst = [];
+    if (input?.name) input = {...input, name: ""}; // Eliminate the root node name (typically "data").
+    this.sanitizeToc1(dst, "", input);
+    return dst;
   }
   
-  _sanitizeToc(file) {
-    if (!file) return null;
-    const name = (file.name || "").toString();
-    if (file.files) return {
-      name,
-      files: file.files.map(f => this._sanitizeToc(f)).filter(v => v).sort((a, b) => this.tocCmp(a, b)),
-    };
-    if (file.serial) return {
-      name,
-      serial: (typeof(file.serial) === "string") ? this.decodeBase64(file.serial) : file.serial,
-    };
-    return {
-      name,
-      serial: "",
-    };
+  sanitizeToc1(dst, pfx, file) { 
+    if (!file) return;
+    if (file.files) {
+      if (file.name) pfx += file.name + "/";
+      const files = [...file.files];
+      files.sort((a, b) => this.tocCmp(a, b));
+      for (const child of files) {
+        this.sanitizeToc1(dst, pfx, child);
+      }
+    } else {
+      const path = pfx + file.name;
+      const { type, qual, rid, name, format } = this.parsePath(path);
+      const serial = ((typeof(file.serial) === "string") ? this.decodeBase64(file.serial) : file.serial) || new Uint8Array(0);
+      dst.push({ path, type, qual, rid, name, format, serial });
+    }
+  }
+  
+  parsePath(path) {
+    const split = path.split("/");
+    const type = split[0];
+    const base = split[split.length - 1];
+    let qual = "";
+    for (let i=1; i<split.length; i++) { // Do consider basename here; eg string uses basename as qual.
+      const elem = split[i];
+      if (elem.match(/^[a-z]{2}$/)) qual = elem;
+    }
+    const match = base.match(/^(\d*)(-[0-9a-zA-Z_]*)?.*(\.[^\.]*)?$/);
+    let rid = +match?.[1] || 0;
+    let name = match?.[2]?.substring(1) || "";
+    let format = match?.[3]?.substring(1).toLowerCase() || "";
+    if (!rid && !name && !format) name = base;
+    return { type, qual, rid, name, format };
   }
   
   tocCmp(a, b) {
@@ -202,227 +244,121 @@ export class Resmgr {
     return dst;
   }
   
-  tocParentByPath(path) {
-    const names = path.split("/");
-    let node = this.bus.toc;
-    while (names.length > 1) {
-      if (!node || !node.files) return null;
-      const name = names[0];
-      names.splice(0, 1);
-      if (!(node = node.files.find(f => f.name === name))) return null;
-    }
-    return node;
-  }
-  
-  tocEntryByPath(path) {
-    const names = path.split("/");
-    let node = this.bus.toc;
-    while (names.length > 0) {
-      if (!node || !node.files) return null;
-      const name = names[0];
-      names.splice(0, 1);
-      if (!(node = node.files.find(f => f.name === name))) return null;
-    }
-    return node;
-  }
-  
-  tocEntryById(type, rid) {
-    // One level deep only.
-    if (!this.bus.toc?.files) return null;
-    const dir = this.bus.toc.files.find(f => f.name === type);
-    if (!dir?.files) return null;
-    const pfx = rid.toString();
-    const file = dir.files.find(f => f.name.startsWith(pfx) && (!f.name[pfx.length] || (f.name[pfx.length] === '-') || (f.name[pfx.length] === '.')));
-    return file;
-  }
-  
-  /* Adjusts global TOC as needed, including intermediate directories.
-   * The new file will have empty serial.
-   * Throws if the file already exists, or if there's a regular file among the intermediates.
-   * Our request to create the file will not be sent yet, it's queued in our dirty backlog.
-   * If we don't throw, we recommend the caller proceed on the assumption that it's saved.
+  /* This happens during fetchAll().
+   * Given a finalish TOC, locate all of the image resources, create an Image object for each, and wait for those to load.
+   * We modify (toc) in place and resolve with the same.
    */
-  createFile(path) {
-    // Create TOC nodes for each directory leading to the file, if they don't exist yet.
-    const names = path.split("/");
-    let node = this.bus.toc;
-    while (names.length > 1) {
-      const name = names[0];
-      names.splice(0, 1);
-      if (!node || !node.files) throw new Error(`Unable to create file ${path}`); // Regular file in path, or TOC not initialized?
-      let nextNode = node.files.find(f => f.name === name);
-      if (!nextNode) { // Add directory.
-        nextNode = { name, files: [] };
-        node.files.push(nextNode);
-      }
-      node = nextNode;
+  loadAllImages(toc) {
+    const promises = [];
+    for (const res of toc) {
+      if (res.type !== "image") continue;
+      if (!res.serial.length) continue;
+      promises.push(this.loadImage(res.serial).then(img => res.image = img));
     }
-    // Now we're pointing at the immediate parent node, with the basename queued up.
-    if (!node || !node.files) throw new Error(`Unable to create file ${path}`); // Regular file in path, or TOC not initialized?
-    const name = names[0];
-    if (node.files.find(f => f.name === name)) throw new Error(`File already exists: ${path}`);
-    const fnode = { name, serial: new Uint8Array(0) };
-    node.files.push(fnode);
-    this.bus.toc = this.sanitizeToc(this.bus.toc);
-    this.dirty(path, () => new Uint8Array(0));
+    return Promise.all(promises).then(() => toc);
+  }
+  
+  loadImage(serial) {
+    const image = new Image();
+    const blob = new Blob([serial]);
+    const url = URL.createObjectURL(blob);
+    return new Promise((resolve, reject) => {
+      image.addEventListener("load", () => {
+        URL.revokeObjectURL(url);
+        resolve(image);
+      }, { once: true });
+      image.addEventListener("error", error => {
+        URL.revokeObjectURL(url);
+        reject(error);
+      }, { once: true });
+      image.src = url;
+    });
+  }
+  
+  createFile(path) {
+    // Insert in TOC just before the longest prefix match.
+    let insp = this.bus.toc.length;
+    let matchlen = 0;
+    const pfxcnt = (a, b) => {
+      let c = 0;
+      for (; a[c] === b[c]; c++) ;
+      return c;
+    };
+    for (let i=0; i<this.bus.toc.length; i++) {
+      const res = this.bus.toc[i];
+      const q = pfxcnt(res.path, path);
+      if (q > matchlen) {
+        matchlen = q;
+        insp = i;
+      }
+    }
+    const file = this.parsePath(path);
+    file.path = path;
+    file.serial = new Uint8Array(0);
+    this.bus.toc.splice(insp, 0, file);
+    this.bus.setToc(this.bus.toc);
+    this.dirty(path, () => file.serial);
   }
   
   deleteFile(path) {
-    const parent = this.tocParentByPath(path);
-    if (!parent || !parent.files) throw new Error(`File not found: ${path}`);
-    const name = path.replace(/^.*\//, "");
-    const p = parent.files.findIndex(f => f.name === name);
-    if (p < 0) throw new Error(`File not found: ${path}`);
-    parent.files.splice(p, 1);
+    const p = this.bus.toc.findIndex(r => r.path === path);
+    if (p < 0) return this.bus.broadcast({ type: "error", error: `File ${JSON.stringify(path)} not found` });
+    this.bus.toc.splice(p, 1);
+    this.bus.setToc(this.bus.toc);
     this.comm.httpBinary("DELETE", "/res/" + path).then(() => {
     }).catch(error => this.bus.broadcast({ type: "error", error }));
   }
   
-  parseResourcePath(path) {
-    let base = "";
-    let type = "";
-    let qual = "";
-    for (const elem of path.split('/')) {
-      base = elem;
-      if (elem.match(/^[a-z]{2}$/)) qual = elem;
-      else if (elem.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) type = elem;
-    }
-    const match = base.match(/^(\d*)(-[0-9a-zA-Z_]*)?.*(\.[^\.]*)?$/);
-    let rid = +match?.[1] || 0;
-    let name = match?.[2]?.substring(1) || "";
-    let format = match?.[3]?.substring(1).toLowerCase() || "";
-    return { type, qual, rid, name, format };
-  }
-  
-  ridFromString(src, type, rtnserial) {
-    // If it's a path with ID in the basename, go with that.
-    let match = src.match(/(\d+)(-[^\/]*)?$/);
-    if (match) {
-      const rid = +match[1];
-      if (rtnserial) {
-        const entry = this.tocEntryById(type, rid);
-        if (entry) rtnserial.push(entry.serial);
-      }
-      return rid;
-    }
-    // Otherwise it's a name or maybe "type:name".
-    const split = src.split(':');
-    if (split.length === 2) {
-      type = split[0];
-      src = split[1];
-    }
-    // Or maybe it's an integer at this point, that would be convenient.
-    let rid = +src;
-    if (!isNaN(rid)) {
-      if (rtnserial) {
-        const entry = this.tocEntryById(type, rid);
-        if (entry) rtnserial.push(entry.serial);
-      }
-      return rid;
-    }
-    // Search only in the top directory of this type.
-    // I haven't actually declared as a requirement that resources be exactly two levels deep, but might do.
-    if (!type) return null;
-    let dir = this.bus.toc?.files?.find(f => f.name === type);
-    if (!dir?.files) return null;
-    for (const f of dir.files) {
-      const match = f.name.match(/^(\d*)(-[0-9a-zA-Z_]*)?.*(\.[^\.]*)?$/);
-      let rid = +match?.[1] || 0;
-      let name = match?.[2]?.substring(1) || "";
-      if (name === src) {
-        if (rtnserial) rtnserial.push(f.serial);
-        return rid;
-      }
-    }
-    return null;
-  }
-  
-  /* Returns null or an Image object.
-   * (id) can be rid, path, name, "image:NAME", we're flexible.
-   * TODO This should also work for images with no explicit ID. But how???
-   */
-  getImage(id) {
-    const rtnserial = [];
-    if (typeof(id) === "string") {
-      id = this.ridFromString(id, "image", rtnserial);
-    }
-    if (typeof(id) !== "number") return null;
-    let img = this.images[id];
-    if (img) return img;
-    if (img === false) return null; // false is an indicator that we've already tried
-    if (!rtnserial.length) {
-      const entry = this.tocEntryById("image", id);
-      if (entry) rtnserial.push(entry.serial);
-    }
-    if (!rtnserial.length) {
-      this.images[id] = false;
-      return null;
-    }
-    const blob = new Blob([rtnserial[0]]);
-    const url = URL.createObjectURL(blob);
-    const image = new Image();
-    image.addEventListener("load", () => {
-      URL.revokeObjectURL(url);
-      this.images[id] = image;
-    });
-    image.addEventListener("error", (e) => {
-      URL.revokeObjectURL(url);
-      this.images[id] = false;
-    });
-    image.src = url;
-    this.images[id] = image;
-    return image;
-  }
-  
-  editorClassForResource(path, serial) {
-    const { type, qual, rid, name, format } = this.parseResourcePath(path);
+  editorClassForResource(res) {
     
     // First, let the client override any editor selection.
-    let clazz = selectCustomEditor(path, serial, type, qual, rid, name, format);
+    let clazz = selectCustomEditor(res.path, res.serial, res.type, res.qual, res.rid, res.name, res.format);
     if (clazz) return clazz;
 
     // Sound effects in our text format use SfgEditor.
     // Check for WAV and SFG-binary signatures; let those fall thru to HexEditor.
-    if (type === "sound") {
-      if ((serial.length >= 4) && (serial[0] === 0x52) && (serial[1] === 0x49) && (serial[2] === 0x46) && (serial[3] === 0x46)) ;
-      else if ((serial.length >= 2) && (serial[0] === 0xeb) && (serial[1] === 0xeb)) ;
+    if (res.type === "sound") {
+      const s = res.serial;
+      if ((s.length >= 4) && (s[0] === 0x52) && (s[1] === 0x49) && (s[2] === 0x46) && (s[3] === 0x46)) ;
+      else if ((s.length >= 2) && (s[0] === 0xeb) && (s[1] === 0xeb)) ;
       else return SfgEditor;
     }
     
     // TextEditor would suffice for metadata, but we can do better.
-    if (type === "metadata") return MetadataEditor;
+    if (res.type === "metadata") return MetadataEditor;
     
     // We have a read-only viewer for image resources.
-    if (type === "image") return ImageEditor;
+    if (res.type === "image") return ImageEditor;
     
     // Strings have a very special side-by-side deal to aid translation.
-    if (type === "string") return StringEditor;
+    if (res.type === "string") return StringEditor;
      
     // If the whole thing is UTF-8 and not empty, use the text editor.
-    if (serial.length) {
+    if (res.serial.length) {
+      const s = res.serial;
       let extc = 0;
       let ok = true;
-      for (let srcp=0; srcp<serial.length; srcp++) {
+      for (let srcp=0; srcp<s.length; srcp++) {
         if (extc) {
           extc--;
-          if ((serial[srcp] & 0xc0) !== 0x80) { ok = false; break; }
-        } else if (!(serial[srcp] & 0x80)) {
+          if ((s[srcp] & 0xc0) !== 0x80) { ok = false; break; }
+        } else if (!(s[srcp] & 0x80)) {
           // Forbid C0 bytes except HT, LF, CR.
-          if (serial[srcp] === 0x09) ;
-          else if (serial[srcp] === 0x0a) ;
-          else if (serial[srcp] === 0x0d) ;
-          else if (serial[srcp] < 0x20) { ok = false; break; }
-        } else if (!(serial[srcp] & 0x40)) { ok = false; break; }
-        else if (!(serial[srcp] & 0x20)) extc = 1;
-        else if (!(serial[srcp] & 0x10)) extc = 2;
-        else if (!(serial[srcp] & 0x08)) extc = 3;
+          if (s[srcp] === 0x09) ;
+          else if (s[srcp] === 0x0a) ;
+          else if (s[srcp] === 0x0d) ;
+          else if (s[srcp] < 0x20) { ok = false; break; }
+        } else if (!(s[srcp] & 0x40)) { ok = false; break; }
+        else if (!(s[srcp] & 0x20)) extc = 1;
+        else if (!(s[srcp] & 0x10)) extc = 2;
+        else if (!(s[srcp] & 0x08)) extc = 3;
         else { ok = false; break; }
       }
       if (extc) ok = false;
       if (ok) return TextEditor;
     }
     
-    // Finally, the hex editor can open anything at all:
+    // Finally, the hex editor can open anything at all.
     return HexEditor;
   }
 }

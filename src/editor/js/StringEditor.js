@@ -25,18 +25,16 @@ export class StringEditor {
   
   setup(serial, path) {
     this.pathPrefix = path.replace(/[^\/]*$/, "");
-    const parent = this.resmgr.tocParentByPath(path);
-    if (!parent) return;
-    this.files = parent.files.filter(f => f.serial);
+    this.files = this.resmgr.bus.toc.filter(res => res.type === "string");
     if (this.files.length < 1) return;
     if (this.files.length === 1) {
       this.chooseFiles(this.files[0], null);
     } else {
-      const main = this.files.find(f => path.endsWith(f.name));
+      const main = this.files.find(f => path === f.path);
       if (!main) return;
       let ref;
       const lang = this.resmgr.getMetadata("language").trim().substring(0, 2) || "en";
-      if (main.name !== lang) ref = this.files.find(f => f.name === lang);
+      if (main.name !== lang) ref = this.files.find(f => f.qual === lang);
       if (!ref) ref = this.files.find(f => f !== main);
       this.chooseFiles(ref, main);
     }

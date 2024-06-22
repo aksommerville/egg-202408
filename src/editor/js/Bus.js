@@ -41,7 +41,7 @@ export class Bus {
     
     // General state.
     this.status = "pending";
-    this.toc = {}; // {name,files:*[]} or {name,serial}
+    this.toc = []; // {path,type,qual,rid,name,format,serial[,image]}, files only. rid not necessarily known.
     this.roms = []; // string
     // For audio:
     this.sound = new Sound();

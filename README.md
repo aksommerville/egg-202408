@@ -31,6 +31,7 @@ sudo apt install clang wabt
 - - [x] Custom global operations, eg "validate my resources"
 - - [x] Add and delete files.
 - - [ ] More fs ops: Rename file, rename directory, move file, make directory, remove directory. Low priority; user can always do this odd stuff in her filesystem directly.
+- - [ ] StringEditor: Create new string
 - [ ] eggdev bundle html: Minify platform Javascript.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?

@@ -52,9 +52,9 @@ export class RootUi {
   }
   
   onHashChange(path) {
-    const res = this.resmgr.tocEntryByPath(path);
+    const res = this.resmgr.resByPath(path);
     if (res && res.serial) {
-      const clazz = this.resmgr.editorClassForResource(path, res.serial);
+      const clazz = this.resmgr.editorClassForResource(res);
       if (clazz) {
         const workspace = this.element.querySelector(".workspace");
         workspace.innerHTML = "";

@@ -85,25 +85,42 @@ export class SidebarUi {
     const element = this.element.querySelector(".toc");
     const openDirectories = Array.from(element.querySelectorAll("li.dir.open")).map(e => e.getAttribute("data-path"));
     element.innerHTML = "";
-    if (event.toc?.files) {
-      for (const file of event.toc.files) this.addTocFile(element, file, "", openDirectories);
-    }
-  }
-  
-  addTocFile(ul, file, pfx, openDirectories) {
-    if (!file || !file.name) return;
-    const path = pfx + file.name;
-    if (file.hasOwnProperty("serial")) { // Regular file, ie leaf node.
-      const li = this.dom.spawn(ul, "LI", ["file"], { "data-path": path }, file.name);
-      li.addEventListener("click", (e) => this.chooseFile(e, file, pfx, li));
-      if (this.currentPath === path) li.classList.add("open");
-    } else if (file.files) { // Directory.
-      const id = `dir-${this.idNext++}`;
-      const li = this.dom.spawn(ul, "LI", ["dir"], { id, "data-path": path });
-      if (openDirectories.includes(path)) li.classList.add("open");
-      this.dom.spawn(li, "DIV", ["dirlabel"], file.name, { "on-click": () => this.toggleDir(id) });
-      const subul = this.dom.spawn(li, "UL", ["dir"]);
-      for (const child of file.files) this.addTocFile(subul, child, path + "/", openDirectories);
+    if (event.toc) {
+      let ul = element;
+      const pathbits = [];
+      for (const file of event.toc) {
+        const fpath = file.path.split("/");
+        const basename = fpath[fpath.length - 1];
+        fpath.splice(fpath.length - 1, 1); // Remove basename.
+        
+        // Pop elements from (pathbits) until (pathbits) is a prefix of (fpath). Step (ul) upward on each pop.
+        const arrayIsPrefix = (pre, q) => {
+          for (let i=0; i<pre.length; i++) {
+            if (pre[i] !== q[i]) return false;
+          }
+          return true;
+        };
+        while (!arrayIsPrefix(pathbits, fpath)) {
+          pathbits.splice(pathbits.length - 1, 1);
+          ul = ul.parentNode.parentNode;
+        }
+        
+        // Push a new element for each member of (fpath) beyond (pathbits).
+        for (let i=pathbits.length; i<fpath.length; i++) {
+          pathbits.push(fpath[i]);
+          const id = `SidebarUi-dir-${this.idNext++}`;
+          const lipath = pathbits.join("/");
+          const li = this.dom.spawn(ul, "LI", ["dir"], { id, "data-path": lipath });
+          if (openDirectories.includes(lipath)) li.classList.add("open");
+          this.dom.spawn(li, "DIV", ["dirlabel"], fpath[i], { "on-click": () => this.toggleDir(id) });
+          ul = this.dom.spawn(li, "UL", ["dir"]);
+        }
+        
+        // And finally add the file.
+        const li = this.dom.spawn(ul, "LI", ["file"], { "data-path": file.path }, basename);
+        li.addEventListener("click", e => this.chooseFile(e, file, li));
+        if (this.currentPath === file.path) li.classList.add("open");
+      }
     }
   }
   
@@ -117,16 +134,14 @@ export class SidebarUi {
     }
   }
   
-  chooseFile(event, file, pfx, li) {
+  chooseFile(event, file, li) {
     if (event.ctrlKey) {
-      this.dom.modalPickOne(["Cancel, keep it", "Yes, delete it"], `Really delete file '${pfx}${file.name}'?`)
+      this.dom.modalPickOne(["Cancel, keep it", "Yes, delete it"], `Really delete file '${file.path}'?`)
         .catch(() => {})
         .then(rsp => {
           if (!rsp || !rsp.startsWith("Yes")) return;
-          const path = pfx + file.name;
-          this.resmgr.deleteFile(path);
-          this.onTocChanged({ toc: this.bus.toc });
-          if (path === this.currentPath) {
+          this.resmgr.deleteFile(file.path);
+          if (file.path === this.currentPath) {
             this.currentPath = "";
             this.bus.broadcast({ type: "open", path: "", serial: [] });
           }
@@ -134,8 +149,8 @@ export class SidebarUi {
     } else {
       for (const elem of this.element.querySelectorAll(".file.open")) elem.classList.remove("open");
       li.classList.add("open");
-      this.currentPath = pfx + file.name;
-      this.bus.broadcast({ type: "open", path: pfx + file.name, serial: file.serial });
+      this.currentPath = file.path;
+      this.bus.broadcast({ type: "open", path: file.path, serial: file.serial });
     }
   }
   
@@ -148,7 +163,7 @@ export class SidebarUi {
         parent.classList.add("open");
       }
     }
-    li.click();
+    this.chooseFile({}, this.bus.toc.find(r => r.path === path), li);
   }
   
   focusPath(path) {
@@ -178,7 +193,6 @@ export class SidebarUi {
     this.dom.modalInput("File name, relative to inside data directory:", "").then(subpath => {
       if (!subpath) return;
       this.resmgr.createFile(subpath);
-      this.onTocChanged({ toc: this.bus.toc });
       this.chooseFileByPath(subpath);
     }).catch(error => {
       if (error) this.bus.broadcast({ type: "error", error });
