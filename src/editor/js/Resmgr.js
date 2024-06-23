@@ -298,6 +298,7 @@ export class Resmgr {
     this.bus.toc.splice(insp, 0, file);
     this.bus.setToc(this.bus.toc);
     this.dirty(path, () => file.serial);
+    return file;
   }
   
   deleteFile(path) {
