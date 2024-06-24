@@ -87,6 +87,7 @@ export class StringEditor {
     this.dom.spawn(tr, "TH", ["id"], "ID");
     this.dom.spawn(tr, "TH", ["left"], this.names[1], { "on-click": () => this.chooseLanguage(1) });
     this.dom.spawn(tr, "TH", ["right"], this.names[2], { "on-click": () => this.chooseLanguage(2) });
+    this.dom.spawn(this.element, "INPUT", { type: "button", value: "+", "on-click": () => this.onAdd() });
   }
   
   chooseLanguage(col) {
@@ -103,11 +104,33 @@ export class StringEditor {
     }).catch(() => {});
   }
   
+  onAdd() {
+    this.dom.modalInput("ID or name:", this.unusedId()).catch(() => {}).then(rsp => {
+      if (!rsp) return;
+      const table = this.element.querySelector("table");
+      const tr = this.dom.spawn(table, "TR", ["res"]);
+      this.dom.spawn(tr, "TD", ["id"], this.dom.spawn(null, "INPUT", { type: "text", value: rsp }));
+      this.dom.spawn(tr, "TD", ["left"], this.dom.spawn(null, "INPUT", { type: "text", value: "" }));
+      this.dom.spawn(tr, "TD", ["right"], this.dom.spawn(null, "INPUT", { type: "text", value: "" }));
+      this.onDirty();
+    });
+  }
+  
   onDirty() {
     const lfile = this.files.find(f => f.name === this.names[1]);
     const rfile = this.files.find(f => f.name === this.names[2]);
     if (lfile) this.resmgr.dirty(this.pathPrefix + lfile.name, () => this.encode("left"));
     if (rfile) this.resmgr.dirty(this.pathPrefix + rfile.name, () => this.encode("right"));
+  }
+  
+  unusedId() {
+    const used = [];
+    for (const input of this.element.querySelectorAll("tr.res td.id input")) {
+      const rid = +input.value;
+      if (isNaN(rid)) continue;
+      used[rid] = true;
+    }
+    for (let rid=1; ; rid++) if (!used[rid]) return rid;
   }
   
   encode(colname) {

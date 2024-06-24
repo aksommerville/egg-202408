@@ -29,6 +29,9 @@ sudo apt install clang wabt
 - - [ ] More fs ops: Rename file, rename directory, move file, make directory, remove directory. Low priority; user can always do this odd stuff in her filesystem directly.
 - - [ ] StringEditor: Create new string
 - - [x] Shift-click or something, to select an editor manually.
+- - [ ] Are we allowing strings to split across multiple files? We must. eg "en-dialogue" and "en-menus", and those names would be discarded.
+- - - StringEditor will need to be smart about that, and not compare like "fr-Apples" to "en-Oranges".
+- - [ ] Global op to detect missing strings.
 - [ ] eggdev bundle html: Minify platform Javascript.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?
