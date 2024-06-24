@@ -218,6 +218,30 @@ body > * {
   color: #fcc;
 }
 
+.SongEditor {
+  display: flex;
+  flex-direction: column;
+  overflow: scroll;
+}
+.SongEditor > .controls {
+  background-color: #222;
+  border-bottom: 1px solid #000;
+  position: sticky;
+  top: 0;
+}
+.SongEditor > .main {
+}
+.SongEditor > .main tr:nth-child(odd) {
+  background-color: #222;
+}
+.SongEditor > .main th {
+  text-align: left;
+  cursor: pointer;
+}
+.SongEditor > .main input.event {
+  display: block;
+}
+
 /* From egg-202405/synthwerk.
  **************************************************************/
  

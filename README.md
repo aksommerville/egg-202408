@@ -25,7 +25,8 @@ sudo apt install clang wabt
 - [ ] Editor
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
 - - [ ] Synth receiver (I want to run midevil against this server).
-- - [ ] Is it crazy to add a MIDI editor? Not necessarily a full sequencer, but something where you can play songs and tweak the program selection and levels.
+- - [x] Is it crazy to add a MIDI editor? Not necessarily a full sequencer, but something where you can play songs and tweak the program selection and levels.
+- - [ ] SongEditor: Playback.
 - - [ ] More fs ops: Rename file, rename directory, move file, make directory, remove directory. Low priority; user can always do this odd stuff in her filesystem directly.
 - - [ ] StringEditor: Create new string
 - - [x] Shift-click or something, to select an editor manually.
