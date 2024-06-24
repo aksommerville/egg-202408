@@ -69,6 +69,10 @@ export class SidebarUi {
       this.dom.spawn(ops, "OPTION", { value }, name);
     }
     
+    const instructions = this.dom.spawn(this.element, "DIV", ["instructions"]);
+    this.dom.spawn(instructions, "DIV", "Ctl-click to delete.");
+    this.dom.spawn(instructions, "DIV", "Shift-click to choose editor.");
+    
     const toc = this.dom.spawn(this.element, "UL", ["toc", "dir"]);
   }
   
@@ -135,6 +139,7 @@ export class SidebarUi {
   }
   
   chooseFile(event, file, li) {
+  
     if (event.ctrlKey) {
       this.dom.modalPickOne(["Cancel, keep it", "Yes, delete it"], `Really delete file '${file.path}'?`)
         .catch(() => {})
@@ -146,6 +151,21 @@ export class SidebarUi {
             this.bus.broadcast({ type: "open", path: "", serial: [] });
           }
         }).catch(error => this.bus.broadcast({ type: "error", error }));
+  
+    } else if (event.shiftKey) {
+      const classes = this.resmgr.editorClassesForResource(file);
+      this.dom.modalPickOne(classes.map(c => c.name), "Editor class:")
+        .catch(() => {})
+        .then(rsp => {
+          const editorClass = classes.find(c => c.name === rsp);
+          if (editorClass) {
+            for (const elem of this.element.querySelectorAll(".file.open")) elem.classList.remove("open");
+            li.classList.add("open");
+            this.currentPath = file.path;
+            this.bus.broadcast({ type: "open", path: file.path, serial: file.serial, editorClass });
+          }
+        });
+  
     } else {
       for (const elem of this.element.querySelectorAll(".file.open")) elem.classList.remove("open");
       li.classList.add("open");

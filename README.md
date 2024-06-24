@@ -23,15 +23,12 @@ sudo apt install clang wabt
 - [ ] xegl cursor lock on startup seems to be reporting absolute when we start in fullscreen? Try eggsamples/shmup.egg, it's haywire in fullscreen.
 - [ ] Notify of motion outside window. Platform might only be able to supply enter/exit, but that's enough. (see lingerful cursor in eggsamples/hardboiled).
 - [ ] Editor
-- - [x] Record UI state in URL, so refreshing keeps you looking at the same thing.
-- - - I think we can be satisfied with just the selected file's path. Not the full workbench state.
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
 - - [ ] Synth receiver (I want to run midevil against this server).
-- - [x] Plug-in framework for custom editors.
-- - [x] Custom global operations, eg "validate my resources"
-- - [x] Add and delete files.
+- - [ ] Is it crazy to add a MIDI editor? Not necessarily a full sequencer, but something where you can play songs and tweak the program selection and levels.
 - - [ ] More fs ops: Rename file, rename directory, move file, make directory, remove directory. Low priority; user can always do this odd stuff in her filesystem directly.
 - - [ ] StringEditor: Create new string
+- - [x] Shift-click or something, to select an editor manually.
 - [ ] eggdev bundle html: Minify platform Javascript.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?

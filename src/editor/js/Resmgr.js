@@ -11,7 +11,7 @@ import { StringEditor } from "./StringEditor.js";
 import { ImageEditor } from "./ImageEditor.js";
 import { MetadataEditor } from "./MetadataEditor.js";
 import { SfgEditor } from "./audio/SfgEditor.js";
-import { selectCustomEditor } from "./selectCustomEditor.js";
+import { selectCustomEditor, listCustomEditors } from "./selectCustomEditor.js";
 
 export class Resmgr {
   static getDependencies() {
@@ -308,6 +308,19 @@ export class Resmgr {
     this.bus.setToc(this.bus.toc);
     this.comm.httpBinary("DELETE", "/res/" + path).then(() => {
     }).catch(error => this.bus.broadcast({ type: "error", error }));
+  }
+  
+  editorClassesForResource(res) {
+    // We could eliminate editor types that we know will be incompatible, but I'm not sure that's really our place.
+    return [
+      HexEditor,
+      TextEditor,
+      SfgEditor,
+      MetadataEditor,
+      ImageEditor,
+      StringEditor,
+      ...listCustomEditors(res.path, res.serial, res.type, res.qual, res.rid, res.name, res.format),
+    ];
   }
   
   editorClassForResource(res) {

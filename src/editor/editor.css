@@ -80,6 +80,16 @@ body > * {
   background-color: #000;
 }
 
+.SidebarUi > .instructions {
+  font-size: 9pt;
+  font-style: italic;
+  border-bottom: 1px solid #000;
+}
+
+.SidebarUi > .toc {
+  user-select: none;
+}
+
 .SidebarUi li.dir > ul.dir {
   display: none;
 }

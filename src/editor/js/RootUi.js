@@ -22,6 +22,7 @@ export class RootUi {
     
     this.sidebarUi = null;
     this.editor = null;
+    this.nextEditorClass = null; // Sticky class, we stash it here during the hash change.
     
     this.buildUi();
     
@@ -48,13 +49,16 @@ export class RootUi {
   }
   
   onOpen(event) {
+    this.nextEditorClass = event.editorClass;
+    this.window.location = "#";
     this.window.location = "#" + event.path;
   }
   
   onHashChange(path) {
+    if (path === "#") return;
     const res = this.resmgr.resByPath(path);
     if (res && res.serial) {
-      const clazz = this.resmgr.editorClassForResource(res);
+      const clazz = this.nextEditorClass || this.resmgr.editorClassForResource(res);
       if (clazz) {
         const workspace = this.element.querySelector(".workspace");
         workspace.innerHTML = "";
