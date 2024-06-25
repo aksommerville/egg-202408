@@ -100,11 +100,11 @@ export class SongEditor {
   
   editDivision() {
     if (!this.song) return;
-    this.dom.modal("Ticks/qnote:", this.song.division.toString()).then(rsp => {
+    this.dom.modalInput("Ticks/qnote:", this.song.division.toString()).then(rsp => {
       const division = +rsp;
       if (isNaN(division) || (division < 1) || (division >= 0x8000)) return;
-      this.song.division = division;
-      this.element.querySelector("input[name='division']").value = `${division} ticks/qnote`;
+      if (!this.song.changeDivision(division)) return;
+      this.populateUi(); // All timestamps will have changed, rebuild from scratch.
       this.resmgr.dirty(this.path, () => this.song.encode());
     }).catch(() => {});
   }

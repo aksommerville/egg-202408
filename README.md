@@ -27,7 +27,9 @@ sudo apt install clang wabt
 - - [ ] Synth receiver (I want to run midevil against this server).
 - - [x] Is it crazy to add a MIDI editor? Not necessarily a full sequencer, but something where you can play songs and tweak the program selection and levels.
 - - [ ] SongEditor: Playback.
-- - [ ] More fs ops: Rename file, rename directory, move file, make directory, remove directory. Low priority; user can always do this odd stuff in her filesystem directly.
+- - - This is a big deal. We'll need to bring in the web runtime's synthesizer somehow, and either modify it to play MIDI, or also implement the song compiler.
+- - [x] More fs ops: Rename file, rename directory, move file, make directory, remove directory. Low priority; user can always do this odd stuff in her filesystem directly.
+- - - Not providing UI for directories. They get created implicitly as needed, and let the user figure it out from there.
 - - [ ] StringEditor: Create new string
 - - [x] Shift-click or something, to select an editor manually.
 - - [ ] Are we allowing strings to split across multiple files? We must. eg "en-dialogue" and "en-menus", and those names would be discarded.

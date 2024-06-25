@@ -70,7 +70,7 @@ export class SidebarUi {
     }
     
     const instructions = this.dom.spawn(this.element, "DIV", ["instructions"]);
-    this.dom.spawn(instructions, "DIV", "Ctl-click to delete.");
+    this.dom.spawn(instructions, "DIV", "Ctl-click to delete or rename.");
     this.dom.spawn(instructions, "DIV", "Shift-click to choose editor.");
     
     const toc = this.dom.spawn(this.element, "UL", ["toc", "dir"]);
@@ -141,16 +141,32 @@ export class SidebarUi {
   chooseFile(event, file, li) {
   
     if (event.ctrlKey) {
-      this.dom.modalPickOne(["Cancel, keep it", "Yes, delete it"], `Really delete file '${file.path}'?`)
-        .catch(() => {})
-        .then(rsp => {
-          if (!rsp || !rsp.startsWith("Yes")) return;
+      this.dom.modalInput("New path, or blank+OK to delete:", file.path).then(rsp => {
+        rsp = rsp.trim();
+        if (!rsp) {
           this.resmgr.deleteFile(file.path);
           if (file.path === this.currentPath) {
             this.currentPath = "";
             this.bus.broadcast({ type: "open", path: "", serial: [] });
           }
-        }).catch(error => this.bus.broadcast({ type: "error", error }));
+        } else if (rsp === file.path) {
+          // Unchanged, cool, done.
+        } else {
+          // Renaming is trickier. Resmgr.createFile dirties the new file, and it gets created on the next flush.
+          // We can dirty it ourselves right after create, with the content.
+          // Trigger that flush manually, and delete the old file only if it succeeds.
+          // If the flush fails, Resmgr reports the error independently.
+          this.resmgr.createFile(rsp);
+          this.resmgr.dirty(rsp, () => file.serial);
+          this.resmgr.flushDirties().then(() => {
+            this.resmgr.deleteFile(file.path);
+            this.currentPath = rsp;
+            this.bus.broadcast({ type: "open", path: rsp, serial: file.serial });
+          });
+        }
+      }).catch(error => {
+        if (error) this.bus.broadcast({ type: "error", error });
+      });
   
     } else if (event.shiftKey) {
       const classes = this.resmgr.editorClassesForResource(file);

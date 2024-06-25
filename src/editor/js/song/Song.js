@@ -19,6 +19,26 @@ export class Song {
     this.division = 24; // ticks/qnote: 1..32767
   }
   
+  /* Sets division (ticks/qnote) to this new value and updates all timestamps with a best fit.
+   * Returns false if unchanged -- invalid input, or already at this value.
+   * Beware that this is very destructive.
+   * Increasing division by a multiple of the prior division is completely safe,
+   * but any other case will likely produce some rounding error.
+   */
+  changeDivision(division) {
+    if (!division || (typeof(division) !== "number") || (division < 1) || (division > 0x7fff)) return false;
+    if (division === this.division) return false;
+    const scale = division / this.division;
+    for (const track of this.tracks) {
+      for (const event of track.events) {
+        event.when = Math.round(event.when * scale);
+        if (event.duration) event.duration = Math.round(event.when * scale);
+      }
+    }
+    this.division = division;
+    return true;
+  }
+  
   addTrack() {
     const track = { events: [] };
     this.tracks.push(track);

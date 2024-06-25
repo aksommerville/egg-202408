@@ -75,6 +75,7 @@ export class SongEventModal {
           for (let i=0; i<0x80; i++) {
             this.dom.spawn(k, "OPTION", { value: i }, `${i}: ${CONTROL_KEYS[i] || ''}`);
           }
+          k.value = this.event.a;
           this.spawnNumber(table, "b", "Value");
         } break;
       case 0xc0: {
@@ -82,6 +83,7 @@ export class SongEventModal {
           for (let i=0; i<0x80; i++) {
             this.dom.spawn(pgm, "OPTION", { value: i }, `${i}: ${GM_PROGRAM_NAMES[i] || ''}`);
           }
+          pgm.value = this.event.a;
         } break;
       case 0xd0: {
           this.spawnNumber(table, "a", "Pressure");
@@ -182,7 +184,7 @@ const CONTROL_KEYS = [
 ];
 
 const GM_PROGRAM_NAMES = [
-"Acoustic Grand Piano","Bright Acoustic Piano","Electric Grand Piano","Electric Piano 1 (Rhodes Piano)","Electric Piano 2 (Chorused Piano)","Harpsichord","Clavinet",
+"Acoustic Grand Piano","Bright Acoustic Piano","Electric Grand Piano","Honky","Electric Piano 1 (Rhodes Piano)","Electric Piano 2 (Chorused Piano)","Harpsichord","Clavinet",
 "Celesta","Glockenspiel","Music Box","Vibraphone","Marimba","Xylophone","Tubular Bells","Dulcimer (Santur)",
 "Drawbar Organ (Hammond)","Percussive Organ","Rock Organ","Church Organ","Reed Organ","Accordion (French)","Harmonica","Tango Accordion (Band neon)",
 "Acoustic Guitar (nylon)","Acoustic Guitar (steel)","Electric Guitar (jazz)","Electric Guitar (clean)","Electric Guitar (muted)","Overdriven Guitar","Distortion Guitar","Guitar harmonics",
@@ -194,7 +196,7 @@ const GM_PROGRAM_NAMES = [
 "Piccolo","Flute","Recorder","Pan Flute","Blown Bottle","Shakuhachi","Whistle","Ocarina",
 "Lead 1 (square wave)","Lead 2 (sawtooth wave)","Lead 3 (calliope)","Lead 4 (chiffer)","Lead 5 (charang)","Lead 6 (voice solo)","Lead 7 (fifths)","Lead 8 (bass + lead)",
 "Pad 1 (new age Fantasia)","Pad 2 (warm)","Pad 3 (polysynth)","Pad 4 (choir space voice)","Pad 5 (bowed glass)","Pad 6 (metallic pro)","Pad 7 (halo)","Pad 8 (sweep)",
-"FX 1 (rain)","FX 2 (soundtrack)","FX 3 (crystal)","FX 4 (atmosphere)","FX 5 (brightness)","FX 6 (goblins)","FX 7 (echoes, drops)",
+"FX 1 (rain)","FX 2 (soundtrack)","FX 3 (crystal)","FX 4 (atmosphere)","FX 5 (brightness)","FX 6 (goblins)","FX 7 (echoes, drops)","FX 8 (sci",
 "Sitar","Banjo","Shamisen","Koto","Kalimba","Bag pipe","Fiddle","Shanai",
 "Tinkle Bell","Agogo","Steel Drums","Woodblock","Taiko Drum","Melodic Tom","Synth Drum","Reverse Cymbal",
 "Guitar Fret Noise","Breath Noise","Seashore","Bird Tweet","Telephone Ring","Helicopter","Applause","Gunshot",
