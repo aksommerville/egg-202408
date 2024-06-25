@@ -30,7 +30,7 @@ sudo apt install clang wabt
 - - [x] Are we allowing strings to split across multiple files? We must. eg "en-dialogue" and "en-menus", and those names would be discarded.
 - - - StringEditor will need to be smart about that, and not compare like "fr-Apples" to "en-Oranges".
 - - - This is broken both in the editor and the packer.
-- - [ ] Global op to detect missing strings.
+- - [x] Global op to detect missing strings.
 - - [ ] string,metadata,sfg,...: Is it feasible to preserve comments during encode?
 - [ ] eggdev bundle html: Minify platform Javascript.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?

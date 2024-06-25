@@ -8,18 +8,21 @@ import { Comm } from "./Comm.js";
 import { Launcher } from "./Launcher.js";
 import { Resmgr } from "./Resmgr.js";
 import { customGlobalActions } from "./customGlobalActions.js";
+import { GlobalActions } from "./GlobalActions.js";
 
 export class SidebarUi {
   static getDependencies() {
-    return [HTMLElement, Dom, Bus, Comm, Launcher, Resmgr];
+    return [HTMLElement, Dom, Bus, Comm, Launcher, Resmgr, GlobalActions];
   }
-  constructor(element, dom, bus, comm, launcher, resmgr) {
+  constructor(element, dom, bus, comm, launcher, resmgr, globalActions) {
     this.element = element;
     this.dom = dom;
     this.bus = bus;
     this.comm = comm;
     this.launcher = launcher;
     this.resmgr = resmgr;
+    this.globalActions = globalActions;
+    
     this.statusListener = this.bus.listen(["status"], e => this.onStatusChanged(e));
     this.tocListener = this.bus.listen(["toc"], e => this.onTocChanged(e));
     this.romsListener = this.bus.listen(["roms"], e => this.onRomsChanged(e));
@@ -61,9 +64,12 @@ export class SidebarUi {
       ops.value = "";
     }});
     this.dom.spawn(ops, "OPTION", { value: "" }, "Ops...");
-    // Opportunity to define standard actions here.
     this.actions = {
     };
+    for (const { value, name, action } of this.globalActions.list()) {
+      this.actions[value] = action;
+      this.dom.spawn(ops, "OPTION", { value }, name);
+    }
     for (const { value, name, action } of customGlobalActions) {
       this.actions[value] = action;
       this.dom.spawn(ops, "OPTION", { value }, name);
