@@ -87,7 +87,7 @@ export class Dom {
       controller.resolve = res;
       controller.reject = rej;
     }).then(r => { controller.element.remove(); return r; }).catch(r => { controller.element.remove(); throw r; });
-    controller.element.addEventListener("click", (event) => {
+    controller.element.addEventListener("mousedown", (event) => {
       const bounds = controller.element.getBoundingClientRect();
       if ((event.clientX >= bounds.x) && (event.clientY >= bounds.y) && (event.clientX < bounds.x + bounds.width) && (event.clientY < bounds.y + bounds.height)) {
         // In bounds, let the modal play with it.

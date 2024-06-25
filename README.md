@@ -31,7 +31,8 @@ sudo apt install clang wabt
 - - - StringEditor will need to be smart about that, and not compare like "fr-Apples" to "en-Oranges".
 - - - This is broken both in the editor and the packer.
 - - [x] Global op to detect missing strings.
-- - [ ] string,metadata,sfg,...: Is it feasible to preserve comments during encode?
+- - [x] string,metadata,sfg,...: Is it feasible to preserve comments during encode? ...done: string metadata. SFG is more complicated, and I'm not bothering just now.
+- - [ ] MetadataEditor: Incorporate "*String" keys more meaningfully.
 - [ ] eggdev bundle html: Minify platform Javascript.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?

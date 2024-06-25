@@ -90,14 +90,14 @@ export class StringEditor {
   }
   
   chooseLanguage(col) {
-    this.dom.modalPickOne(this.files.map(f => f.name), `Currently '${this.names[col]}'`).then(lang => {
+    this.dom.modalPickOne(this.files.map(f => f.path), `Currently '${this.names[col]}'`).then(lang => {
       this.names[col] = lang;
-      const file = this.files.find(f => f.name === lang);
+      const file = this.files.find(f => f.path === lang);
       if (col === 1) {
-        const other = this.files.find(f => f.name === this.names[2]);
+        const other = this.files.find(f => f.path.endsWith(this.names[2]));
         this.chooseFiles(file, other);
       } else {
-        const other = this.files.find(f => f.name === this.names[1]);
+        const other = this.files.find(f => f.path.endsWith(this.names[1]));
         this.chooseFiles(other, file);
       }
     }).catch(() => {});
@@ -116,10 +116,10 @@ export class StringEditor {
   }
   
   onDirty() {
-    const lfile = this.files.find(f => f.name === this.names[1]);
-    const rfile = this.files.find(f => f.name === this.names[2]);
-    if (lfile) this.resmgr.dirty(this.pathPrefix + lfile.name, () => this.encode("left"));
-    if (rfile) this.resmgr.dirty(this.pathPrefix + rfile.name, () => this.encode("right"));
+    const lfile = this.files.find(f => f.path.endsWith(this.names[1]));
+    const rfile = this.files.find(f => f.path.endsWith(this.names[2]));
+    if (lfile) this.resmgr.dirty(lfile.path, () => this.encode("left", lfile.serial));
+    if (rfile) this.resmgr.dirty(rfile.path, () => this.encode("right", rfile.serial));
   }
   
   unusedId() {
@@ -132,20 +132,64 @@ export class StringEditor {
     for (let rid=1; ; rid++) if (!used[rid]) return rid;
   }
   
-  encode(colname) {
-    let text = "";
+  encode(colname, oldserial) {
+  
+    /* Pull new content off the UI.
+     */
+    const content = {}; // key:id, value: text, not fully encoded
     for (const row of this.element.querySelectorAll("tr.res")) {
       const id = row.querySelector("td.id input").value.trim();
       if (!id) continue;
       const v = row.querySelector("td." + colname + " input").value.trim();
-      text += id + " ";
-      if (v.startsWith('"') || (v.indexOf("\n") >= 0) || v.match(/^\s/)) {
-        text += JSON.stringify(v);
-      } else {
-        text += v;
-      }
-      text += "\n";
+      content[id] = v;
     }
-    return  new this.window.TextEncoder("utf8").encode(text);
+    
+    /* Decode old content. Keep comments and blank lines.
+     * Where an old ID is present in new content, emit the new content and drop it.
+     * Old ID absent from new content, skip it.
+     */
+    let dst = "";
+    const src = new this.window.TextDecoder("utf8").decode(oldserial);
+    for (let srcp=0, lineno=1; srcp<src.length; lineno++) {
+      let nlp = src.indexOf("\n", srcp);
+      if (nlp < 0) nlp = src.length;
+      const line = src.substring(srcp, nlp).trim();
+      srcp = nlp + 1;
+      if (!line || line.startsWith("#")) {
+        dst += line + "\n";
+        continue;
+      }
+      const match = line.match(/^([^\s]*)\s+(.*)$/);
+      if (!match) continue; // This shouldn't happen. Drop the invalid line if it does.
+      const id = match[1];
+      if (id in content) {
+        dst += id + " ";
+        const v = content[id];
+        if (v.startsWith('"') || (v.indexOf("\n") >= 0)) {
+          dst += JSON.stringify(v);
+        } else {
+          dst += v;
+        }
+        dst += "\n";
+        delete content[id];
+      } else {
+        // String was deleted or renamed. Skip it.
+      }
+    }
+    
+    /* Any strings remaining in content were not in the old text. Emit them all.
+     */
+    for (const id of Object.keys(content)) {
+      dst += id + " ";
+      const v = content[id];
+      if (v.startsWith('"') || (v.indexOf("\n") >= 0)) {
+        dst += JSON.stringify(v);
+      } else {
+        dst += v;
+      }
+      dst += "\n";
+    }
+    
+    return new this.window.TextEncoder("utf8").encode(dst);
   }
 }

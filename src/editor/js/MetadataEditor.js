@@ -103,14 +103,50 @@ export class MetadataEditor {
   }
   
   encode() {
-    let text = "";
+  
+    /* Gather new values.
+     */
+    const content = {};
     for (const tr of this.element.querySelectorAll("tr.standard,tr.nonstandard")) {
       const k = tr.querySelector("td.key").innerText.trim();
       const v = tr.querySelector("td.value input").value.trim();
       if (!v) continue;
-      text += `${k}=${v}\n`;
+      content[k] = v;
     }
-    return new TextEncoder("utf8").encode(text);
+    
+    /* Read the previous encoded content, preserve blanks and comments, replace existing fields, and drop deleted ones.
+     */
+    let dst = "";
+    const src = new TextDecoder("utf8").decode(this.serial);
+    for (let srcp=0, lineno=1; srcp<src.length; lineno++) {
+      let nlp = src.indexOf("\n", srcp);
+      if (nlp < 0) nlp = src.length;
+      const line = src.substring(srcp, nlp).trim();
+      srcp = nlp + 1;
+      if (!line || line.startsWith("#")) {
+        dst += line + "\n";
+        continue;
+      }
+      let eqp = line.indexOf("="); if (eqp < 0) eqp = line.length;
+      let clp = line.indexOf(":"); if (clp < 0) clp = line.length;
+      const sepp = Math.min(eqp, clp);
+      const k = line.substring(0, sepp).trim();
+      const v = line.substring(sepp + 1).trim();
+      if (k in content) {
+        dst += k + "=" + content[k] + "\n";
+        delete content[k];
+      }
+    }
+    
+    /* Any fields remaining in content are new -- append them.
+     */
+    for (const k of Object.keys(content)) {
+      dst += k + "=" + content[k] + "\n";
+    }
+    
+    const serial = new TextEncoder("utf8").encode(dst);
+    this.serial = serial;
+    return serial;
   }
   
   validateAll() {
