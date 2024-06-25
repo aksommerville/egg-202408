@@ -22,6 +22,7 @@ static void eggdev_print_help_pack() {
   fprintf(stderr,"Generate an Egg ROM file from loose inputs.\n");
   fprintf(stderr,"INPUTS can be files or directories to walk recursively.\n");
   fprintf(stderr,"We expect to find resources named '.../TYPE/ID[-NAME][.FORMAT]', for the most part.\n");
+  fprintf(stderr,"See etc/doc/rom-format.md for more detail on paths.\n");
   fprintf(stderr,"Optional '--types' file contains lines of 'TID NAME' for your custom types.\n");
   fprintf(stderr,"Use command 'unpack' to reverse the process. Some information will be lost, eg resource names.\n");
   fprintf(stderr,"string, song, sound, and metadata resources get compiled during pack.\n");

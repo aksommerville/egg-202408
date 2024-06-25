@@ -25,16 +25,13 @@ sudo apt install clang wabt
 - [ ] Editor
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
 - - [ ] Synth receiver (I want to run midevil against this server).
-- - [x] Is it crazy to add a MIDI editor? Not necessarily a full sequencer, but something where you can play songs and tweak the program selection and levels.
 - - [ ] SongEditor: Playback.
 - - - This is a big deal. We'll need to bring in the web runtime's synthesizer somehow, and either modify it to play MIDI, or also implement the song compiler.
-- - [x] More fs ops: Rename file, rename directory, move file, make directory, remove directory. Low priority; user can always do this odd stuff in her filesystem directly.
-- - - Not providing UI for directories. They get created implicitly as needed, and let the user figure it out from there.
-- - [ ] StringEditor: Create new string
-- - [x] Shift-click or something, to select an editor manually.
-- - [ ] Are we allowing strings to split across multiple files? We must. eg "en-dialogue" and "en-menus", and those names would be discarded.
+- - [x] Are we allowing strings to split across multiple files? We must. eg "en-dialogue" and "en-menus", and those names would be discarded.
 - - - StringEditor will need to be smart about that, and not compare like "fr-Apples" to "en-Oranges".
+- - - This is broken both in the editor and the packer.
 - - [ ] Global op to detect missing strings.
+- - [ ] string,metadata,sfg,...: Is it feasible to preserve comments during encode?
 - [ ] eggdev bundle html: Minify platform Javascript.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?

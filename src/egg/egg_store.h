@@ -19,6 +19,11 @@
   _(image) \
   _(song) \
   _(sound)
+  
+#define EGG_QUAL(lang) ( \
+  ((((lang[0]>='0')&&(lang[0]<='5'))?(lang[0]-'0'):(lang[0]-'a'+6))<<5)| \
+   (((lang[1]>='0')&&(lang[1]<='5'))?(lang[1]-'0'):(lang[1]-'a'+6)) \
+)
 
 /* Copy a resource from the ROM to client memory.
  * Always returns the actual length, never negative.

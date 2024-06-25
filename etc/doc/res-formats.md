@@ -74,6 +74,7 @@ I recommend using both in this case, so lazy decoders don't have to look up stri
 Resources in the archive are just plain text. I recommend UTF-8.
 
 These can be sourced from files whose name is the ISO 639 language code, eg "en" is English.
+You can also use comments in the file names, eg: "en-menus", "en-cutscene1_dialogue". These are dropped during compile.
 Each non-empty line in the file is one string resource.
 Line comments begin with '#', full lines only.
 Starts with decimal ID or a C identifier name.

@@ -164,20 +164,68 @@ export class Resmgr {
   }
   
   parsePath(path) {
-    const split = path.split("/");
-    const type = split[0];
-    const base = split[split.length - 1];
-    let qual = "";
-    for (let i=1; i<split.length; i++) { // Do consider basename here; eg string uses basename as qual.
-      const elem = split[i];
-      if (elem.match(/^[a-z]{2}$/)) qual = elem;
+    /* Be careful to apply the same rules as src/eggdev/eggdev_pack.c:eggdev_pack_analyze_path():
+     *   .../metadata
+     *   .../string/QUAL[-NAME]
+     *   .../TYPE/ID
+     *   .../TYPE/ID-NAME
+     *   .../TYPE/ID-QUAL-NAME
+     *   .../TYPE/NAME
+     *   .../TYPE/QUAL-NAME
+     * And any of those generic ones may be followed by [.COMMENT][.FORMAT].
+     */
+    const components = path.split("/");
+    let base = components[components.length - 1];
+    
+    // metadata is special.
+    if (base === "metadata") return { type: "metadata", qual: "", rid: 0, name: "metadata", format: "" };
+    
+    // Everything else has TYPE at the beginning and .COMMENT.FORMAT at the end.
+    if (components.length < 2) throw new Error(`${path}: Resource paths must have at least two components.`);
+    const type = components[components.length - 2];
+    const dotbits = base.split(".");
+    base = dotbits[0];
+    const format = (dotbits.length > 1) ? dotbits[dotbits.length - 1].toLowerCase() : "";
+    
+    // string is a little bit special; it requires QUAL.
+    if (type === "string") {
+      const split = base.split("-");
+      if (split.length > 2) throw new Error(`${path}: String basenames must be "QUAL" or "QUAL-NAME" with no dashes in NAME.`);
+      const qual = split[0];
+      const name = split[1] || "";
+      return { type, qual, rid: 0, name, format };
     }
-    const match = base.match(/^(\d*)(-[0-9a-zA-Z_]*)?.*(\.[^\.]*)?$/);
-    let rid = +match?.[1] || 0;
-    let name = match?.[2]?.substring(1) || "";
-    let format = match?.[3]?.substring(1).toLowerCase() || "";
-    if (!rid && !name && !format) name = base;
-    return { type, qual, rid, name, format };
+    
+    // Everything else is generic.
+    const dashbits = base.split("-");
+    if (dashbits.length > 3) {
+      throw new Error(`${path}: Too many dashes in basename. Expected "ID", "ID-NAME", or "ID-QUAL-NAME".`);
+    } else if (dashbits.length === 3) {
+      const rid = +dashbits[0];
+      if (isNaN(rid) || (rid < 0) || (rid > 0xffff)) throw new Error(`${path}: Invalid ID`);
+      const qual = dashbits[1];
+      const name = dashbits[2];
+      return { type, qual, rid, name, format };
+    } else if (dashbits.length === 2) { 
+      // "ID-NAME" or "QUAL-NAME", ID wins ties.
+      let rid = +dashbits[0];
+      let qual = "";
+      if (isNaN(rid) || (rid < 0) || (rid > 0xffff)) {
+        rid = 0;
+        qual = dashbits[0];
+      }
+      const name = dashbits[1];
+      return { type, qual, rid, name, format };
+    } else {
+      // "ID" or "NAME"
+      let rid = +dashbits[0];
+      let name = "";
+      if (isNaN(rid) || (rid < 0) || (rid > 0xffff)) {
+        rid = 0;
+        name = dashbits[0];
+      }
+      return { type, qual: "", rid, name, format };
+    }
   }
   
   tocCmp(a, b) {

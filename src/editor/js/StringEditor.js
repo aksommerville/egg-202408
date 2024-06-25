@@ -32,17 +32,16 @@ export class StringEditor {
     } else {
       const main = this.files.find(f => path === f.path);
       if (!main) return;
-      let ref;
+      let ref = null;
       const lang = this.resmgr.getMetadata("language").trim().substring(0, 2) || "en";
-      if (main.name !== lang) ref = this.files.find(f => f.qual === lang);
-      if (!ref) ref = this.files.find(f => f !== main);
+      if (main.qual !== lang) ref = this.files.find(f => ((f.qual === lang) && (f.name === main.name)));
       this.chooseFiles(ref, main);
     }
   }
   
   chooseFiles(l, r) {
-    this.element.querySelector("th.left").innerText = this.names[1] = l?.name || "";
-    this.element.querySelector("th.right").innerText = this.names[2] = r?.name || "";
+    this.element.querySelector("th.left").innerText = this.names[1] = l?.path.replace(this.pathPrefix, "") || "";
+    this.element.querySelector("th.right").innerText = this.names[2] = r?.path.replace(this.pathPrefix, "") || "";
     for (const row of this.element.querySelectorAll("tr.res")) row.remove();
     this.rows = [];
     if (l) this.decodeFile(1, l.serial);

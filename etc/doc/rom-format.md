@@ -69,3 +69,43 @@ Commands:
 - 'q N': qual+=N+1, rid=1
 - 's N': rid+=N+1
 - 'r N (...)': Add resource, length N, rid++. After decoding base64, zero-pad or truncate to the stated length.
+
+## Conventional Source Layout
+
+```
+myproject/
+  src/ -- Or sometimes I put "data/" in the root, it doesn't matter.
+    data/
+      metadata
+      image/
+        1-appicon.png
+        2-whatever.png
+      sound/
+        midi_drums.sfg -- multi-resource
+        mysounds.sfg   -- multi-resource
+        1-pow.wav
+        2-bleep.wav
+      song/
+        1-intro.mid
+        2-play.mid
+        3-gameover.mid
+      string/
+        en          -- multi-resource
+        ru          -- multi-resource
+        en-dialogue -- "-dialogue" gets lost during compile, it's only for the editor
+        ru-dialogue -- ...and of course use whatever comments you like.
+      mycustomtype/
+        1
+        2.myext
+        3-name_of_thing.myext
+        implicit_id.myext
+```
+
+Key points:
+- All data must be stored in one directory, and nothing else in there.
+- "metadata" lives in the data root.
+- All other resources should be exactly one directory deep, in a directory whose name is exactly a resource type name.
+- Single-resource files usually begin with a decimal ID, but we'll make one up if not.
+- `string` and `sound` pack multiple resources into one source file.
+- The name of a `string` file begins with its qualifier, a two-letter ISO 639 language code.
+- Other types may also generically indicate a qualifier: `ID-QUAL-NAME.FORMAT`

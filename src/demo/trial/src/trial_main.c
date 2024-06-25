@@ -186,14 +186,34 @@ int egg_client_init() {
   if (1) { // Play a song.
     egg_audio_play_song(0, 4, 0, 1);
   }
-  if (1) { // Dump two strings known to have discontiguous IDs.
-    char twenty[16],thirty[16],one[16];
-    int twentyc=egg_res_get(twenty,sizeof(twenty),EGG_RESTYPE_string,10*32+19,20);
-    int thirtyc=egg_res_get(thirty,sizeof(thirty),EGG_RESTYPE_string,10*32+19,30);
-    int onec=egg_res_get(one,sizeof(one),EGG_RESTYPE_string,10*32+19,1);
-    egg_log("twenty: '%.*s'",twentyc,twenty);
-    egg_log("thirty: '%.*s'",thirtyc,thirty);
-    egg_log("one: '%.*s'",onec,one);
+  if (0) { // Dump strings.
+    int en=EGG_QUAL("en");
+    int fr=EGG_QUAL("fr");
+    int it=EGG_QUAL("it");
+    int rid=1;
+    for (;;rid++) {
+      int ok=0;
+      char text[64];
+      int textc;
+      egg_log("string:%d:",rid);
+      if (((textc=egg_res_get(text,sizeof(text),EGG_RESTYPE_string,0,rid))>0)&&(textc<=sizeof(text))) {
+        egg_log("  00: %.*s",textc,text);
+        ok=1;
+      } else if (textc>0) egg_log("  00 too long"); else egg_log("  00 not found");
+      if (((textc=egg_res_get(text,sizeof(text),EGG_RESTYPE_string,en,rid))>0)&&(textc<=sizeof(text))) {
+        egg_log("  en: %.*s",textc,text);
+        ok=1;
+      } else if (textc>0) egg_log("  en too long"); else egg_log("  en not found");
+      if (((textc=egg_res_get(text,sizeof(text),EGG_RESTYPE_string,fr,rid))>0)&&(textc<=sizeof(text))) {
+        egg_log("  fr: %.*s",textc,text);
+        ok=1;
+      } else if (textc>0) egg_log("  fr too long"); else egg_log("  fr not found");
+      if (((textc=egg_res_get(text,sizeof(text),EGG_RESTYPE_string,it,rid))>0)&&(textc<=sizeof(text))) {
+        egg_log("  it: %.*s",textc,text);
+        ok=1;
+      } else if (textc>0) egg_log("  it too long"); else egg_log("  it not found");
+      if (!ok) break;
+    }
   }
   
   egg_texture_get_header(&screenw,&screenh,0,1);

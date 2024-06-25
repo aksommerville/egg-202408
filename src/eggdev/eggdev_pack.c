@@ -3,79 +3,127 @@
 /* Analyze source path.
  */
 
-static void eggdev_pack_analyze_path(struct eggdev_rpath *rpath,const char *path) {
+static int eggdev_pack_analyze_path(struct eggdev_rpath *rpath,const char *path) {
   memset(rpath,0,sizeof(struct eggdev_rpath));
   rpath->path=path;
   
-  // Walk thru the path componentwise. If we see a valid type name, keep it and reset qual.
-  // After type, qual is allowed as a directory name. Only if it starts with a letter.
-  // We do examine the basename here too. For some things like string, it's convenient to use qual as the file name.
-  const char *base=0;
-  int pathp=0,basec=0;
-  while (path[pathp]) {
+  // Extract the last two components of the path, those are all we care about.
+  int pathc=0; while (path[pathc]) pathc++;
+  while (pathc&&(path[pathc-1]=='/')) pathc--; // Trailing slashes would mess us up.
+  const char *tname=0,*base=path;
+  int tnamec=0,basec=0;
+  int pathp=0;
+  for (;pathp<pathc;pathp++) {
     if (path[pathp]=='/') {
-      pathp++;
-      continue;
-    }
-    base=path+pathp;
-    basec=0;
-    while (path[pathp]&&(path[pathp++]!='/')) basec++;
-    int q=eggdev_type_eval(base,basec);
-    if (q) {
-      rpath->tid=q;
-      rpath->qual=0;
-    } else if (rpath->tid) {
-      if ((base[0]>='a')&&(base[0]<='z')&&((q=rom_qual_eval(base,basec))>0)) {
-        rpath->qual=q;
-      }
-    } else if (path[pathp]&&(sr_int_eval(&q,base,basec)>=2)&&(q>0)&&(q<64)) {
-      // Directory name is an integer in 1..63, type is not yet set, and there's more remaining in the path? Call this number the type, it could be a custom one.
-      rpath->tid=q;
+      tname=base;
+      tnamec=basec;
+      base=path+pathp+1;
+      basec=0;
+    } else {
+      basec++;
     }
   }
   
-  // If basename begins with a decimal integer, that's (rid).
-  int basep=0;
-  while ((basep<basec)&&(base[basep]>='0')&&(base[basep]<='9')) {
-    rpath->rid*=10;
-    rpath->rid+=base[basep++]-'0';
+  /* Some standard types enjoy special privileges in naming.
+   * Custom types (and most standard ones) must follow the generic pattern.
+   */
+  if ((basec==8)&&!memcmp(base,"metadata",8)) {
+    // "metadata" is always metadata:0:1, the only allowed ID.
+    rpath->tid=EGG_RESTYPE_metadata;
+    rpath->qual=0;
+    rpath->rid=1;
+    rpath->name="metadata";
+    rpath->namec=8;
+    return 0;
   }
-  //...unless it's followed by a letter.
-  if (basep<basec) {
-    if (((base[basep]>='a')&&(base[basep]<='z'))||((base[basep]>='A')&&(base[basep]<='Z'))) {
+  if ((tnamec==6)&&!memcmp(tname,"string",6)) {
+    // "string" type are named "QUAL[-COMMENT]", and we drop COMMENT immediately (only the editor needs it).
+    rpath->tid=EGG_RESTYPE_string;
+    if ((basec<2)||((basec>2)&&(base[2]!='-'))) {
+      fprintf(stderr,"%s: String file basename must be 'QUAL' or 'QUAL-COMMENT' where QUAL is two letters.\n",path);
+      return -2;
+    }
+    if ((base[0]=='0')&&(base[1]=='0')) {
+      rpath->qual=0; // This is legal (albeit weird). Pick off specially, so we can treat 0 from rom_qual_eval as an error.
+    } else if ((rpath->qual=rom_qual_eval(base,2))<1) {
+      fprintf(stderr,"%s: Expected two-letter ISO 639 code, found '%.2s'\n",path,base);
+      return -2;
+    }
+    if (basec>2) {
+      // This won't be used anywhere, but might as well record it.
+      rpath->name=base+3;
+      rpath->namec=basec-3;
+    }
+    return 0;
+  }
+  
+  /* Everything else follows the generic pattern:
+   *   TYPE/ID[.FORMAT]
+   *   TYPE/ID-NAME[.FORMAT]
+   *   TYPE/ID-QUAL-NAME[.FORMAT]
+   *   TYPE/NAME[.FORMAT]
+   *   TYPE/QUAL-NAME[.FORMAT]
+   */
+  if (!(rpath->tid=eggdev_type_eval(tname,tnamec))) {
+    fprintf(stderr,"%s: Expected resource type, found '%.*s'\n",path,tnamec,tname);
+    return -2;
+  }
+  // Strip ".FORMAT" suffix first; it's the same in all cases.
+  // If there's more than one dot, we preserve the bit after the last one and discard anything in between.
+  int basep=0,dot1p=-1,dot2p=-1;
+  for (;basep<basec;basep++) {
+    if (base[basep]=='.') {
+      if (dot1p<0) dot1p=basep;
+      else dot2p=basep;
+    }
+  }
+  if (dot2p>=0) {
+    const char *src=base+dot2p+1;
+    int srcc=basec-dot2p-1;
+    if (srcc<=sizeof(rpath->sfx)) {
+      int i=srcc;
+      while (i-->0) {
+        if ((src[i]>='A')&&(src[i]<='Z')) rpath->sfx[i]=src[i]+0x20;
+        else rpath->sfx[i]=src[i];
+      }
+      rpath->sfxc=srcc;
+    }
+  }
+  if (dot1p>=0) basec=dot1p;
+  if (basec<1) return -1; // Don't allow a leading dot.
+  // Find dashes. There must be zero, one, or two.
+  int dash1p=-1,dash2p=-1;
+  for (basep=0;basep<basec;basep++) {
+    if (base[basep]=='-') {
+      if (dash1p<0) dash1p=basep;
+      else if (dash2p<0) dash2p=basep;
+      else {
+        fprintf(stderr,"%s: Invalid resource name. Must contain no more than 2 dashes. (Separating ID, QUAL, and NAME).\n",path);
+        return -2;
+      }
+    }
+  }
+  // If there's two dashes, base must be "ID-QUAL-NAME".
+  if (dash2p>=0) {
+    if ((sr_int_eval(&rpath->rid,base,dash1p)<2)||(rpath->rid<1)||(rpath->rid>0xffff)) return -1;
+    rpath->qual=rom_qual_eval(base+dash1p+1,dash2p-dash1p-1);
+    rpath->name=base+dash2p+1;
+    rpath->namec=basec-dash2p-1;
+  // One dash can be either "ID-NAME" or "QUAL-NAME". There's overlap here, and ID wins ties.
+  } else if (dash1p>=0) {
+    if ((sr_int_eval(&rpath->rid,base,dash1p)<2)||(rpath->rid<1)||(rpath->rid>0xffff)) {
       rpath->rid=0;
-      basep=0;
+      rpath->qual=rom_qual_eval(base,dash1p);
     }
+  // No dashes, base is either ID or NAME, depending on whether its first character is a digit.
+  } else if ((base[0]>='0')&&(base[0]<='9')) {
+    if ((sr_int_eval(&rpath->rid,base,dash1p)<2)||(rpath->rid<1)||(rpath->rid>0xffff)) return -1;
+  } else {
+    rpath->name=base;
+    rpath->namec=basec;
   }
   
-  // Skip dashes after rid. Or leading dashes, but what kind of monster would use those?
-  while ((basep<basec)&&(base[basep]=='-')) basep++;
-  
-  // Now everything up to the first dot is the name.
-  if ((basep<basec)&&(base[basep]!='.')) {
-    rpath->name=base+basep;
-    while ((basep<basec)&&(base[basep]!='.')) { basep++; rpath->namec++; }
-  }
-  
-  // Anything between dots is entirely ignored.
-  // After the last dot, force lowercase as (sfx), if short enough.
-  int dotp=-1;
-  int i=basec;
-  while (i>=basep) {
-    if (base[i]=='.') { dotp=i; break; }
-    i--;
-  }
-  if (dotp>=0) {
-    const char *pre=base+dotp+1;
-    int prec=basec-dotp-1;
-    if (prec<=sizeof(rpath->sfx)) {
-      rpath->sfxc=prec;
-      for (i=prec;i-->0;) {
-        if ((pre[i]>='A')&&(pre[i]<='Z')) rpath->sfx[i]=pre[i]+0x20;
-        else rpath->sfx[i]=pre[i];
-      }
-    }
-  }
+  return 0;
 }
 
 /* Add regular file to archive.
@@ -83,7 +131,11 @@ static void eggdev_pack_analyze_path(struct eggdev_rpath *rpath,const char *path
  
 static int eggdev_pack_add_regular_file(struct romw *romw,const char *path) {
   struct eggdev_rpath rpath;
-  eggdev_pack_analyze_path(&rpath,path);
+  int err=eggdev_pack_analyze_path(&rpath,path);
+  if (err<0) {
+    if (err!=2) fprintf(stderr,"%s: Invalid resource path.\n",path);
+    return -2;
+  }
   
   void *serial=0;
   int serialc=file_read(&serial,path);
@@ -97,7 +149,7 @@ static int eggdev_pack_add_regular_file(struct romw *romw,const char *path) {
     switch (rpath.tid) {
     
       case EGG_RESTYPE_string: {
-          int err=eggdev_strings_slice(romw,serial,serialc,&rpath);
+          err=eggdev_strings_slice(romw,serial,serialc,&rpath);
           if (err) {
             free(serial);
             if (err>=0) return 0;
@@ -107,7 +159,7 @@ static int eggdev_pack_add_regular_file(struct romw *romw,const char *path) {
         } break;
         
       case EGG_RESTYPE_sound: {
-          int err=eggdev_sounds_slice(romw,serial,serialc,&rpath);
+          err=eggdev_sounds_slice(romw,serial,serialc,&rpath);
           if (err) {
             free(serial);
             if (err>=0) return 0;
@@ -133,9 +185,12 @@ static int eggdev_pack_add_regular_file(struct romw *romw,const char *path) {
   return 0;
 }
 
+/* Add regular file.
+ */
+
 /* Add file or directory to archive.
  */
- 
+
 static int eggdev_pack_add_from_dir(const char *path,const char *base,char type,void *userdata) {
   struct romw *romw=userdata;
   if (!type) type=file_get_type(path);
