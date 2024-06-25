@@ -6,14 +6,15 @@
 static void eggdev_print_help_commands() {
   fprintf(stderr,"\nUsage: %s COMMAND [OPTIONS]\n\n",eggdev.exename);
   fprintf(stderr,"Try `--help=COMMAND` for more detail.\n\n");
-  fprintf(stderr,"      pack -oROM [--types=PATH] [INPUTS...]\n");
-  fprintf(stderr,"    unpack -oDIR ROM [--types=PATH]\n");
-  fprintf(stderr,"      list ROM [-fFORMAT] [--types=PATH]\n");
-  fprintf(stderr,"       toc [INPUTS...] [--named-only] [--types=PATH]\n");
-  fprintf(stderr,"   tocflag -oPATH [INPUTS...] [--types=PATH]\n");
-  fprintf(stderr,"    bundle -oEXE|HTML --rom=ROM [--code=LIB]\n");
-  fprintf(stderr,"  unbundle -oROM EXE|HTML\n");
-  fprintf(stderr,"     serve [ROMS...] [--port=8080] [--external=0] [--htdocs=PATH]\n");
+  fprintf(stderr,"        pack -oROM [--types=PATH] [INPUTS...]\n");
+  fprintf(stderr,"      unpack -oDIR ROM [--types=PATH]\n");
+  fprintf(stderr,"        list ROM [-fFORMAT] [--types=PATH]\n");
+  fprintf(stderr,"         toc [INPUTS...] [--named-only] [--types=PATH]\n");
+  fprintf(stderr,"     tocflag -oPATH [INPUTS...] [--types=PATH]\n");
+  fprintf(stderr,"      bundle -oEXE|HTML --rom=ROM [--code=LIB]\n");
+  fprintf(stderr,"    unbundle -oROM EXE|HTML\n");
+  fprintf(stderr,"       serve [ROMS...] [--port=8080] [--external=0] [--htdocs=PATH]\n");
+  fprintf(stderr," webtemplate -oHTML [JS...]\n");
   fprintf(stderr,"\n");
 }
 
@@ -97,6 +98,13 @@ static void eggdev_print_help_serve() {
   fprintf(stderr,"\n");
 }
 
+static void eggdev_print_help_webtemplate() {
+  fprintf(stderr,"\nUsage: %s webtemplate -oHTML [JS...]\n\n",eggdev.exename);
+  fprintf(stderr,"Generate the template HTML bundle with the full runtime and insertion points for the ROM.\n");
+  fprintf(stderr,"Egg's own build does this, and you should never need to.\n");
+  fprintf(stderr,"\n");
+}
+
 /* --help, dispatch
  */
  
@@ -114,6 +122,7 @@ void eggdev_print_help(const char *topic,int topicc) {
   _(bundle)
   _(unbundle)
   _(serve)
+  _(webtemplate)
   #undef _
   else {
     fprintf(stderr,"%s: Unknown help topic '%.*s'. Printing default instead.\n",eggdev.exename,topicc,topic);

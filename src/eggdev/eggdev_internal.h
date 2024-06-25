@@ -66,6 +66,8 @@ int eggdev_unbundle_exe(void *dstpp,const char *srcpath);
 
 int eggdev_tocflag_generate(struct sr_encoder *dst);
 
+int eggdev_webtemplate_generate(struct sr_encoder *dst);
+
 int eggdev_shell_script_(const char *scriptpath,...);
 #define eggdev_shell_script(script,...) eggdev_shell_script_(script,##__VA_ARGS__,(void*)0)
 

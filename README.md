@@ -27,13 +27,8 @@ sudo apt install clang wabt
 - - [ ] Synth receiver (I want to run midevil against this server).
 - - [ ] SongEditor: Playback.
 - - - This is a big deal. We'll need to bring in the web runtime's synthesizer somehow, and either modify it to play MIDI, or also implement the song compiler.
-- - [x] Are we allowing strings to split across multiple files? We must. eg "en-dialogue" and "en-menus", and those names would be discarded.
-- - - StringEditor will need to be smart about that, and not compare like "fr-Apples" to "en-Oranges".
-- - - This is broken both in the editor and the packer.
-- - [x] Global op to detect missing strings.
-- - [x] string,metadata,sfg,...: Is it feasible to preserve comments during encode? ...done: string metadata. SFG is more complicated, and I'm not bothering just now.
 - - [ ] MetadataEditor: Incorporate "*String" keys more meaningfully.
-- [ ] eggdev bundle html: Minify platform Javascript.
+- [x] eggdev bundle html: Minify platform Javascript. ...Could do better but I'm satisfied for now.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?
 - [ ] What would it take to provide a raw PCM out interface? Easy for native, obviously, but under WebAudio....?

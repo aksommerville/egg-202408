@@ -382,6 +382,29 @@ static int eggdev_main_serve() {
   return 0;
 }
 
+/* webtemplate
+ */
+ 
+static int eggdev_main_webtemplate() {
+  if (!eggdev.dstpath) {
+    fprintf(stderr,"%s: Please specify output as -oPATH\n",eggdev.exename);
+    return 1;
+  }
+  struct sr_encoder dst={0};
+  int err=eggdev_webtemplate_generate(&dst);
+  if (err<0) {
+    if (err!=-2) fprintf(stderr,"%s: Unspecified error generating web template.\n",eggdev.exename);
+    return 1;
+  }
+  err=file_write(eggdev.dstpath,dst.v,dst.c);
+  sr_encoder_cleanup(&dst);
+  if (err<0) {
+    fprintf(stderr,"%s: Write failed, %d bytes.\n",eggdev.dstpath,dst.c);
+    return 1;
+  }
+  return 0;
+}
+
 /* Main.
  */
  
@@ -401,6 +424,7 @@ int main(int argc,char **argv) {
   if (!strcmp(eggdev.command,"bundle")) return eggdev_main_bundle();
   if (!strcmp(eggdev.command,"unbundle")) return eggdev_main_unbundle();
   if (!strcmp(eggdev.command,"serve")) return eggdev_main_serve();
+  if (!strcmp(eggdev.command,"webtemplate")) return eggdev_main_webtemplate();
   fprintf(stderr,"%s: Unknown command '%s'\n",eggdev.exename,eggdev.command);
   eggdev_print_help(0,0);
   return 1;

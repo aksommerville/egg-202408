@@ -3,9 +3,9 @@
 
 web_JSFILES:=$(filter src/www/%.js,$(SRCFILES))
 
-#TODO Minify JS first.
 web_BUNDLE_TEMPLATE:=$(web_OUTDIR)/bundle-template.html
-$(web_BUNDLE_TEMPLATE):$(filter-out %Rom.js,$(web_JSFILES));$(PRECMD) etc/tool/gen-bundle-template.sh $@ $^
+web_BUNDLE_INPUTS:=$(filter-out %Rom.js,$(web_JSFILES))
+$(web_BUNDLE_TEMPLATE):$(web_BUNDLE_INPUTS) $(tools_EGGDEV_EXE);$(PRECMD) $(tools_EGGDEV_EXE) webtemplate -o$@ $(web_BUNDLE_INPUTS)
 all-tools:$(web_BUNDLE_TEMPLATE)
 
 web-serve:all-tools demo-trial;$(tools_EGGDEV_EXE) serve --htdocs=src/www out/demo/trial.egg
