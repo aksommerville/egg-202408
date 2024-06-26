@@ -186,7 +186,7 @@ static int xegl_init(struct xegl *xegl,const struct xegl_setup *setup) {
     0,
   };
   if (xegl->delegate.cb_mmotion) {
-    wattr.event_mask|=PointerMotionMask;
+    wattr.event_mask|=PointerMotionMask|EnterWindowMask|LeaveWindowMask;
   }
   if (xegl->delegate.cb_mbutton||xegl->delegate.cb_mwheel) {
     wattr.event_mask|=ButtonPressMask|ButtonReleaseMask;

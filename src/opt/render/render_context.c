@@ -277,8 +277,13 @@ void render_coords_fb_from_screen(struct render *render,int *x,int *y) {
   if ((render->outw>0)&&(render->outh>0)&&(render->texturec>=1)) {
     int fbw=render->texturev[0].w;
     int fbh=render->texturev[0].h;
-    *x=((*x-render->outx)*fbw)/render->outw;
-    *y=((*y-render->outy)*fbh)/render->outh;
+    // Ensure when it's OOB for the window, we report OOB for the framebuffer, don't let it round off.
+    if (*x<0) *x=-1;
+    else if (*x>=render->outw) *x=fbw;
+    else *x=((*x-render->outx)*fbw)/render->outw;
+    if (*y<0) *y=-1;
+    else if (*y>=render->outh) *y=fbh;
+    else *y=((*y-render->outy)*fbh)/render->outh;
   }
 }
 

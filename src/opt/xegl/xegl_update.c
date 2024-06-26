@@ -135,6 +135,8 @@ static int xegl_receive_event(struct xegl *xegl,XEvent *evt) {
     case ButtonPress: return xegl_evt_mbtn(xegl,&evt->xbutton,1);
     case ButtonRelease: return xegl_evt_mbtn(xegl,&evt->xbutton,0);
     case MotionNotify: return xegl_evt_mmotion(xegl,&evt->xmotion);
+    case EnterNotify: return xegl_evt_mmotion(xegl,&evt->xmotion); // It's (xcrossing) really, but the fields we care about are in the same place.
+    case LeaveNotify: return xegl_evt_mmotion(xegl,&evt->xmotion);
     
     case ClientMessage: return xegl_evt_client(xegl,&evt->xclient);
     

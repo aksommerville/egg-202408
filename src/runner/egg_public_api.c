@@ -112,8 +112,6 @@ int egg_store_set(const char *k,int kc,const char *v,int vc) {
   if (!k||(kc<1)) return 0;
   if (!egg.config.storepath) return -1;
   
-  //TODO Storage quota?
-  
   // When the store is empty, it's a different thing.
   if (!egg.storec) {
     if (!v||(vc<1)) return 0;
@@ -124,6 +122,11 @@ int egg_store_set(const char *k,int kc,const char *v,int vc) {
       (sr_encode_json_end(&encoder,0)<0)||
       (sr_encode_u8(&encoder,0x0a)<0)
     ) {
+      sr_encoder_cleanup(&encoder);
+      return -1;
+    }
+    if (encoder.c>egg.config.store_limit) {
+      fprintf(stderr,"%s: %d-byte save file would exceed quota of %d bytes. Launch with --store-limit=BYTES to change.\n",egg.exename,encoder.c,egg.config.store_limit);
       sr_encoder_cleanup(&encoder);
       return -1;
     }
@@ -178,6 +181,11 @@ int egg_store_set(const char *k,int kc,const char *v,int vc) {
     }
   }
   if ((sr_encode_json_end(&rewrite,0)<0)||(sr_encode_u8(&rewrite,0x0a)<0)) {
+    sr_encoder_cleanup(&rewrite);
+    return -1;
+  }
+  if (rewrite.c>egg.config.store_limit) {
+    fprintf(stderr,"%s: %d-byte save file would exceed quota of %d bytes. Launch with --store-limit=BYTES to change.\n",egg.exename,rewrite.c,egg.config.store_limit);
     sr_encoder_cleanup(&rewrite);
     return -1;
   }

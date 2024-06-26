@@ -29,6 +29,7 @@ static void egg_print_help(const char *topic,int topicc) {
     "  --audio-buffer=INT       If required by driver.\n"
     "  --audio-driver=LIST      See below. First to start up wins.\n"
     "  --save=PATH              Save file. \"none\" to disable saving, or empty for default.\n"
+    "  --store-limit=BYTES      Force save file to stay under this length. Default 1 MB.\n"
     "  --configure-input        Launch in a special mode to map a joystick.\n"
   );
   if (egg_romsrc!=EGG_ROMSRC_NATIVE) {
@@ -159,6 +160,7 @@ static int egg_config_kv(const char *k,int kc,const char *v,int vc) {
   STROPT(audio_device,"audio-device")
   STROPT(audio_driver,"audio-driver")
   STROPT(storepath,"save")
+  INTOPT(store_limit,"store-limit",0,INT_MAX)
   BOOLOPT(ignore_required,"ignore-required")
   BOOLOPT(configure_input,"configure-input")
   #undef BOOLOPT
@@ -270,12 +272,21 @@ static int egg_config_finalize() {
   return 0;
 }
 
+/* Initial defaults.
+ * Everything is zeroed implicitly, so only do the nonzero things.
+ */
+ 
+static void egg_config_init() {
+  egg.config.store_limit=1<<20;
+}
+
 /* Configure, main entry point.
  */
  
 int egg_configure(int argc,char **argv) {
   int err;
   egg.exename=((argc>=1)&&argv&&argv[0]&&argv[0][0])?argv[0]:"egg";
+  egg_config_init();
   //TODO config file?
   if ((err=egg_config_argv(argc,argv))<0) return err;
   if (egg.terminate) return 0;

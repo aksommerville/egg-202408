@@ -161,6 +161,7 @@ static uint8_t egg_fake_cursor_image[]={
  
 void egg_inmgr_render(struct egg_inmgr *inmgr) {
   if (inmgr->show_fake_cursor&&!inmgr->lock_fake_cursor) {
+    if ((inmgr->mousex<0)||(inmgr->mousey<0)) return; // We don't immediately know the right and bottom edges, but it shouldn't matter, the image is offscreen by then.
     if (!inmgr->texid_cursor) {
       if ((inmgr->texid_cursor=render_texture_new(egg.render))<1) return;
       render_texture_load(egg.render,inmgr->texid_cursor,8,8,32,EGG_TEX_FMT_RGBA,egg_fake_cursor_image,sizeof(egg_fake_cursor_image));

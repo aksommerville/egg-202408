@@ -7,22 +7,19 @@ sudo apt install clang wabt
 ## TODO
 
 - [ ] Web runtime
-- - [x] Audio set playhead
 - - [ ] incfg: First, is it worth the effort? How much coverage does Standard Mapping give us? And then.... how?
 - [ ] Native runtime for Linux
 - - [ ] Invoke incfg via client too.
 - - - Think this thru. We'll need to add some kind of abort option, otherwise the user is stuck for about 2 minutes while it cycles thru.
-- - [x] egg_audio_get_playhead: Adjust per driver.
-- - - To observe the need for this: `make -C../../egg && make && ../../egg/out/linux/egg out/lightson.egg --audio-buffer=16384`
-- - [x] synth_set_playhead
+- - [ ] Config file.
 - [ ] Raspberry Pi 1 (Broadcom video)
 - [ ] MS Windows
 - [ ] MacOS
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
-- [ ] Storage access controls.
+- [x] Storage access controls.
 - [ ] TOUCH events for native. What would that take? Maybe acquire some tablet thingy and try it out?
 - [ ] xegl cursor lock on startup seems to be reporting absolute when we start in fullscreen? Try eggsamples/shmup.egg, it's haywire in fullscreen.
-- [ ] Notify of motion outside window. Platform might only be able to supply enter/exit, but that's enough. (see lingerful cursor in eggsamples/hardboiled).
+- [x] Notify of motion outside window. Platform might only be able to supply enter/exit, but that's enough. (see lingerful cursor in eggsamples/hardboiled).
 - [ ] Editor
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
 - - [ ] Synth receiver (I want to run midevil against this server).

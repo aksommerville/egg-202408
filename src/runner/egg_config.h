@@ -20,6 +20,7 @@ struct egg_config {
   char *audio_device;
   char *audio_driver;
   char *storepath;
+  int store_limit;
   int ignore_required;
   int configure_input;
 };
