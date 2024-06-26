@@ -115,6 +115,8 @@ static int eggdev_pack_analyze_path(struct eggdev_rpath *rpath,const char *path)
       rpath->rid=0;
       rpath->qual=rom_qual_eval(base,dash1p);
     }
+    rpath->name=base+dash1p+1;
+    rpath->namec=basec-dash1p-1;
   // No dashes, base is either ID or NAME, depending on whether its first character is a digit.
   } else if ((base[0]>='0')&&(base[0]<='9')) {
     if ((sr_int_eval(&rpath->rid,base,dash1p)<2)||(rpath->rid<1)||(rpath->rid>0xffff)) return -1;
