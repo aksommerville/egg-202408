@@ -32,10 +32,21 @@ export class MetadataEditor {
   buildUi() {
     this.element.innerHTML = "";
     const table = this.dom.spawn(this.element, "TABLE");
+    const trh = this.dom.spawn(table, "TR");
+    this.dom.spawn(trh, "TH", "Key");
+    this.dom.spawn(trh, "TH", "String");
+    this.dom.spawn(trh, "TH", "Value");
+    
     for (const [key, stringable, validate, help] of MetadataEditor.STANDARD_FIELDS) {
       const tr = this.dom.spawn(table, "TR", ["standard"], { "data-key": key });
-      this.dom.spawn(tr, "TD", ["key"], key);
-      this.dom.spawn(tr, "TD", ["help"], "?", { "on-click": () => this.showHelp(help) });
+      const tdk = this.dom.spawn(tr, "TD", ["key"], key);
+      if (help) {
+        tdk.classList.add("help");
+        tdk.addEventListener("click", () => this.showHelp(help));
+      }
+      const tds = this.dom.spawn(tr, "TD", ["string"]);
+      const sbtn = this.dom.spawn(tds, "INPUT", { type: "button", value: "--", name: key + "String", "on-click": () => this.editString(key) });
+      if (!stringable) sbtn.disabled = true;
       const tdv = this.dom.spawn(tr, "TD", ["value"]);
       this.dom.spawn(tdv, "INPUT", { type: "text", name: key });
       this.dom.spawn(tdv, "DIV", ["validationError"]);
@@ -75,6 +86,9 @@ export class MetadataEditor {
     for (const input of this.element.querySelectorAll("td.value input")) {
       input.value = "";
     }
+    for (const button of this.element.querySelectorAll("td.string input")) {
+      button.value = "--";
+    }
     for (const err of this.element.querySelectorAll(".validationError")) {
       err.innerHTML = "";
     }
@@ -84,6 +98,13 @@ export class MetadataEditor {
    * Does not run validation or touch validationError.
    */
   populateField(k, v) {
+    if (k.endsWith("String")) {
+      const pk = k.substring(0, k.length - 6);
+      let tr = this.element.querySelector(`tr[data-key='${pk}']`);
+      if (!tr) tr = this.spawnRow(pk);
+      tr.querySelector(`input[name='${k}']`).value = v;
+      return;
+    }
     if (k.match(/^[a-z][a-zA-Z0-9_]*$/)) {
       const tr = this.element.querySelector(`tr[data-key='${k}']`);
       if (tr) {
@@ -92,14 +113,33 @@ export class MetadataEditor {
         return;
       }
     }
+    const tr = this.spawnRow(k);
+    tr.querySelector("td.value input").value = v;
+  }
+  
+  spawnRow(k) {
     const tr = this.dom.spawn(null, "TR", ["nonstandard"], { "data-key": k });
-    this.dom.spawn(tr, "TD", ["key"], { colspan: 2 }, k);
+    this.dom.spawn(tr, "TD", ["key"], k);
+    const tds = this.dom.spawn(tr, "TD", ["string"]);
+    this.dom.spawn(tds, "INPUT", { type: "button", value: "---", name: k + "String", "on-click": () => this.editString(k) });
     const tdv = this.dom.spawn(tr, "TD", ["value"]);
-    this.dom.spawn(tdv, "INPUT", { type: "text", name: k, value: v });
+    this.dom.spawn(tdv, "INPUT", { type: "text", name: k, value: "" });
     this.dom.spawn(tdv, "DIV", ["validationError"]);
     const table = this.element.querySelector("table");
     const lastRow = this.element.querySelector("tr.lastRow");
     table.insertBefore(tr, lastRow);
+  }
+  
+  editString(k) {
+    // It would be nice of us to present a filterable list of strings, or at least validate the string id at some point.
+    // But that is much more complicated.
+    const btn = this.element.querySelector(`tr[data-key='${k}'] td.string input`);
+    const pv = (btn.value === "--") ? "" : btn.value;
+    this.dom.modalInput("ID of string resource to override natural value:", pv).then(v => {
+      if (!btn) return;
+      btn.value = v.trim() || "--";
+      this.resmgr.dirty(this.path, () => this.encode());
+    }).catch(e => { if (e) this.bus.broadcast({ type: "error", error: e }); });
   }
   
   encode() {
@@ -110,8 +150,13 @@ export class MetadataEditor {
     for (const tr of this.element.querySelectorAll("tr.standard,tr.nonstandard")) {
       const k = tr.querySelector("td.key").innerText.trim();
       const v = tr.querySelector("td.value input").value.trim();
-      if (!v) continue;
-      content[k] = v;
+      if (v) {
+        content[k] = v;
+      }
+      const stringid = tr.querySelector("td.string input").value.trim();
+      if (stringid && (stringid !== "--")) {
+        content[k + "String"] = stringid;
+      }
     }
     
     /* Read the previous encoded content, preserve blanks and comments, replace existing fields, and drop deleted ones.
@@ -152,7 +197,7 @@ export class MetadataEditor {
   validateAll() {
     for (const tr of this.element.querySelectorAll("tr.standard,tr.nonstandard")) {
       const k = tr.getAttribute("data-key");
-      const v = (tr.querySelector("input").value || "").trim();
+      const v = (tr.querySelector("td.value input").value || "").trim();
       if (v.length > 0xff) {
         tr.querySelector(".validationError").innerText = `Illegal length ${v.length}, limit 255.`;
       } else {

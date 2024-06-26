@@ -205,9 +205,15 @@ body > * {
   text-align: right;
   width: 150px;
 }
-.MetadataEditor td.help {
-  width: 1em;
+.MetadataEditor td.key.help {
+  color: #ccf;
   cursor: pointer;
+}
+.MetadataEditor td.string {
+  width: 100px;
+}
+.MetadataEditor td.string > input {
+  width: 100%;
 }
 .MetadataEditor td.value > input {
   width: calc(100% - 10px);
