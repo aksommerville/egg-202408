@@ -56,6 +56,10 @@ static void _pulse_unlock(struct hostio_audio *driver) {
   pulse_unlock(DRIVER->pulse);
 }
 
+static double _pulse_estimate_remaining_buffer(struct hostio_audio *driver) {
+  return pulse_estimate_remaining_buffer(DRIVER->pulse);
+}
+
 /* Type definition.
  */
  
@@ -69,4 +73,5 @@ const struct hostio_audio_type hostio_audio_type_pulse={
   .play=_pulse_play,
   .lock=_pulse_lock,
   .unlock=_pulse_unlock,
+  .estimate_remaining_buffer=_pulse_estimate_remaining_buffer,
 };

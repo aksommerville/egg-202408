@@ -60,10 +60,11 @@ void synth_play_sound_serial(
  * This counter does return to zero when the song repeats.
  * Beware that this is not the whole picture, for reporting to the game: 
  * You should try to estimate how far into its last buffer the PCM driver is.
+ * Give that to us as (adjust), in seconds: How much of the last buffer has not yet been delivered.
  */
-double synth_get_playhead(struct synth *synth);
+double synth_get_playhead(struct synth *synth,double adjust);
 
-static inline void synth_set_playhead(struct synth *synth,double beats) {}//TODO
+void synth_set_playhead(struct synth *synth,double beats);
 
 /* You may push events into the system at any time.
  * Beware that this is the same event bus the song is using.

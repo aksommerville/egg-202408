@@ -47,4 +47,6 @@ int pulse_update(struct pulse *pulse);
 int pulse_lock(struct pulse *pulse);
 void pulse_unlock(struct pulse *pulse);
 
+double pulse_estimate_remaining_buffer(const struct pulse *pulse);
+
 #endif

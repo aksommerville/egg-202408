@@ -58,6 +58,10 @@ static void _alsafd_unlock(struct hostio_audio *driver) {
   alsafd_unlock(DRIVER->alsafd);
 }
 
+static double _alsafd_estimate_remaining_buffer(struct hostio_audio *driver) {
+  return alsafd_estimate_remaining_buffer(DRIVER->alsafd);
+}
+
 /* Type definition.
  */
  
@@ -72,4 +76,5 @@ const struct hostio_audio_type hostio_audio_type_alsafd={
   .update=_alsafd_update,
   .lock=_alsafd_lock,
   .unlock=_alsafd_unlock,
+  .estimate_remaining_buffer=_alsafd_estimate_remaining_buffer,
 };

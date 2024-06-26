@@ -319,8 +319,12 @@ static void egg_wasm_audio_event(wasm_exec_env_t ee,int chid,int opcode,int a,in
 
 static double egg_wasm_audio_get_playhead(wasm_exec_env_t ee) {
   // No need to lock.
-  //TODO Adjust per driver: About how far into the last buffer are we?
-  return synth_get_playhead(egg.synth);
+  double adjust=0.0;
+  if (egg.hostio->audio) {
+    adjust=hostio_audio_estimate_remaining_buffer(egg.hostio->audio);
+  }
+  double ph=synth_get_playhead(egg.synth,adjust);
+  return ph;
 }
 
 static void egg_wasm_audio_set_playhead(wasm_exec_env_t ee,double beat) {

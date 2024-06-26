@@ -18,6 +18,7 @@ static void *pulse_iothd(void *arg) {
       memset(pulse->buf,0,pulse->bufa<<1);
     }
     pthread_mutex_unlock(&pulse->iomtx);
+    pulse->buffer_time_us=pulse_now();
     
     int err=0,result;
     pthread_testcancel();
@@ -110,14 +111,15 @@ static int pulse_init_pa(struct pulse *pulse,const struct pulse_setup *setup) {
 /* With the final rate and channel count settled, calculate a good buffer size and allocate it.
  */
  
-static int pulse_init_buffer(struct pulse *pulse) {
+static int pulse_init_buffer(struct pulse *pulse,const struct pulse_setup *setup) {
 
   const double buflen_target_s= 0.010; // about 100 Hz
   const int buflen_min=           128; // but in no case smaller than N samples
   const int buflen_max=         16384; // ...nor larger
   
   // Initial guess and clamp to the hard boundaries.
-  pulse->bufa=buflen_target_s*pulse->rate*pulse->chanc;
+  if (setup->buffersize>0) pulse->bufa=setup->buffersize;
+  else pulse->bufa=buflen_target_s*pulse->rate*pulse->chanc;
   if (pulse->bufa<buflen_min) {
     pulse->bufa=buflen_min;
   } else if (pulse->bufa>buflen_max) {
@@ -129,6 +131,7 @@ static int pulse_init_buffer(struct pulse *pulse) {
   if (!(pulse->buf=malloc(sizeof(int16_t)*pulse->bufa))) {
     return -1;
   }
+  pulse->buftime_s=(double)(pulse->bufa/pulse->chanc)/(double)pulse->rate;
   
   return 0;
 }
@@ -161,7 +164,7 @@ struct pulse *pulse_new(
   
   if (
     (pulse_init_pa(pulse,setup)<0)||
-    (pulse_init_buffer(pulse)<0)||
+    (pulse_init_buffer(pulse,setup)<0)||
     (pulse_init_thread(pulse)<0)
   ) {
     pulse_del(pulse);
@@ -220,4 +223,24 @@ int pulse_lock(struct pulse *pulse) {
 void pulse_unlock(struct pulse *pulse) {
   if (!pulse) return;
   pthread_mutex_unlock(&pulse->iomtx);
+}
+
+/* Current time.
+ */
+ 
+int64_t pulse_now() {
+  struct timeval tv={0};
+  gettimeofday(&tv,0);
+  return (int64_t)tv.tv_sec*1000000ll+tv.tv_usec;
+}
+
+/* Estimate remaining buffer.
+ */
+ 
+double pulse_estimate_remaining_buffer(const struct pulse *pulse) {
+  int64_t now=pulse_now();
+  double elapsed=(now-pulse->buffer_time_us)/1000000.0;
+  if (elapsed<0.0) return 0.0;
+  if (elapsed>pulse->buftime_s) return pulse->buftime_s;
+  return pulse->buftime_s-elapsed;
 }

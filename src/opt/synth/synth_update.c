@@ -47,7 +47,7 @@ static void synth_updatef_mono(float *v,int c,struct synth *synth) {
     
     int updc=c;
     if (synth->song) {
-      int err=synth_song_update(synth,synth->song);
+      int err=synth_song_update(synth,synth->song,0);
       if (err<=0) {
         synth_end_song(synth);
       } else {

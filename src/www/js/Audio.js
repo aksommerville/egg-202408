@@ -114,8 +114,20 @@ export class Audio {
   
   egg_audio_set_playhead(beat) {
     if (!this.song) return;
-    this.stopVoices();
-    //TODO Set playhead. This is actually pretty tough to manage. Punt.
+    // Kill voices and sound effects. Keep channels.
+    for (const voice of this.voices) voice.release();
+    const now = this.context.currentTime;
+    for (let i=this.soundEffects.length; i-->0; ) {
+      const node = this.soundEffects[i];
+      if (node.eggStartTime && (node.eggStartTime >= now)) {
+        node.disconnect();
+        this.soundEffects.splice(i, 1);
+      }
+    }
+    // Song manages the real playhead change.
+    const dsttime = (beat * this.song.msperqnote) / 1000;
+    this.song.rewind();
+    this.song.fastForward(dsttime);
   }
   
   /* Internals.
@@ -264,11 +276,33 @@ class Song {
     return ((qual === this.qual) && (songid === this.songid));
   }
   
+  rewind() {
+    this.startTime = this.audio.context.currentTime;
+    this.readp = this.startp;
+    this.readTime = this.startTime;
+    this.durationPending = 0;
+  }
+  
+  fastForward(dsts) {
+    while (dsts > 0) {
+      const event = this.readEvent(true);
+      if (!event) {
+        this.audio.endSong();
+        return;
+      }
+      if (typeof(event) === "number") {
+        this.startTime -= event;
+        dsts -= event;
+        if (!this.durations) this.durationPending += event;
+      }
+    }
+  }
+  
   update() {
     const now = this.audio.context.currentTime;
     const later = now + SONG_READAHEAD_WINDOW_S;
     while (this.readTime < later) {
-      const event = this.readEvent();
+      const event = this.readEvent(false);
       
       // End of song?
       if (!event) {
@@ -292,13 +326,14 @@ class Song {
    *  - number: Delay, seconds. Never zero.
    *  - "ok": Processed one event (we dispatch it from here).
    */
-  readEvent() {
+  readEvent(skip) {
     const lead = this.src[this.readp++];
     
     // Zero or end of input is End of Song.
     if (!lead) {
       if (!this.durations) this.durations = this.durationPending;
       if (!this.repeat) return null;
+      if (skip) return null; // Don't repeat when fast-forwarding.
       this.readp = this.loopp;
       // Must delay a little, in case the song has no explicit delays, so we don't loop forever.
       // Note that if this happens, it's a disaster no matter what.
@@ -319,7 +354,7 @@ class Song {
       const chid = a >> 5;
       const noteid = ((a & 0x1f) << 2) | (b >> 6);
       const durms = ((b & 0x3f) << 5);
-      this.audio.playNote(chid, noteid, velocity, durms / 1000, this.readTime);
+      if (!skip) this.audio.playNote(chid, noteid, velocity, durms / 1000, this.readTime);
       return "ok";
     }
     
@@ -331,7 +366,7 @@ class Song {
       velocity |= velocity >> 4;
       const chid = ((lead & 0x03) << 1) | (a >> 7);
       const noteid = (a & 0x7f);
-      this.audio.playNote(chid, noteid, velocity, 0, this.readTime);
+      if (!skip) this.audio.playNote(chid, noteid, velocity, 0, this.readTime);
       return "ok";
     }
     
@@ -340,7 +375,7 @@ class Song {
       const a = this.src[this.readp++] || 0;
       const chid = lead & 0x07;
       const v = (a << 6) | (a >> 2);
-      this.audio.changeWheel(chid, v, this.readTime);
+      if (!skip) this.audio.changeWheel(chid, v, this.readTime);
       return "ok";
     }
     

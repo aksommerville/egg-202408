@@ -33,8 +33,8 @@ static inline int synth_song_is_resource(const struct synth_song *song,int qual,
   return ((song->qual==qual)&&(song->songid==songid));
 }
 
-static inline double synth_song_get_playhead(const struct synth *synth,const struct synth_song *song) {
-  return (double)song->playhead_ms/(double)song->tempo;
+static inline double synth_song_get_playhead(const struct synth *synth,const struct synth_song *song,double adjust) {
+  return ((double)song->playhead_ms-(adjust*1000.0))/(double)song->tempo;
 }
 
 /* Commit new channels and procs to (synth), make ready to play (song).
@@ -44,12 +44,17 @@ int synth_song_init_channels(struct synth *synth,struct synth_song *song);
 
 /* Trigger any events at current playhead, then return frame count to next event.
  * Returns 0 at EOF (if not repeating), or <0 for real errors.
+ * (skip) nonzero to suppress actual event delivery -- only synth_song_set_playhead() should use that.
  */
-int synth_song_update(struct synth *synth,struct synth_song *song);
+int synth_song_update(struct synth *synth,struct synth_song *song,int skip);
 
 /* Advance playhead by so many frames.
  * This must not be more than the last thing we returned at synth_song_update().
  */
 void synth_song_advance(struct synth_song *song,int framec);
+
+/* Reset to start, then discard events until we're close to the requested beat.
+ */
+void synth_song_set_playhead(struct synth *synth,struct synth_song *song,double beats);
 
 #endif

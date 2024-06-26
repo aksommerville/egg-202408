@@ -54,6 +54,10 @@ static void _asound_unlock(struct hostio_audio *driver) {
   asound_unlock(DRIVER->asound);
 }
 
+static double _asound_estimate_remaining_buffer(struct hostio_audio *driver) {
+  return asound_estimate_remaining_buffer(DRIVER->asound);
+}
+
 /* Type definition.
  */
  
@@ -67,4 +71,5 @@ const struct hostio_audio_type hostio_audio_type_asound={
   .play=_asound_play,
   .lock=_asound_lock,
   .unlock=_asound_unlock,
+  .estimate_remaining_buffer=_asound_estimate_remaining_buffer,
 };

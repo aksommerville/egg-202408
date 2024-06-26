@@ -7,13 +7,14 @@ sudo apt install clang wabt
 ## TODO
 
 - [ ] Web runtime
-- - [ ] Audio set playhead
+- - [x] Audio set playhead
 - - [ ] incfg: First, is it worth the effort? How much coverage does Standard Mapping give us? And then.... how?
 - [ ] Native runtime for Linux
 - - [ ] Invoke incfg via client too.
 - - - Think this thru. We'll need to add some kind of abort option, otherwise the user is stuck for about 2 minutes while it cycles thru.
-- - [ ] egg_audio_get_playhead: Adjust per driver.
-- - [ ] synth_set_playhead
+- - [x] egg_audio_get_playhead: Adjust per driver.
+- - - To observe the need for this: `make -C../../egg && make && ../../egg/out/linux/egg out/lightson.egg --audio-buffer=16384`
+- - [x] synth_set_playhead
 - [ ] Raspberry Pi 1 (Broadcom video)
 - [ ] MS Windows
 - [ ] MacOS

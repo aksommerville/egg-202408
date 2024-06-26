@@ -211,8 +211,11 @@ void egg_audio_event(int chid,int opcode,int a,int b) {
 
 double egg_audio_get_playhead() {
   // No need to lock.
-  //TODO Adjust per driver: About how far into the last buffer are we?
-  return synth_get_playhead(egg.synth);
+  double adjust=0.0;
+  if (egg.hostio->audio) {
+    adjust=hostio_audio_estimate_remaining_buffer(egg.hostio->audio);
+  }
+  return synth_get_playhead(egg.synth,adjust);
 }
 void egg_audio_set_playhead(double beat) {
   if (egg_lock_audio()<0) return;

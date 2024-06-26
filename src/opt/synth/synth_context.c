@@ -255,12 +255,26 @@ void synth_play_sound_serial(
 /* Get playhead.
  */
  
-double synth_get_playhead(struct synth *synth) {
+double synth_get_playhead(struct synth *synth,double adjust) {
   // Use "next" if present, so we're discussing the new song as soon as the user asks for it.
   // Its playhead will linger at zero for a little while, until it starts playing for real.
-  if (synth->song_next) return synth_song_get_playhead(synth,synth->song_next);
-  if (synth->song) return synth_song_get_playhead(synth,synth->song);
+  if (synth->song_next) return synth_song_get_playhead(synth,synth->song_next,adjust);
+  if (synth->song) return synth_song_get_playhead(synth,synth->song,adjust);
   return -1.0;
+}
+
+/* Set playhead.
+ */
+ 
+void synth_set_playhead(struct synth *synth,double beats) {
+  if (synth->song_next) {
+    synth_song_set_playhead(synth,synth->song_next,beats);
+  } else if (synth->song) {
+    synth_song_set_playhead(synth,synth->song,beats);
+    int i;
+    struct synth_voice *voice=synth->voicev;
+    for (i=synth->voicec;i-->0;voice++) synth_voice_release(synth,voice);
+  }
 }
 
 /* Drop any voice or proc that might refer to the given channel.

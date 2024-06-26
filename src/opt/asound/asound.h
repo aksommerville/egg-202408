@@ -41,4 +41,6 @@ void asound_play(struct asound *asound,int play);
 int asound_lock(struct asound *asound);
 void asound_unlock(struct asound *asound);
 
+double asound_estimate_remaining_buffer(const struct asound *asound);
+
 #endif

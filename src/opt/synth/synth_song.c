@@ -88,7 +88,7 @@ int synth_song_init_channels(struct synth *synth,struct synth_song *song) {
 /* Update.
  */
 
-int synth_song_update(struct synth *synth,struct synth_song *song) {
+int synth_song_update(struct synth *synth,struct synth_song *song,int skip) {
   for (;;) {
   
     // Finished?
@@ -116,37 +116,49 @@ int synth_song_update(struct synth *synth,struct synth_song *song) {
     // Note.
     if ((lead&0xf0)==0x80) {
       if (song->srcp>song->srcc-2) return -1;
-      uint8_t a=song->src[song->srcp++];
-      uint8_t b=song->src[song->srcp++];
-      uint8_t chid=a>>5;
-      uint8_t velocity=(lead&0x0f)<<3;
-      velocity|=velocity>>4;
-      uint8_t noteid=((a&0x1f)<<2)|(b>>6);
-      int dur=lroundf(((b&0x3f)<<5)*song->frames_per_ms);
-      if (dur<0) dur=0;
-      synth_event(synth,chid,MIDI_OPCODE_NOTE_ONCE,noteid,velocity,dur);
+      if (skip) {
+        song->srcp+=2;
+      } else {
+        uint8_t a=song->src[song->srcp++];
+        uint8_t b=song->src[song->srcp++];
+        uint8_t chid=a>>5;
+        uint8_t velocity=(lead&0x0f)<<3;
+        velocity|=velocity>>4;
+        uint8_t noteid=((a&0x1f)<<2)|(b>>6);
+        int dur=lroundf(((b&0x3f)<<5)*song->frames_per_ms);
+        if (dur<0) dur=0;
+        synth_event(synth,chid,MIDI_OPCODE_NOTE_ONCE,noteid,velocity,dur);
+      }
       continue;
     }
   
     // Fire-and-forget.
     if ((lead&0xf0)==0x90) {
       if (song->srcp>song->srcc-1) return -1;
-      uint8_t a=song->src[song->srcp++];
-      uint8_t chid=((lead&0x03)<<1)|(a>>7);
-      uint8_t noteid=(a&0x7f);
-      uint8_t velocity=(lead&0x0c)<<2;
-      velocity|=velocity>>2;
-      velocity|=velocity>>4;
-      synth_event(synth,chid,MIDI_OPCODE_NOTE_ONCE,noteid,velocity,0);
+      if (skip) {
+        song->srcp+=1;
+      } else {
+        uint8_t a=song->src[song->srcp++];
+        uint8_t chid=((lead&0x03)<<1)|(a>>7);
+        uint8_t noteid=(a&0x7f);
+        uint8_t velocity=(lead&0x0c)<<2;
+        velocity|=velocity>>2;
+        velocity|=velocity>>4;
+        synth_event(synth,chid,MIDI_OPCODE_NOTE_ONCE,noteid,velocity,0);
+      }
       continue;
     }
   
     // Wheel.
     if ((lead&0xf8)==0xa0) {
       if (song->srcp>song->srcc-1) return -1;
-      uint8_t v=song->src[song->srcp++];
-      uint8_t chid=lead&0x07;
-      synth_event(synth,chid,MIDI_OPCODE_WHEEL,v<<6,v>>1,0);
+      if (skip) {
+        song->srcp+=1;
+      } else {
+        uint8_t v=song->src[song->srcp++];
+        uint8_t chid=lead&0x07;
+        synth_event(synth,chid,MIDI_OPCODE_WHEEL,v<<6,v>>1,0);
+      }
       continue;
     }
   
@@ -167,5 +179,23 @@ void synth_song_advance(struct synth_song *song,int framec) {
       song->playhead_ms=song->playhead_ms_next;
       song->playhead_ms_next=0;
     }
+  }
+}
+
+/* Set playhead.
+ */
+ 
+void synth_song_set_playhead(struct synth *synth,struct synth_song *song,double beats) {
+  int dstframe=beats*song->tempo*song->frames_per_ms;
+  song->srcp=song->startp;
+  song->delay=1;
+  song->playhead_ms=1;
+  song->playhead_ms_next=song->playhead_ms;
+  while (dstframe>0) {
+    int err=synth_song_update(synth,song,1);
+    if (err<=0) break;
+    if (err>dstframe) err=dstframe;
+    synth_song_advance(song,err);
+    dstframe-=err;
   }
 }

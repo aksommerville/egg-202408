@@ -18,6 +18,7 @@ static void *alsafd_iothd(void *arg) {
       memset(alsafd->buf,0,alsafd->bufa<<1);
     }
     pthread_mutex_unlock(&alsafd->iomtx);
+    alsafd->buffer_time_us=alsafd_now();
     
     const uint8_t *src=(uint8_t*)alsafd->buf;
     int srcc=alsafd->bufa<<1; // bytes (from samples)
@@ -203,6 +204,7 @@ static int alsafd_configure_device(
   alsafd->bufa=(alsafd->hwbufframec*alsafd->chanc)>>1;
   if (alsafd->buf) free(alsafd->buf);
   if (!(alsafd->buf=malloc(alsafd->bufa<<1))) return -1;
+  alsafd->buftime_s=(double)alsafd->hwbufframec/(double)alsafd->rate;
   
   /* Now set some driver software parameters.
    * The main thing is we want avail_min to be half of the hardware buffer size.
@@ -365,4 +367,24 @@ int alsafd_error(struct alsafd *alsafd,const char *context,const char *fmt,...) 
     }
   }
   return -1;
+}
+
+/* Current time.
+ */
+ 
+int64_t alsafd_now() {
+  struct timeval tv={0};
+  gettimeofday(&tv,0);
+  return (int64_t)tv.tv_sec*1000000ll+tv.tv_usec;
+}
+
+/* Estimate remaining buffer.
+ */
+ 
+double alsafd_estimate_remaining_buffer(const struct alsafd *alsafd) {
+  int64_t now=alsafd_now();
+  double elapsed=(now-alsafd->buffer_time_us)/1000000.0;
+  if (elapsed<0.0) return 0.0;
+  if (elapsed>alsafd->buftime_s) return alsafd->buftime_s;
+  return alsafd->buftime_s-elapsed;
 }

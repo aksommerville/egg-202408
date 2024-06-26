@@ -110,4 +110,6 @@ int alsafd_update(struct alsafd *alsafd);
 int alsafd_lock(struct alsafd *alsafd);
 void alsafd_unlock(struct alsafd *alsafd);
 
+double alsafd_estimate_remaining_buffer(const struct alsafd *alsafd);
+
 #endif

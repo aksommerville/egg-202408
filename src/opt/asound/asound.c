@@ -18,6 +18,7 @@ static void *asound_iothd(void *arg) {
       memset(asound->buf,0,asound->bufa<<1);
     }
     pthread_mutex_unlock(&asound->iomtx);
+    asound->buffer_time_us=asound_now();
     
     int framec=asound->bufa_frames;
     int framep=0;
@@ -61,7 +62,7 @@ static int asound_init(struct asound *asound,const struct asound_setup *setup) {
     asound->chanc=setup->chanc;
     device=setup->device;
   }
-       if (asound->rate>200) asound->rate=44100;
+       if (asound->rate<200) asound->rate=44100;
   else if (asound->rate>200000) asound->rate=44100;
        if (asound->chanc<1) asound->chanc=1;
   else if (asound->chanc>8) asound->chanc=8;
@@ -92,6 +93,7 @@ static int asound_init(struct asound *asound,const struct asound_setup *setup) {
 
   asound->bufa=asound->bufa_frames*asound->chanc;
   if (!(asound->buf=malloc(asound->bufa*2))) return -1;
+  asound->buftime_s=(double)asound->bufa_frames/(double)asound->rate;
 
   pthread_mutexattr_t mattr;
   pthread_mutexattr_init(&mattr);
@@ -157,4 +159,24 @@ int asound_lock(struct asound *asound) {
 void asound_unlock(struct asound *asound) {
   if (!asound) return;
   pthread_mutex_unlock(&asound->iomtx);
+}
+
+/* Current time.
+ */
+ 
+int64_t asound_now() {
+  struct timeval tv={0};
+  gettimeofday(&tv,0);
+  return (int64_t)tv.tv_sec*1000000ll+tv.tv_usec;
+}
+
+/* Estimate remaining buffer.
+ */
+ 
+double asound_estimate_remaining_buffer(const struct asound *asound) {
+  int64_t now=asound_now();
+  double elapsed=(now-asound->buffer_time_us)/1000000.0;
+  if (elapsed<0.0) return 0.0;
+  if (elapsed>asound->buftime_s) return asound->buftime_s;
+  return asound->buftime_s-elapsed;
 }

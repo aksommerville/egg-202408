@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include <alsa/asoundlib.h>
 
@@ -19,6 +20,10 @@ struct asound {
   pthread_t iothd;
   pthread_mutex_t iomtx;
   int ioabort;
+  int64_t buffer_time_us;
+  double buftime_s;
 };
+
+int64_t asound_now();
 
 #endif

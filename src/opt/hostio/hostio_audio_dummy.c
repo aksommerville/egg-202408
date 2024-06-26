@@ -156,4 +156,5 @@ const struct hostio_audio_type hostio_audio_type_dummy={
   // Typical:
   // int lock(struct hostio_audio *driver);
   // void unlock(struct hostio_audio *driver);
+  // double estimate_remaining_buffer(struct hostio_audio *driver);
 };

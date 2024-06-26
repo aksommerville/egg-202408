@@ -39,6 +39,8 @@ struct alsafd {
   int ioerror;
   int16_t *buf;
   int bufa; // samples
+  int64_t buffer_time_us;
+  double buftime_s;
 };
 
 // Log if enabled, and always returns -1. Null (fmt) to use errno.
@@ -54,5 +56,7 @@ void alsafd_hw_params_set_interval(struct snd_pcm_hw_params *params,int k,int lo
 
 // Having already refined the given param, choose a single value for it as close as possible to (v).
 void alsafd_hw_params_set_nearest_interval(struct snd_pcm_hw_params *params,int k,unsigned int v);
+
+int64_t alsafd_now();
 
 #endif
