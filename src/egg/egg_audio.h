@@ -3,26 +3,6 @@
  
 #ifndef EGG_AUDIO_H
 #define EGG_AUDIO_H
-
-/* Manual PCM API.
- * If you brought your own synthesizer, call this during init, and fill the buffer whenever we call it.
- * Employ the lock from outside the callback to ensure your callback is not running.
- * Depending on the underlying platform, the callback might happen in a separate thread.
- * If you use this manual API, the friendly API below is not available.
- ******************************************************************************************/
- 
-//XXX 2024-06-26 Confirm that WAMR will be OK with this before implementing.
-
-/* Provide your preferred rate and channel count, and we replace with the actual.
- * You must accept whatever we return.
- * Returns <0 only on hard errors.
- * Playback will not begin during egg_client_init(), so it's safe to init first and then prep your synthesizer.
- * For your callback, (c) is always in samples -- not frames, not bytes.
- */
-int egg_audio_init_manual(int *rate,int *chanc,void (*cb)(float *v,int c));
-
-int egg_audio_lock();
-void egg_audio_unlock();
  
 /* Friendly API.
  * By default, we'll create a synthesizer and take care of all the PCM work for you.
