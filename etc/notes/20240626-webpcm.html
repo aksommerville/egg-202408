@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html><head>
+<title>webpcm poc</title>
+<script>
+
+let context = null;
+let buffer = null; // AudioBuffer
+let bsrc = null; // AudioBufferSource
+let raw = null; // Float32Array -1..1, client writes here.
+
+/* (dst) is a Float32Array.
+ * Content initially undefined and probably not zero.
+ * We must overwrite it completely.
+ * This is the one function that would live outside our framework.
+ */
+let p = 0;
+let dp = (440 * Math.PI * 2) / 44100;
+let dplo = (200 * Math.PI * 2) / 44100;
+let dphi = (800 * Math.PI * 2) / 44100;
+let ddp = (dphi - dplo) / 20000;
+function client_generate(dst) {
+  for (let i=0; i<dst.length; i++, p+=dp) {
+    dst[i] = Math.sin(p) * 0.100;
+    dp += ddp;
+    if (ddp > 0) {
+      if (dp > dphi) ddp = -ddp;
+    } else {
+      if (dp < dplo) ddp = - ddp;
+    }
+  }
+}
+
+/* This works great.
+ * Be careful to fire the manual update only the first time, it takes care of itself after that.
+ * My heart says we need double-buffering, but so far I haven't heard the need for it.
+ * That could certainly change under realistic load.
+ * It feels wasteful to make a new AudioBufferSource for each iteration. But reusing it didn't seem to work.
+ */
+
+function update() {
+  client_generate(raw);
+  buffer.copyToChannel(raw, 0);
+  if (bsrc) {
+    bsrc.stop();
+    bsrc.disconnect();
+  }
+  bsrc = context.createBufferSource();
+  bsrc.buffer = buffer;
+  bsrc.onended = () => {
+    update();
+  };
+  bsrc.connect(context.destination);
+  bsrc.start(0);
+}
+
+function beginPlayback() {
+  let firstTime = false;
+  if (!context) {
+    context = new window.AudioContext({
+      sampleRate: 44100,
+      latencyHint: "interactive",
+    });
+    firstTime = true;
+  }
+  if (context.state === "suspended") {
+    context.resume();
+  }
+  if (!raw) {
+    raw = new Float32Array(2048);
+  }
+  if (!buffer) {
+    buffer = context.createBuffer(1, raw.length, 44100);
+  }
+  if (firstTime) update();
+}
+
+function endPlayback() {
+  if (!context) return;
+  if (bsrc) {
+    bsrc.stop(0);
+    bsrc.disconnect();
+    bsrc = null;
+  }
+  context.suspend();
+}
+
+function togglePlayback() {
+  const btn = document.getElementById("toggle");
+  if (btn.value === "Play") {
+    btn.value = "Pause";
+    beginPlayback();
+  } else {
+    btn.value = "Play";
+    endPlayback();
+  }
+}
+
+</script>
+</head><body>
+<input type="button" id="toggle" value="Play" onclick="togglePlayback()"/>
+</body></html>
