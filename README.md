@@ -6,11 +6,7 @@ sudo apt install clang wabt
 
 ## TODO
 
-- [ ] Web runtime
-- - [ ] incfg: First, is it worth the effort? How much coverage does Standard Mapping give us? And then.... how?
 - [ ] Native runtime for Linux
-- - [ ] Invoke incfg via client too.
-- - - Think this thru. We'll need to add some kind of abort option, otherwise the user is stuck for about 2 minutes while it cycles thru.
 - - [ ] Config file.
 - [ ] Raspberry Pi 1 (Broadcom video)
 - [ ] MS Windows
