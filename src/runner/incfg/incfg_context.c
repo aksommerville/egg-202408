@@ -75,53 +75,53 @@ static int incfg_deliver_sources(struct incfg *incfg) {
   struct egg_inmap_rules *rules=egg_inmap_rewrite_rules(inmap,vid,pid,version,name,-1);
   if (!rules) return -1;
   const struct incfg_source *source=incfg->sourcev;
-  int i=0; for (;i<21;i++,source++) {
+  int i=0; for (;i<INCFG_IX_COUNT;i++,source++) {
     if (!source->btnid) continue;
     int dstbtnid=0;
     
     switch (i) {
-      case 0: dstbtnid=EGG_JOYBTN_SOUTH; break;
-      case 1: dstbtnid=EGG_JOYBTN_EAST; break;
-      case 2: dstbtnid=EGG_JOYBTN_WEST; break;
-      case 3: dstbtnid=EGG_JOYBTN_NORTH; break;
-      case 4: dstbtnid=EGG_JOYBTN_L1; break;
-      case 5: dstbtnid=EGG_JOYBTN_R1; break;
-      case 6: dstbtnid=EGG_JOYBTN_L2; break;
-      case 7: dstbtnid=EGG_JOYBTN_R2; break;
-      case 8: dstbtnid=EGG_JOYBTN_AUX2; break;
-      case 9: dstbtnid=EGG_JOYBTN_AUX1; break;
-      case 10: dstbtnid=EGG_JOYBTN_LP; break;
-      case 11: dstbtnid=EGG_JOYBTN_RP; break;
-      case 12: switch (source->part) {
+      case INCFG_IX_SOUTH: dstbtnid=EGG_JOYBTN_SOUTH; break;
+      case INCFG_IX_EAST: dstbtnid=EGG_JOYBTN_EAST; break;
+      case INCFG_IX_WEST: dstbtnid=EGG_JOYBTN_WEST; break;
+      case INCFG_IX_NORTH: dstbtnid=EGG_JOYBTN_NORTH; break;
+      case INCFG_IX_L1: dstbtnid=EGG_JOYBTN_L1; break;
+      case INCFG_IX_R1: dstbtnid=EGG_JOYBTN_R1; break;
+      case INCFG_IX_L2: dstbtnid=EGG_JOYBTN_L2; break;
+      case INCFG_IX_R2: dstbtnid=EGG_JOYBTN_R2; break;
+      case INCFG_IX_AUX2: dstbtnid=EGG_JOYBTN_AUX2; break;
+      case INCFG_IX_AUX1: dstbtnid=EGG_JOYBTN_AUX1; break;
+      case INCFG_IX_UP: switch (source->part) {
           case 0: dstbtnid=EGG_JOYBTN_UP; break;
           case -1: dstbtnid=EGG_INMAP_BTN_VERT; break;
           case 1: dstbtnid=EGG_INMAP_BTN_NVERT; break;
           case 8: dstbtnid=EGG_INMAP_BTN_DPAD; break;
         } break;
-      case 13: dstbtnid=EGG_JOYBTN_DOWN; break;
-      case 14: switch (source->part) {
+      case INCFG_IX_DOWN: dstbtnid=EGG_JOYBTN_DOWN; break;
+      case INCFG_IX_LEFT: switch (source->part) {
           case 0: dstbtnid=EGG_JOYBTN_LEFT;
           case -1: dstbtnid=EGG_INMAP_BTN_HORZ; break;
           case 1: dstbtnid=EGG_INMAP_BTN_NHORZ; break;
         } break;
-      case 15: dstbtnid=EGG_JOYBTN_RIGHT; break;
-      case 16: dstbtnid=EGG_JOYBTN_AUX3; break;
-      case 17: switch (source->part) {
+      case INCFG_IX_RIGHT: dstbtnid=EGG_JOYBTN_RIGHT; break;
+      case INCFG_IX_AUX3: dstbtnid=EGG_JOYBTN_AUX3; break;
+      case INCFG_IX_LX: switch (source->part) {
           case -1: dstbtnid=EGG_JOYBTN_LX; break;
           case 1: dstbtnid=EGG_INMAP_BTN_NLX; break;
         } break;
-      case 18: switch (source->part) {
+      case INCFG_IX_LY: switch (source->part) {
           case -1: dstbtnid=EGG_JOYBTN_LY; break;
           case 1: dstbtnid=EGG_INMAP_BTN_NLY; break;
         } break;
-      case 19: switch (source->part) {
+      case INCFG_IX_RX: switch (source->part) {
           case -1: dstbtnid=EGG_JOYBTN_RX; break;
           case 1: dstbtnid=EGG_INMAP_BTN_NRX; break;
         } break;
-      case 20: switch (source->part) {
+      case INCFG_IX_RY: switch (source->part) {
           case -1: dstbtnid=EGG_JOYBTN_RY; break;
           case 1: dstbtnid=EGG_INMAP_BTN_NRY; break;
         } break;
+      case INCFG_IX_LP: dstbtnid=EGG_JOYBTN_LP; break;
+      case INCFG_IX_RP: dstbtnid=EGG_JOYBTN_RP; break;
     }
     
     if (!dstbtnid) continue;
@@ -135,8 +135,9 @@ static int incfg_deliver_sources(struct incfg *incfg) {
  */
  
 static void incfg_commit_button(struct incfg *incfg,int save) {
-  if ((incfg->btnix>=21)||incfg->finished) {
+  if ((incfg->btnix>=INCFG_IX_COUNT)||incfg->finished) {
     incfg->finished=1;
+    incfg_deliver_sources(incfg);
     return;
   }
   if (save) {
@@ -145,21 +146,54 @@ static void incfg_commit_button(struct incfg *incfg,int save) {
     
     // Check whether this assignment obviates some future one.
     switch (incfg->btnix) {
-      case 12: if (incfg->part==8) {
-          incfg->ignoreix[13]=1;
-          incfg->ignoreix[14]=1;
-          incfg->ignoreix[15]=1;
+      case INCFG_IX_UP: if (incfg->part==8) {
+          incfg->ignoreix[INCFG_IX_DOWN]=1;
+          incfg->ignoreix[INCFG_IX_LEFT]=1;
+          incfg->ignoreix[INCFG_IX_RIGHT]=1;
         } else if (incfg->part) {
-          incfg->ignoreix[13]=1;
+          incfg->ignoreix[INCFG_IX_DOWN]=1;
         } break;
-      case 14: if (incfg->part) {
-          incfg->ignoreix[15]=1;
+      case INCFG_IX_LEFT: if (incfg->part) {
+          incfg->ignoreix[INCFG_IX_RIGHT]=1;
         } break;
     }
     
   } else {
     incfg->sourcev[incfg->btnix].btnid=0;
     incfg->sourcev[incfg->btnix].part=0;
+    
+    // When a button is ignored, we might infer that others also don't exist.
+    switch (incfg->btnix) {
+      case INCFG_IX_L1: { // No left trigger, don't expect a right one. And if trigger 1 is missing, there won't be a 2.
+          incfg->ignoreix[INCFG_IX_R1]=1;
+          incfg->ignoreix[INCFG_IX_L2]=1;
+          incfg->ignoreix[INCFG_IX_R2]=1;
+        } break;
+      case INCFG_IX_L2: {
+          incfg->ignoreix[INCFG_IX_R2]=1;
+        } break;
+      case INCFG_IX_UP: { // No dpad? This isn't going to end well, but let's stop asking about it.
+          incfg->ignoreix[INCFG_IX_DOWN]=1;
+          incfg->ignoreix[INCFG_IX_LEFT]=1;
+          incfg->ignoreix[INCFG_IX_RIGHT]=1;
+        } break;
+      case INCFG_IX_LX: { // Don't ask for vertical or plunger on a stick with no horizontal.
+          incfg->ignoreix[INCFG_IX_LY]=1;
+          incfg->ignoreix[INCFG_IX_LP]=1;
+          // Debatable: If there's no left stick, assume there's no right stick either:
+          incfg->ignoreix[INCFG_IX_RX]=1;
+          incfg->ignoreix[INCFG_IX_RY]=1;
+          incfg->ignoreix[INCFG_IX_RP]=1;
+        } break;
+      case INCFG_IX_RX: {
+          incfg->ignoreix[INCFG_IX_RY]=1;
+          incfg->ignoreix[INCFG_IX_RP]=1;
+        } break;
+      case INCFG_IX_LP: {
+          incfg->ignoreix[INCFG_IX_RP]=1;
+        } break;
+    }
+    
   }
   for (;;) {
     incfg->btnix++;
@@ -422,17 +456,17 @@ void incfg_render(struct incfg *incfg) {
     case 7: focusp=9; break;
     case 8: focusp=10; break;
     case 9: focusp=11; break;
-    case 10: focusp=12; break;
-    case 11: focusp=13; break;
-    case 12: focusp=14; break;
-    case 13: focusp=15; break;
-    case 14: focusp=16; break;
-    case 15: focusp=17; break;
-    case 16: focusp=18; break;
-    case 17: focusp=12; focuspart=1; break; // lx
-    case 18: focusp=12; focuspart=2; break; // ly
-    case 19: focusp=13; focuspart=1; break; // rx
-    case 20: focusp=13; focuspart=2; break; // ry
+    case 10: focusp=14; break;
+    case 11: focusp=15; break;
+    case 12: focusp=16; break;
+    case 13: focusp=17; break;
+    case 14: focusp=18; break;
+    case 15: focusp=12; focuspart=1; break; // lx
+    case 16: focusp=12; focuspart=2; break; // ly
+    case 17: focusp=13; focuspart=1; break; // rx
+    case 18: focusp=13; focuspart=2; break; // ry
+    case 19: focusp=12; break;
+    case 20: focusp=13; break;
   }
   if (focusp>=0) {
     int vtxc=1;

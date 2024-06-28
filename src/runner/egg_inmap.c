@@ -401,8 +401,12 @@ static int egg_inmap_encode(struct sr_encoder *dst,const struct egg_inmap *inmap
  
 static int egg_inmap_save(struct egg_inmap *inmap) {
   if (!inmap->cfgpath) {
-    fprintf(stderr,"%s: Unable to save new input configuration, as no config file was found.\n",egg.exename);
-    return 0;
+    const char *src="./input.cfg";
+    int srcc=0; while (src[srcc]) srcc++;
+    if (!(inmap->cfgpath=malloc(srcc+1))) return -1;
+    memcpy(inmap->cfgpath,src,srcc);
+    inmap->cfgpath[srcc]=0;
+    fprintf(stderr,"%s: Input config path was unset. Saving to '%s'.\n",egg.exename,inmap->cfgpath);
   }
   struct sr_encoder serial={0};
   if (egg_inmap_encode(&serial,inmap)<0) {

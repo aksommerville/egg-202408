@@ -8,6 +8,7 @@ sudo apt install clang wabt
 
 - [ ] Native runtime for Linux
 - - [ ] Config file.
+- - [x] incfg: Don't ask about buttons if a similar one was already skipped: L1=>R1, L1=>L2, L2=>R2, LP=>RP, DPADY=>DPADX, LX=>LY, RX=>RY, LX=>RX?
 - [ ] Raspberry Pi 1 (Broadcom video)
 - [ ] MS Windows
 - [ ] MacOS
