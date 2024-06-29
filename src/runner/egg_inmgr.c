@@ -21,6 +21,7 @@ struct egg_inmgr {
   int show_fake_cursor;
   int texid_cursor;
   struct egg_inmap inmap;
+  struct egg_inmap_rules *kbdrules; // WEAK, OPTIONAL
 };
 
 /* Cleanup.
@@ -60,6 +61,9 @@ struct egg_inmgr *egg_inmgr_new() {
   if (egg_inmap_load(&inmgr->inmap)<0) {
     egg_inmgr_del(inmgr);
     return 0;
+  }
+  if (inmgr->kbdrules=egg_inmap_rules_for_device(&inmgr->inmap,0xffff,0xffff,0,"System Keyboard",-1)) {
+    fprintf(stderr,"%s: Input rules for System Keyboard will be processed by platform and not sent to game.\n",inmgr->inmap.cfgpath);
   }
   
   return inmgr;
@@ -368,17 +372,6 @@ static int egg_device_apply_rules(struct egg_inmgr *inmgr,struct egg_device *dev
     }
   }
   
-  /* Drop all buttons whose (dstbtnid) is still zero.
-   *XXX Don't drop them; we need the original button list for reporting to the client.
-  int rmc=0;
-  for (i=device->buttonc,button=device->buttonv+device->buttonc-1;i-->0;button--) {
-    if (button->hidusage) continue;
-    device->buttonc--;
-    memmove(button,button+1,sizeof(struct egg_button)*(device->buttonc-i));
-    rmc++;
-  }
-  /**/
-  
   return 0;
 }
 
@@ -531,14 +524,6 @@ static struct egg_device *egg_inmgr_add_device(struct egg_inmgr *inmgr,struct ho
   
   // Decide how we're going to use the device (keyboard, mouse, joystick, touch, accelerometer?), and configure that.
   if ((egg_device_configure(egg.inmgr,device)<0)||!device->rptcls) {
-    /*XXX If we knew that RAW events will never be enabled, we could clean things up a little and drop the device immediately.
-     * But we probably shouldn't -- a device that fails to configure is a strong candidate for guided configuration, which requires RAW.
-     *
-      fprintf(stderr,"%s: Dropping input device '%.*s' after failure to configure.\n",egg.exename,device->namec,device->name);
-      egg_inmgr_remove_device(egg.inmgr,devid);
-      if (driver->type->disconnect) driver->type->disconnect(driver,devid);
-      return 0;
-    /**/
     device->rptcls=EGG_EVENT_RAW;
     return device;
   }
@@ -563,6 +548,18 @@ void egg_inmgr_get_button_range(int *lo,int *hi,int *rest,const struct egg_inmgr
  ******************************************************************************************************/
 
 int egg_cb_key(struct hostio_video *driver,int keycode,int value) {
+
+  // If a global stateless action is mapped to this key, fire that and suppress the event.
+  // We're not checking that it actually is one of the stateless actions: Anything mapped to System Keyboard is presumed to be.
+  // Keys so mapped *will* report Repeat and Release events, since we won't bother searching for those.
+  if (egg.inmgr->kbdrules&&(value==1)) {
+    int dstbtnid=egg_inmap_rules_get_button(egg.inmgr->kbdrules,keycode);
+    if (dstbtnid) {
+      egg_perform_user_action(dstbtnid);
+      return 0;
+    }
+  }
+
   if (egg.inmgr->eventmask&(1<<EGG_EVENT_KEY)) {
     union egg_event *event=egg_event_push(egg.inmgr);
     event->key.type=EGG_EVENT_KEY;
@@ -767,6 +764,13 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
               else if (value>127) value=127;
               if (value==button->dstvalue) return;
               button->dstvalue=value;
+              int dstbtnid=button->dstbtnid;
+              switch (button->dstbtnid) {
+                case EGG_INMAP_BTN_NLX: dstbtnid=EGG_JOYBTN_LX; break;
+                case EGG_INMAP_BTN_NLY: dstbtnid=EGG_JOYBTN_LY; break;
+                case EGG_INMAP_BTN_NRX: dstbtnid=EGG_JOYBTN_RX; break;
+                case EGG_INMAP_BTN_NRY: dstbtnid=EGG_JOYBTN_RY; break;
+              }
               egg_send_joy_event(devid,button->dstbtnid,value);
             } break;
             
@@ -830,6 +834,7 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
               if (value&&button->dstvalue) return;
               if (!value&&!button->dstvalue) return;
               button->dstvalue=value;
+              if (value&&egg_perform_user_action(button->dstbtnid)) break;
               egg_send_joy_event(devid,button->dstbtnid,value);
             }
         }
@@ -842,11 +847,12 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
         if ((button->hidusage<0x00070000)||(button->hidusage>=0x00080000)) return;
         if (value==button->value) return;
         button->value=value;
+        //TODO Check for configured one-shot actions.
         union egg_event *event=egg_event_push(egg.inmgr);
         event->key.type=EGG_EVENT_KEY;
         event->key.keycode=button->hidusage;
         event->key.value=value;
-        // We'll fake KEY events straight off the device, but not TEXT. That would be too complicated. TODO But should we?
+        // We'll fake KEY events straight off the device, but not TEXT. That would be too complicated.
       } break;
       
     case EGG_EVENT_MMOTION: {

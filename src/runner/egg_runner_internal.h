@@ -38,6 +38,7 @@ extern struct egg {
   int directgl;
   char *glstr; // For glGetString, circular buffer.
   int glstrp,glstra;
+  int hard_pause;
 } egg;
 
 extern const int egg_romsrc;
@@ -96,5 +97,8 @@ void egg_cb_pcm_out(int16_t *v,int c,struct hostio_audio *driver);
 void egg_cb_connect(struct hostio_input *driver,int devid);
 void egg_cb_disconnect(struct hostio_input *driver,int devid);
 void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value);
+
+// >0 if this is a valid stateless action, 0 if not. (no operational status returned)
+int egg_perform_user_action(int inmap_btnid);
 
 #endif

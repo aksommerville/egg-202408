@@ -257,6 +257,7 @@ static int egg_update() {
   int err;
   
   // Pump the upstream event queue.
+  // Processing events may trigger termination, so check again after.
   if (hostio_update(egg.hostio)<0) {
     fprintf(stderr,"%s: Error updating I/O drivers.\n",egg.exename);
     return -2;
@@ -265,16 +266,18 @@ static int egg_update() {
     if (err!=-2) fprintf(stderr,"%s: Unspecified error updating input manager.\n",egg.exename);
     return -2;
   }
+  if (egg.terminate) return 1;
   
   // Sleep if needed, then update the client.
+  // If we're hard-paused, just stop after ticking the clock.
   double elapsed=egg_timer_tick(&egg.timer);
+  if (egg.hard_pause) return 0;
   if (egg.config.configure_input) {
     if ((err=incfg_update(egg.incfg,elapsed))<0) {
       if (err!=-2) fprintf(stderr,"%s: Unspecified error updating input configurator.\n",egg.exename);
       return -2;
     }
     if (incfg_is_finished(egg.incfg)) {
-      //TODO If we make incfg accessible to client games, don't terminate here -- return to the game.
       egg.terminate=1;
       return 0;
     }

@@ -68,6 +68,9 @@ static int egg_inmap_btnid_eval(int *dst,const char *src,int srcc) {
         INMAP_BTN(HORZ)
         INMAP_BTN(VERT)
         INMAP_BTN(DPAD)
+        INMAP_BTN(QUIT)
+        INMAP_BTN(SAVE)
+        INMAP_BTN(LOAD)
         ALIAS(MENU,AUX3)
       } break;
     case 5: {
@@ -78,9 +81,16 @@ static int egg_inmap_btnid_eval(int *dst,const char *src,int srcc) {
         ALIAS(HEART,AUX3)
         INMAP_BTN(NHORZ)
         INMAP_BTN(NVERT)
+        INMAP_BTN(PAUSE)
       } break;
     case 6: {
         ALIAS(SELECT,AUX2)
+      } break;
+    case 9: {
+        INMAP_BTN(SCREENCAP)
+      } break;
+    case 10: {
+        INMAP_BTN(FULLSCREEN)
       } break;
     #undef JOYBTN
     #undef INMAP_BTN
@@ -125,6 +135,12 @@ static const char *egg_inmap_btnid_repr(int btnid) {
     _(NLY)
     _(NRX)
     _(NRY)
+    _(QUIT)
+    _(SCREENCAP)
+    _(SAVE)
+    _(LOAD)
+    _(PAUSE)
+    _(FULLSCREEN)
     #undef _
   }
   return 0;
@@ -417,11 +433,12 @@ static int egg_inmap_save(struct egg_inmap *inmap) {
   if (err<0) {
     // Try mkdir on the parent, but just that one level.
     // It's ok to create "~/.egg", but don't go creating "/home" on a Mac or Windows machine!
+    // Also abort if the slash is in position 0 or 1: Don't try to mkdir(".").
     int slashp=-1,i=0;
     for (;inmap->cfgpath[i];i++) {
       if (inmap->cfgpath[i]=='/') slashp=i;
     }
-    if (slashp<0) { sr_encoder_cleanup(&serial); return -1; }
+    if (slashp<=1) { sr_encoder_cleanup(&serial); return -1; }
     inmap->cfgpath[slashp]=0;
     err=dir_mkdir(inmap->cfgpath);
     inmap->cfgpath[slashp]='/';
@@ -442,6 +459,7 @@ static int egg_inmap_save(struct egg_inmap *inmap) {
 struct egg_inmap_rules *egg_inmap_rules_for_device(
   const struct egg_inmap *inmap,int vid,int pid,int version,const char *name,int namec
 ) {
+  if (namec<0) { namec=0; while (name[namec]) namec++; }
   int i=0; for (;i<inmap->rulesc;i++) {
     struct egg_inmap_rules *rules=inmap->rulesv[i];
     if (rules->vid&&(rules->vid!=vid)) continue;

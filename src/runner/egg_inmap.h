@@ -46,6 +46,13 @@ struct egg_device {
 #define EGG_INMAP_BTN_NRX   0x27
 #define EGG_INMAP_BTN_NRY   0x28
 
+#define EGG_INMAP_BTN_QUIT       0x30
+#define EGG_INMAP_BTN_SCREENCAP  0x31
+#define EGG_INMAP_BTN_SAVE       0x32
+#define EGG_INMAP_BTN_LOAD       0x33
+#define EGG_INMAP_BTN_PAUSE      0x34 /* Hard pause, toggle. */
+#define EGG_INMAP_BTN_FULLSCREEN 0x35 /* Toggle. */
+
 struct egg_inmap_button {
   int srcbtnid;
   int dstbtnid;
