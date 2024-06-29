@@ -6,9 +6,9 @@ sudo apt install clang wabt
 
 ## TODO
 
-- [ ] Native runtime for Linux
+- [x] Native runtime for Linux
 - - [x] Config file.
-- - [ ] Generate input config file with one-off keyboard bindings initially.
+- - [x] Generate input config file with one-off keyboard bindings initially.
 - [ ] Raspberry Pi 1 (Broadcom video)
 - [ ] MS Windows
 - [ ] MacOS

@@ -370,6 +370,47 @@ static int egg_inmap_load_path(struct egg_inmap *inmap,const char *prepath) {
   return 0; // Ignore errors. We found the file, and we're keeping it, whether it decoded or not.
 }
 
+/* Create default config file, after a load failure.
+ */
+ 
+static int egg_inmap_create_default_config(struct egg_inmap *inmap) {
+
+  /* If we get the ROM externally, we're the generic runtime and should create "~/.egg/input.cfg".
+   * Otherwise, we're branded as the game and we try not to say "egg". So use "./input.cfg".
+   */
+  const char *prepath=0;
+  if (egg_romsrc==EGG_ROMSRC_EXTERNAL) {
+    prepath="~/.egg/input.cfg";
+  } else {
+    prepath="./input.cfg";
+  }
+  char path[1024];
+  int pathc=path_resolve(path,sizeof(path),prepath,-1);
+  if ((pathc<1)||(pathc>=sizeof(path))) return 0;
+  if (dir_mkdirp_parent(path)<0) return 0;
+  
+  /* Write the default content.
+   */
+  const char initfile[]=
+    ">>> 0xffff 0xffff System Keyboard\n"
+    "0x00070029 QUIT\n" // esc
+    "0x00070042 LOAD\n" // f10
+    "0x00070043 SAVE\n" // f9
+    "0x00070044 FULLSCREEN\n" // f11
+    "0x00070045 PAUSE\n" // f12
+    "0x00070049 SCREENCAP\n" // insert
+  "";
+  if (file_write(path,initfile,sizeof(initfile)-1)<0) return 0;
+  
+  /* Now read it back and set up as usual.
+   */
+  if (egg_inmap_load_path(inmap,path)>=0) {
+    fprintf(stderr,"%s: Created new input config.\n",inmap->cfgpath);
+  }
+
+  return 0;
+}
+
 /* Load.
  */
 
@@ -386,7 +427,8 @@ int egg_inmap_load(struct egg_inmap *inmap) {
   if (inmap->cfgpath) {
     fprintf(stderr,"%s: Loaded input config.\n",inmap->cfgpath);
   } else {
-    fprintf(stderr,"%s: No input config file found.\n",egg.exename);
+    fprintf(stderr,"%s: No input config file found. Will attempt to create...\n",egg.exename);
+    if (egg_inmap_create_default_config(inmap)<0) return -1;
   }
   return 0;
 }
