@@ -38,6 +38,26 @@ struct render *render_new() {
   return render;
 }
 
+/* Drop textures.
+ */
+ 
+void render_drop_textures(struct render *render) {
+  while (render->texturec>1) {
+    render->texturec--;
+    struct render_texture *texture=render->texturev+render->texturec;
+    render_texture_cleanup(texture);
+  }
+}
+
+/* Enumerate textures.
+ */
+ 
+int render_texid_by_index(const struct render *render,int p) {
+  if (p<0) return -1;
+  if (p>=render->texturec) return -1;
+  return p+1;
+}
+
 /* Delete texture.
  */
 
@@ -47,6 +67,17 @@ void render_texture_del(struct render *render,int texid) {
   struct render_texture *texture=render->texturev+texid;
   render_texture_cleanup(texture);
   memset(texture,0,sizeof(struct render_texture));
+}
+
+/* New texture of explicit id.
+ */
+ 
+int render_texture_require(struct render *render,int texid) {
+  if (texid<1) return -1;
+  while (texid>render->texturec) {
+    if (render_texture_new(render)<1) return -1;
+  }
+  return 0;
 }
 
 /* New texture.
@@ -185,6 +216,8 @@ static int render_texture_upload(struct render *render,struct render_texture *te
   texture->w=w;
   texture->h=h;
   texture->fmt=fmt;
+  texture->qual=0;
+  texture->rid=0;
   return 0;
 }
 
@@ -241,6 +274,23 @@ int render_texture_load(struct render *render,int texid,int w,int h,int stride,i
   if ((expectsrcc<1)||(src&&(srcc<expectsrcc))) return -1;
   if (render_texture_upload(render,texture,w,h,stride,fmt,src)<0) return -1;
   return 0;
+}
+
+/* Texture origin (commentary we stash on the client's behalf).
+ */
+ 
+void render_texture_set_origin(struct render *render,int texid,int qual,int rid) {
+  if ((texid<1)||(texid>render->texturec)) return;
+  struct render_texture *texture=render->texturev+texid-1;
+  texture->qual=qual;
+  texture->rid=rid;
+}
+
+void render_texture_get_origin(int *qual,int *rid,const struct render *render,int texid) {
+  if ((texid<1)||(texid>render->texturec)) return;
+  struct render_texture *texture=render->texturev+texid-1;
+  *qual=texture->qual;
+  *rid=texture->rid;
 }
   
 /* Get texture properties.

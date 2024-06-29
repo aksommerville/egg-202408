@@ -17,10 +17,22 @@ struct render *render_new();
 void render_texture_del(struct render *render,int texid);
 int render_texture_new(struct render *render);
 
+// Drop all textures above ID 1.
+void render_drop_textures(struct render *render);
+
+int render_texid_by_index(const struct render *render,int p);
+
+int render_texture_require(struct render *render,int texid);
+
 /* (w,h,stride,fmt) zero to decode.
  * (stride,src,srcc) zero to allocate, content initially undefined.
  */
 int render_texture_load(struct render *render,int texid,int w,int h,int stride,int fmt,const void *src,int srcc);
+
+// Caller should do this after loading, so we can restore from resources on save state.
+// Resets to (0,0) on render_texture_load().
+void render_texture_set_origin(struct render *render,int texid,int qual,int rid);
+void render_texture_get_origin(int *qual,int *rid,const struct render *render,int texid);
 
 void render_texture_get_header(int *w,int *h,int *fmt,const struct render *render,int texid);
 

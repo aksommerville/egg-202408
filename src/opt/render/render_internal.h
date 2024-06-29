@@ -22,6 +22,7 @@ struct render_texture {
   GLuint texid;
   GLuint fbid;
   int w,h,fmt;
+  int qual,rid; // Commentary we can report later, for saving state.
 };
 
 struct render {

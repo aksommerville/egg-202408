@@ -101,4 +101,17 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value);
 // >0 if this is a valid stateless action, 0 if not. (no operational status returned)
 int egg_perform_user_action(int inmap_btnid);
 
+int egg_savestate_save();
+int egg_savestate_load();
+
+// Queue input events regardless of current state. This happens when loading a saved state.
+int egg_get_eventmask();
+void egg_force_eventmask(int mask);
+void egg_artificial_joy_disconnect(int devid);
+void egg_artificial_raw_disconnect(int devid);
+void egg_artificial_key_release(int keycode);
+int egg_get_held_keys(int *dst,int dsta); // never returns >dsta
+int egg_get_joy_devids(int *dst,int dsta); // ''
+int egg_get_raw_devids(int *dst,int dsta); // ''
+
 #endif

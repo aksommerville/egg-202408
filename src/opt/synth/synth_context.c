@@ -176,6 +176,25 @@ void synth_play_song_serial(
   synth_end_song(synth);
 }
 
+/* Get song IDs.
+ */
+ 
+void synth_get_song(int *qual,int *rid,int *repeat,const struct synth *synth) {
+  if (synth->song_next) {
+    *qual=synth->song_next->qual;
+    *rid=synth->song_next->songid;
+    *repeat=synth->song_next->repeat;
+  } else if (synth->song) {
+    *qual=synth->song->qual;
+    *rid=synth->song->songid;
+    *repeat=synth->song->repeat;
+  } else {
+    *qual=0;
+    *rid=0;
+    *repeat=0;
+  }
+}
+
 /* Create a pcm printer and register it.
  * On success, returns WEAK reference to the new PCM dump.
  * The printer stays resident until next update, even if it runs to completion immediately, to keep the pcm alive.

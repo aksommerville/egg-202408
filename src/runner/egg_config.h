@@ -23,6 +23,7 @@ struct egg_config {
   int store_limit;
   int ignore_required;
   int configure_input;
+  char *savestatepath;
 };
 
 int egg_configure(int argc,char **argv);

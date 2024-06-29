@@ -348,6 +348,7 @@ MetadataEditor.STANDARD_FIELDS = [
   ["rating", false, validateRating, "Machine-readable declaration of ratings from official agencies. TODO Format unspecified."],
   ["timestamp", false, validateTimestamp, "ISO 8601 eg 'YYYY-MM-DD' or 'YYYY'"],
   ["version", false, null, "Version of your game (not the platform version). Recommend semver eg 'v1.2.3'"],
+  ["magic", false, null, "Used in preference to 'version' for matching save states. Content can be any text."],
   ["posterImage", false, validatePosterImage, "ID of image resource. TODO Recommend dimensions."],
   ["url", false, validateUrl, "Project or author's home page."],
   ["contact", false, null, "Your email, phone, or whatever. Displays verbatim to the user."],

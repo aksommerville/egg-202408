@@ -65,7 +65,7 @@ int wamr_add_module(struct wamr *wamr,int modid,void *src,int srcc,const char *r
   module->modid=modid;
   
   int stack_size=0x01000000;
-  int heap_size=0x01000000;
+  module->heap_size=0x01000000;
   char msg[1024]={0};
   if (!(module->module=wasm_runtime_load(src,srcc,msg,sizeof(msg)))) {
     if (refname) fprintf(stderr,"%s:wasm_runtime_load: %s\n",refname,msg);
@@ -73,7 +73,7 @@ int wamr_add_module(struct wamr *wamr,int modid,void *src,int srcc,const char *r
     wamr_module_cleanup(module);
     return -1;
   }
-  if (!(module->instance=wasm_runtime_instantiate(module->module,stack_size,heap_size,msg,sizeof(msg)))) {
+  if (!(module->instance=wasm_runtime_instantiate(module->module,stack_size,module->heap_size,msg,sizeof(msg)))) {
     if (refname) fprintf(stderr,"%s:wasm_runtime_instantiate: %s\n",refname,msg);
     wamr->modulec--;
     wamr_module_cleanup(module);
@@ -160,6 +160,18 @@ void *wamr_validate_pointer(struct wamr *wamr,int modid,uint32_t waddr,int reqc)
     }
   }
   return 0;
+}
+
+int wamr_get_full_heap(void *dstpp,struct wamr *wamr,int modid) {
+  struct wamr_module *module=wamr->modulev;
+  int modulei=wamr->modulec;
+  for (;modulei-->0;module++) {
+    if (module->modid!=modid) continue;
+    if (!wasm_runtime_validate_app_addr(module->instance,0,module->heap_size)) return -1;
+    if (!(*(void**)dstpp=wasm_runtime_addr_app_to_native(module->instance,0))) return -1;
+    return module->heap_size;
+  }
+  return -1;
 }
 
 /* Translate pointer to client space.

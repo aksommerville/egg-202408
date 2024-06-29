@@ -22,6 +22,7 @@ struct egg_inmgr {
   int texid_cursor;
   struct egg_inmap inmap;
   struct egg_inmap_rules *kbdrules; // WEAK, OPTIONAL
+  uint8_t keyv[32]; // set bit for each held key; bits little-endian
 };
 
 /* Cleanup.
@@ -549,6 +550,15 @@ void egg_inmgr_get_button_range(int *lo,int *hi,int *rest,const struct egg_inmgr
 
 int egg_cb_key(struct hostio_video *driver,int keycode,int value) {
 
+  // Update tracking bits.
+  if ((keycode>=0x00070000)&&(keycode<0x00070100)) {
+    int subid=keycode&0xff;
+    int p=subid>>3;
+    uint8_t mask=1<<(subid&7);
+    if (value) egg.inmgr->keyv[p]|=mask;
+    else egg.inmgr->keyv[p]&=~mask;
+  }
+
   // If a global stateless action is mapped to this key, fire that and suppress the event.
   // We're not checking that it actually is one of the stateless actions: Anything mapped to System Keyboard is presumed to be.
   // Keys so mapped *will* report Repeat and Release events, since we won't bother searching for those.
@@ -669,7 +679,6 @@ void egg_cb_disconnect(struct hostio_input *driver,int devid) {
       } break;
   
     case EGG_EVENT_JOY: {
-        //TODO Drop nonzero buttons? Or is that the client's problem?
         if (egg.inmgr->eventmask&(1<<EGG_EVENT_RAW)) {
           union egg_event *event=egg_event_push(egg.inmgr);
           event->raw.type=EGG_EVENT_RAW;
@@ -898,6 +907,92 @@ void egg_cb_button(struct hostio_input *driver,int devid,int btnid,int value) {
     case EGG_EVENT_TOUCH: break;//TODO?
     case EGG_EVENT_ACCEL: break;//TODO?
   }
+}
+
+/* Forcible calls required during saved state load.
+ */
+ 
+int egg_get_eventmask() {
+  return egg.inmgr->eventmask;
+}
+
+void egg_force_eventmask(int mask) {
+  egg.inmgr->eventmask=0;
+  int etype=30;
+  while (etype-->0) {
+    if (!(mask&(1<<etype))) continue;
+    egg_event_enable(etype,1);
+  }
+}
+
+void egg_artificial_joy_disconnect(int devid) {
+  if (!(egg.inmgr->eventmask&(1<<EGG_EVENT_JOY))) return;
+  union egg_event *event=egg_event_push(egg.inmgr);
+  event->joy.type=EGG_EVENT_JOY;
+  event->joy.devid=devid;
+  event->joy.btnid=0; // "connection state"
+  event->joy.value=0;
+}
+
+void egg_artificial_raw_disconnect(int devid) {
+  if (!(egg.inmgr->eventmask&(1<<EGG_EVENT_RAW))) return;
+  union egg_event *event=egg_event_push(egg.inmgr);
+  event->joy.type=EGG_EVENT_RAW;
+  event->joy.devid=devid;
+  event->joy.btnid=0; // "connection state"
+  event->joy.value=0;
+}
+
+void egg_artificial_key_release(int keycode) {
+  if (!(egg.inmgr->eventmask&(1<<EGG_EVENT_KEY))) return;
+  union egg_event *event=egg_event_push(egg.inmgr);
+  event->key.type=EGG_EVENT_KEY;
+  event->key.keycode=keycode;
+  event->key.value=0;
+}
+
+int egg_get_held_keys(int *dst,int dsta) {
+  int dstc=0;
+  int major=0;
+  for (;major<sizeof(egg.inmgr->keyv);major++) {
+    int src=egg.inmgr->keyv[major];
+    if (!src) continue;
+    int minor=0,mask=0x01;
+    for (;minor<8;minor++,mask<<=1) {
+      if (!(src&mask)) continue;
+      if (dstc>=dsta) return dstc; // never report more than dsta
+      dst[dstc++]=0x00070000|(major<<3)|minor;
+    }
+  }
+  return dstc;
+}
+
+int egg_get_joy_devids(int *dst,int dsta) {
+  int dstc=0;
+  struct egg_device **p=egg.inmgr->devicev;
+  int i=egg.inmgr->devicec;
+  for (;i-->0;p++) {
+    struct egg_device *device=*p;
+    if (device->rptcls==EGG_EVENT_JOY) {
+      if (dstc>=dsta) return dstc; // never report more than dsta
+      dst[dstc++]=device->devid;
+    }
+  }
+  return dstc;
+}
+
+int egg_get_raw_devids(int *dst,int dsta) {
+  int dstc=0;
+  struct egg_device **p=egg.inmgr->devicev;
+  int i=egg.inmgr->devicec;
+  for (;i-->0;p++) {
+    struct egg_device *device=*p;
+    if ((device->rptcls==EGG_EVENT_JOY)||(device->rptcls==EGG_EVENT_RAW)) {
+      if (dstc>=dsta) return dstc; // never report more than dsta
+      dst[dstc++]=device->devid;
+    }
+  }
+  return dstc;
 }
 
 /* Public API.

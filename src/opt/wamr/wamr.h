@@ -31,6 +31,8 @@ int wamr_call(struct wamr *wamr,int modid,int fnid,uint32_t *argv,int argc);
  */
 void *wamr_validate_pointer(struct wamr *wamr,int modid,uint32_t waddr,int reqc);
 
+int wamr_get_full_heap(void *dstpp,struct wamr *wamr,int modid);
+
 int wamr_host_to_client_pointer(struct wamr *wamr,int modid,const void *src);
 
 /* If the Wasm app gives you a function pointer, use this to call it.

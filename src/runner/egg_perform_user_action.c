@@ -25,6 +25,14 @@ static void egg_ua_PAUSE() {
     egg.hard_pause=1;
   }
 }
+ 
+static void egg_ua_SAVE() {
+  egg_savestate_save();
+}
+ 
+static void egg_ua_LOAD() {
+  egg_savestate_load();
+}
 
 /* Compose path for new screencap.
  * The directory containing it must exist, it's within our writ to create it.
@@ -106,20 +114,6 @@ static void egg_ua_SCREENCAP() {
   sr_encoder_cleanup(&serial);
   if (err<0) return;
   fprintf(stderr,"%s: Saved screencap.\n",path);
-}
-
-/* Save state.
- */
- 
-static void egg_ua_SAVE() {
-  fprintf(stderr,"%s:%s TODO\n",__FILE__,__func__);
-}
-
-/* Load state.
- */
- 
-static void egg_ua_LOAD() {
-  fprintf(stderr,"%s:%s TODO\n",__FILE__,__func__);
 }
 
 /* User action, dispatch.

@@ -96,7 +96,9 @@ int egg_texture_load_image(int texid,int qual,int rid) {
   const void *serial=0;
   int serialc=rom_get(&serial,&egg.rom,EGG_RESTYPE_image,qual,rid);
   if (serialc<=0) return -1;
-  return render_texture_load(egg.render,texid,0,0,0,0,serial,serialc);
+  if (render_texture_load(egg.render,texid,0,0,0,0,serial,serialc)<0) return -1;
+  render_texture_set_origin(egg.render,texid,qual,rid);
+  return 0;
 }
 
 int egg_texture_upload(int texid,int w,int h,int stride,int fmt,const void *v,int c) {

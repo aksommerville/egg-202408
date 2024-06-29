@@ -68,6 +68,7 @@ I recommend using both in this case, so lazy decoders don't have to look up stri
 | freedom             | no   | "restricted", "limited", "intact", "free". Default "limited". |
 | require             | no   | Comma-delimited list of machine readable features. TODO define features. |
 | players             | no   | Integers and elapsis eg "1..4" |
+| magic               | no   | Arbitrary text for matching save states. Content may be shown to the user in mismatch cases, but doesn't need to be meaningful. |
 
 ## string
 

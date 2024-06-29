@@ -41,6 +41,8 @@ void synth_play_song_serial(
   int repeat
 );
 
+void synth_get_song(int *qual,int *rid,int *repeat,const struct synth *synth);
+
 /* Play a fire-and-forget sound effect, from some resource.
  */
 void synth_play_sound(struct synth *synth,int qual,int soundid,float trim,float pan);

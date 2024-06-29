@@ -60,6 +60,7 @@ struct synth_song *synth_song_new(
     song->src=song->keepalive;
   }
   song->srcc=srcc;
+  song->srcp=song->startp;
   return song;
 }
 
@@ -81,7 +82,6 @@ int synth_song_init_channels(struct synth *synth,struct synth_song *song) {
     synth_channel_control(synth,channel,MIDI_CONTROL_PAN_MSB,src[2]>>1);
     *chanp=channel;
   }
-  song->srcp=song->startp;
   return 0;
 }
 

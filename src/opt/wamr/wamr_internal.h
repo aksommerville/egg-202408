@@ -21,6 +21,7 @@ struct wamr_module {
   wasm_exec_env_t ee;
   struct wamr_function *functionv;
   int functionc,functiona;
+  int heap_size;
 };
 
 struct wamr {

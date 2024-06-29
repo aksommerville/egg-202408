@@ -30,6 +30,7 @@ static void egg_print_help(const char *topic,int topicc) {
     "  --audio-driver=LIST      See below. First to start up wins.\n"
     "  --save=PATH              Save file. \"none\" to disable saving, or empty for default.\n"
     "  --store-limit=BYTES      Force save file to stay under this length. Default 1 MB.\n"
+    "  --state=PATH             File for saved state. Press a key in-game to load or save. \"none\" to disable.\n"
     "  --configure-input        Launch in a special mode to map a joystick.\n"
   );
   if (egg_romsrc!=EGG_ROMSRC_NATIVE) {
@@ -163,6 +164,7 @@ static int egg_config_kv(const char *k,int kc,const char *v,int vc) {
   INTOPT(store_limit,"store-limit",0,INT_MAX)
   BOOLOPT(ignore_required,"ignore-required")
   BOOLOPT(configure_input,"configure-input")
+  STROPT(savestatepath,"state")
   #undef BOOLOPT
   #undef INTOPT
   #undef STROPT
@@ -224,32 +226,44 @@ static int egg_config_argv(int argc,char **argv) {
   return 0;
 }
 
-/* Make up storepath.
+/* Prepare one of the "*path" fields based on user input, ROM path, and executable path.
  */
  
-static char *egg_config_neighbor_storepath(const char *rompath) {
-  // Append ".save" to the ROM's path, but first if it exists, trim ".egg".
-  int rompathc=0;
-  while (rompath[rompathc]) rompathc++;
-  if ((rompathc>=4)&&!memcmp(rompath+rompathc-4,".egg",4)) rompathc-=4;
+static char *egg_config_path_from_neighbor(const char *ref,const char *sfx) {
+  if (!sfx) sfx="";
+  int refc=0;
+  while (ref[refc]) refc++;
+  if ((refc>=4)&&!memcmp(ref+refc-4,".egg",4)) refc-=4;
+  else if ((refc>=4)&&!memcmp(ref+refc-4,".exe",4)) refc-=4;
   char tmp[1024];
-  int tmpc=snprintf(tmp,sizeof(tmp),"%.*s.save",rompathc,rompath);
+  int tmpc=snprintf(tmp,sizeof(tmp),"%.*s%s",refc,ref,sfx);
   if ((tmpc<1)||(tmpc>=sizeof(tmp))) return 0;
   return strdup(tmp);
 }
-
-static char *egg_config_exe_storepath(const char *exename) {
-  int sepp=-1,i=0;
-  for (;exename[i];i++) if (exename[i]=='/') sepp=i;
-  if (sepp>=0) {
-    char tmp[1024];
-    int tmpc=snprintf(tmp,sizeof(tmp),"%.*s/save",sepp,exename);
-    if ((tmpc<1)||(tmpc>=sizeof(tmp))) return 0;
-    return strdup(tmp);
+ 
+static int egg_config_default_path(char **v,const char *sfx) {
+  
+  // If unset, we make something up.
+  // If we're using an external ROM file, that's the only reference we'll use.
+  if (!*v) {
+    if (egg_romsrc==EGG_ROMSRC_EXTERNAL) {
+      if (!egg.config.rompath) return -1;
+      if (*v=egg_config_path_from_neighbor(egg.config.rompath,sfx)) return 0;
+      //TODO Opportunity here to select some global path like ~/.egg/GAMEHASH.sfx
+      return 0;
+    }
+    if (*v=egg_config_path_from_neighbor(egg.exename,sfx)) return 0;
+    return -1;
   }
-  // Executable name has no slashes, so it must have been found on PATH or something.
-  // We could guess a path globally i guess, like "~/.egg/GAMEHASH.save", something like that?
-  return 0;
+  
+  // If it's literally "none", clear it.
+  if (!strcmp(*v,"none")) {
+    free(*v);
+    *v=0;
+    return 0;
+  }
+  
+  // Otherwise the user provided an explicit path and we will honor it.
 }
 
 /* Finalize.
@@ -257,6 +271,7 @@ static char *egg_config_exe_storepath(const char *exename) {
  
 static int egg_config_finalize() {
 
+  #if 0 // storepath isn't special; savestatepath is going to work exactly the same way.
   // (storepath) unset means make one up. "none", we should set it null to disable saving.
   if (!egg.config.storepath) {
     if ((egg_romsrc==EGG_ROMSRC_EXTERNAL)&&egg.config.rompath) {
@@ -268,6 +283,10 @@ static int egg_config_finalize() {
     free(egg.config.storepath);
     egg.config.storepath=0;
   }
+  #endif
+  
+  egg_config_default_path(&egg.config.storepath,".save");
+  egg_config_default_path(&egg.config.savestatepath,".state");
   
   return 0;
 }
