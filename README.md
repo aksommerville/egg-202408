@@ -14,7 +14,8 @@ sudo apt install clang wabt
 - [ ] MacOS
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
 - [ ] TOUCH events for native. What would that take? Maybe acquire some tablet thingy and try it out?
-- [ ] xegl cursor lock on startup seems to be reporting absolute when we start in fullscreen? Try eggsamples/shmup.egg, it's haywire in fullscreen.
+- [x] xegl cursor lock on startup seems to be reporting absolute when we start in fullscreen? Try eggsamples/shmup.egg, it's haywire in fullscreen.
+- - It's also screwy when windowed. Didn't this ever work?
 - [ ] Editor
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
 - - [ ] Synth receiver (I want to run midevil against this server).

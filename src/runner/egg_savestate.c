@@ -129,7 +129,7 @@ static int egg_savestate_encode(struct sr_encoder *dst) {
   
   // Memory.
   const uint8_t *heap=0;
-  int heapc=wamr_get_full_heap(&heap,egg.wamr,1);
+  int heapc=egg_get_full_heap(&heap);
   if (heapc<0) return -1;
   int heapp=0;
   while (heapp<heapc) {
@@ -353,7 +353,7 @@ static int egg_savestate_apply(const struct egg_savestate_decode *ctx,const char
   // "mmry" chunks must not exceed the existing heap.
   // Validate all before applying any.
   char *heap=0;
-  int heapc=wamr_get_full_heap(&heap,egg.wamr,1);
+  int heapc=egg_get_full_heap(&heap);
   if (heapc<0) return -1;
   const struct egg_savestate_mmry *mmry=ctx->mmryv;
   int i=ctx->mmryc;

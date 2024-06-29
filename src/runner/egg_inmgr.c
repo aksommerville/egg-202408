@@ -588,12 +588,30 @@ void egg_cb_text(struct hostio_video *driver,int codepoint) {
 }
  
 void egg_cb_mmotion(struct hostio_video *driver,int x,int y) {
-  if (!egg.directgl) {
-    render_coords_fb_from_screen(egg.render,&x,&y);
+  int locked=0;
+  if (egg.hostio->video->type->lock_cursor) {
+    locked=egg.hostio->video->cursor_locked;
+  } else {
+    locked=egg.inmgr->lock_fake_cursor;
   }
-  if ((x==egg.inmgr->mousex)&&(y==egg.inmgr->mousey)) return;
-  egg.inmgr->mousex=x;
-  egg.inmgr->mousey=y;
+  if (locked) {
+    if (!egg.directgl) {
+      int fbw=1,fbh=1;
+      render_texture_get_header(&fbw,&fbh,0,egg.render,1);
+      x=(x*fbw)/egg.hostio->video->w;
+      y=(y*fbh)/egg.hostio->video->h;
+    }
+    if (!x&&!y) return;
+    egg.inmgr->mousex=0;
+    egg.inmgr->mousey=0;
+  } else {
+    if (!egg.directgl) {
+      render_coords_fb_from_screen(egg.render,&x,&y);
+    }
+    if ((x==egg.inmgr->mousex)&&(y==egg.inmgr->mousey)) return;
+    egg.inmgr->mousex=x;
+    egg.inmgr->mousey=y;
+  }
   if (!(egg.inmgr->eventmask&(1<<EGG_EVENT_MMOTION))) return;
   if (egg.inmgr->show_fake_cursor&&!x&&!y) return;
   union egg_event *event=egg_event_push(egg.inmgr);

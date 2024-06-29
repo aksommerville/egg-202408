@@ -78,6 +78,32 @@ static int xegl_evt_mmotion(struct xegl *xegl,XMotionEvent *evt) {
   return 0;
 }
 
+static int xegl_evt_mcrossing(struct xegl *xegl,XCrossingEvent *evt) {
+  if (xegl->cursor_locked) return 0;
+  // We'll report it as motion.
+  // If the event was EnterNotify, coords must be in bounds, and if LeaveNotify they must be out of bounds.
+  // And of bloody course, we don't get the same courtesy from my X server :P
+  int x=evt->x,y=evt->y;
+  if (evt->type==EnterNotify) {
+    if (x<0) x=0; else if (x>=xegl->w) x=xegl->w-1;
+    if (y<0) y=0; else if (y>=xegl->h) y=xegl->h-1;
+  } else {
+    if ((x>=0)&&(x<xegl->w)&&(y>=0)&&(y<xegl->h)) {
+      // ...fuck's sake.
+      // Knock it off the nearest edge.
+      int ldist=x,udist=y,rdist=xegl->w-x,bdist=xegl->h-y;
+      if ((ldist<=udist)&&(ldist<=rdist)&&(ldist<=bdist)) x=-1;
+      else if ((udist<=rdist)&&(udist<=bdist)) y=-1;
+      else if (rdist<=bdist) x=xegl->w;
+      else y=xegl->h;
+    }
+  }
+  if (xegl->delegate.cb_mmotion) {
+    xegl->delegate.cb_mmotion(xegl->delegate.userdata,x,y);
+  }
+  return 0;
+}
+
 /* Client message.
  */
  
@@ -135,8 +161,8 @@ static int xegl_receive_event(struct xegl *xegl,XEvent *evt) {
     case ButtonPress: return xegl_evt_mbtn(xegl,&evt->xbutton,1);
     case ButtonRelease: return xegl_evt_mbtn(xegl,&evt->xbutton,0);
     case MotionNotify: return xegl_evt_mmotion(xegl,&evt->xmotion);
-    case EnterNotify: return xegl_evt_mmotion(xegl,&evt->xmotion); // It's (xcrossing) really, but the fields we care about are in the same place.
-    case LeaveNotify: return xegl_evt_mmotion(xegl,&evt->xmotion);
+    case EnterNotify: return xegl_evt_mcrossing(xegl,&evt->xcrossing);
+    case LeaveNotify: return xegl_evt_mcrossing(xegl,&evt->xcrossing);
     
     case ClientMessage: return xegl_evt_client(xegl,&evt->xclient);
     

@@ -626,3 +626,10 @@ void egg_romsrc_call_client_render() {
   uint32_t argv[1]={0};
   wamr_call(egg.wamr,1,4,argv,0);
 }
+
+/* WAMR proxy.
+ */
+ 
+int egg_get_full_heap(void *dstpp) {
+  return wamr_get_full_heap(dstpp,egg.wamr,1);
+}

@@ -114,4 +114,7 @@ int egg_get_held_keys(int *dst,int dsta); // never returns >dsta
 int egg_get_joy_devids(int *dst,int dsta); // ''
 int egg_get_raw_devids(int *dst,int dsta); // ''
 
+// Need to proxy this because we don't necessarily have WAMR at runtime (for true-native builds).
+int egg_get_full_heap(void *dstpp);
+
 #endif

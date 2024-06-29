@@ -254,3 +254,10 @@ void egg_romsrc_call_client_update(double elapsed) {
 void egg_romsrc_call_client_render() {
   egg_client_render();
 }
+
+/* WAMR proxy.
+ */
+ 
+int egg_get_full_heap(void *dstpp) {
+  return -1;
+}
