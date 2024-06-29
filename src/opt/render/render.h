@@ -24,6 +24,9 @@ int render_texture_load(struct render *render,int texid,int w,int h,int stride,i
 
 void render_texture_get_header(int *w,int *h,int *fmt,const struct render *render,int texid);
 
+// Caller frees, if not null.
+void *render_texture_get_pixels(int *w,int *h,int *fmt,struct render *render,int texid);
+
 void render_texture_clear(struct render *render,int texid);
 
 void render_tint(struct render *render,uint32_t rgba);

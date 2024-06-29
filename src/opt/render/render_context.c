@@ -254,6 +254,34 @@ void render_texture_get_header(int *w,int *h,int *fmt,const struct render *rende
   if (fmt) *fmt=texture->fmt;
 }
 
+/* Get texture pixels.
+ */
+ 
+void *render_texture_get_pixels(int *w,int *h,int *fmt,struct render *render,int texid) {
+  if (!w||!h||!fmt) return 0;
+  if ((texid<1)||(texid>render->texturec)) return 0;
+  struct render_texture *texture=render->texturev+texid-1;
+  if (!texture->fbid) return 0; // We can only read from textures that have an associated framebuffer.
+  *w=texture->w;
+  *h=texture->h;
+  *fmt=texture->fmt;
+  int stride=render_minimum_stride(texture->w,texture->fmt);
+  int len=render_texture_measure(texture->w,texture->h,stride,texture->fmt);
+  if (len<1) return 0;
+  void *dst=malloc(len);
+  if (!dst) return 0;
+  int glfmt=GL_RGBA,gltype=GL_UNSIGNED_BYTE;
+  switch (texture->fmt) {
+    case EGG_TEX_FMT_RGBA: break;
+    case EGG_TEX_FMT_A8: glfmt=GL_ALPHA; break;
+    case EGG_TEX_FMT_A1: break;
+    default: free(dst); return 0;
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER,texture->fbid);
+  glReadPixels(0,0,texture->w,texture->h,glfmt,gltype,dst);
+  return dst;
+}
+
 /* Allocate framebuffer if needed.
  */
  

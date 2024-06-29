@@ -67,11 +67,9 @@ static double egg_wasm_time_real(wasm_exec_env_t ee) {
   return (double)tv.tv_sec+(double)tv.tv_usec/1000000.0;
 }
 
-static void egg_wasm_time_local(wasm_exec_env_t ee,int vp,int a) {
+// This one is useful, and I'm actually calling it from within the platform too.
+void egg_time_local(int *dst,int a) {
   if (a<1) return;
-  if (a>7) a=7;
-  int *dst=wamr_validate_pointer(egg.wamr,1,vp,a*sizeof(int));
-  if (!dst) return;
   time_t now=time(0);
   struct tm tm={0};
   localtime_r(&now,&tm);
@@ -90,6 +88,14 @@ static void egg_wasm_time_local(wasm_exec_env_t ee,int vp,int a) {
   struct timeval tv={0};
   gettimeofday(&tv,0);
   *dst=tv.tv_usec/1000;
+}
+
+static void egg_wasm_time_local(wasm_exec_env_t ee,int vp,int a) {
+  if (a<1) return;
+  if (a>7) a=7;
+  int *dst=wamr_validate_pointer(egg.wamr,1,vp,a*sizeof(int));
+  if (!dst) return;
+  egg_time_local(dst,a);
 }
 
 static void egg_wasm_request_termination(wasm_exec_env_t ee) {
