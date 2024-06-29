@@ -1,5 +1,6 @@
 #include "egg_runner_internal.h"
 #include "opt/serial/serial.h"
+#include "opt/fs/fs.h"
 
 /* --help
  */
@@ -15,6 +16,7 @@ static void egg_print_help(const char *topic,int topicc) {
     "\n"
     "OPTIONS:\n"
     "  --help                   Print this message and exit.\n"
+    "  --config=PATH            Load from the given config file before processing any other args.\n"
     "  --lang=en                Set language. Overrides LANG and LANGUAGE env vars.\n"
     "  --window=WxH             Set initial window size.\n"
     "  --fullscreen             Start fullscreen.\n"
@@ -27,6 +29,7 @@ static void egg_print_help(const char *topic,int topicc) {
     "  --stereo                 --audio-chanc=2\n"
     "  --mono                   --audio-chanc=1\n"
     "  --audio-buffer=INT       If required by driver.\n"
+    "  --audio-device=STRING    If required by driver.\n"
     "  --audio-driver=LIST      See below. First to start up wins.\n"
     "  --save=PATH              Save file. \"none\" to disable saving, or empty for default.\n"
     "  --store-limit=BYTES      Force save file to stay under this length. Default 1 MB.\n"
@@ -150,6 +153,7 @@ static int egg_config_kv(const char *k,int kc,const char *v,int vc) {
     if (egg_config_string(&egg.config.fldname,v,vc,0)<0) return -1; \
     return 0; \
   }
+  // "--config=PATH" is not handled here: We don't allow loading config files recursively. It's handled special at egg_config_files().
   BOOLOPT(fullscreen,"fullscreen")
   STROPT(video_device,"video-device")
   STROPT(video_driver,"video-driver")
@@ -266,24 +270,112 @@ static int egg_config_default_path(char **v,const char *sfx) {
   // Otherwise the user provided an explicit path and we will honor it.
 }
 
+/* Load one config file.
+ */
+ 
+static int egg_config_file_text(const char *src,int srcc,const char *path) {
+  struct sr_decoder decoder={.v=src,.c=srcc};
+  int lineno=1,linec;
+  const char *line;
+  for (;(linec=sr_decode_line(&line,&decoder))>0;lineno++) {
+    while (linec&&((unsigned char)line[linec-1]<=0x20)) linec--;
+    while (linec&&((unsigned char)line[0]<=0x20)) { linec--; line++; }
+    if (!linec||(line[0]=='#')) continue;
+    int linep=0;
+    const char *k=line+linep,*v=0;
+    int kc=0,vc=0;
+    while ((linep<linec)&&(line[linep]!='=')&&(line[linep]!=':')) { linep++; kc++; }
+    while (kc&&((unsigned char)k[kc-1]<=0x20)) kc--;
+    while (kc&&(k[0]=='-')) { k++; kc--; } // Allow leading dashes for harmony with argv.
+    if (linep<linec) {
+      linep++;
+      while ((linep<linec)&&((unsigned char)line[linep]<=0x20)) linep++;
+      v=line+linep;
+      vc=linec-linep;
+    }
+    if ((kc==4)&&!memcmp(k,"help",4)) {
+      fprintf(stderr,"%s:%d: 'help' in a config file is not allowed. Run with '--help' on command line instead.\n",path,lineno);
+      return -2;
+    }
+    if ((kc==15)&&!memcmp(k,"configure-input",15)) {
+      fprintf(stderr,"%s:%d: 'configure-input' in a config file is not allowed. Run with '--configure-input' on command line instead.\n",path,lineno);
+      return -2;
+    }
+    int err=egg_config_kv(k,kc,v,vc);
+    if (err<0) {
+      fprintf(stderr,"%s:%d: Error setting config field '%.*s' = '%.*s'\n",path,lineno,kc,k,vc,v);
+      return -2;
+    }
+  }
+  return 0;
+}
+ 
+static int egg_config_file(const char *path) {
+  void *src=0;
+  int srcc=file_read(&src,path);
+  if (srcc<0) {
+    fprintf(stderr,"%s: Failed to read file.\n",path);
+    return -2;
+  }
+  int err=egg_config_file_text(src,srcc,path);
+  free(src);
+  return err;
+}
+
+/* Load from config files.
+ * If the user supplied "--config=PATH", we honor it and remove it from argv.
+ * We return the new argc.
+ */
+ 
+static int egg_config_files(int argc,char **argv) {
+  int filec=0,argp=1;
+  while (argp<argc) {
+    const char *arg=argv[argp];
+    if (!arg||memcmp(arg,"--config=",9)) {
+      argp++;
+      continue;
+    }
+    const char *path=arg+9;
+    int err=egg_config_file(path);
+    if (err<0) {
+      if (err!=-2) fprintf(stderr,"%s: Unspecified error loading config file.\n",path);
+      return -2;
+    }
+    fprintf(stderr,"%s: Loaded general config.\n",path);
+    argc--;
+    memmove(argv+argp,argv+argp+1,sizeof(void*)*(argc-argp));
+    filec++;
+  }
+  if (!filec) {
+    // No --config, so let's try some default locations.
+    const char *builtinv[]={
+      "./config",
+      "~/.egg/egg.cfg",
+    };
+    int builtinc=sizeof(builtinv)/sizeof(void*);
+    int builtini=0;
+    for (;builtini<builtinc;builtini++) {
+      const char *prepath=builtinv[builtini];
+      char path[1024];
+      int pathc=path_resolve(path,sizeof(path),prepath,-1);
+      if ((pathc<1)||(pathc>=sizeof(path))) continue;
+      if (file_get_type(path)!='f') continue;
+      int err=egg_config_file(path);
+      if (err<0) {
+        if (err!=-2) fprintf(stderr,"%s: Unspecified error loading config file.\n",path);
+        return -2;
+      }
+      fprintf(stderr,"%s: Loaded general config.\n",path);
+      break;
+    }
+  }
+  return argc;
+}
+
 /* Finalize.
  */
  
 static int egg_config_finalize() {
-
-  #if 0 // storepath isn't special; savestatepath is going to work exactly the same way.
-  // (storepath) unset means make one up. "none", we should set it null to disable saving.
-  if (!egg.config.storepath) {
-    if ((egg_romsrc==EGG_ROMSRC_EXTERNAL)&&egg.config.rompath) {
-      egg.config.storepath=egg_config_neighbor_storepath(egg.config.rompath);
-    } else {
-      egg.config.storepath=egg_config_exe_storepath(egg.exename);
-    }
-  } else if (!strcmp(egg.config.storepath,"none")) {
-    free(egg.config.storepath);
-    egg.config.storepath=0;
-  }
-  #endif
   
   egg_config_default_path(&egg.config.storepath,".save");
   egg_config_default_path(&egg.config.savestatepath,".state");
@@ -306,7 +398,7 @@ int egg_configure(int argc,char **argv) {
   int err;
   egg.exename=((argc>=1)&&argv&&argv[0]&&argv[0][0])?argv[0]:"egg";
   egg_config_init();
-  //TODO config file?
+  if ((argc=egg_config_files(argc,argv))<0) return argc;
   if ((err=egg_config_argv(argc,argv))<0) return err;
   if (egg.terminate) return 0;
   if ((err=egg_config_finalize())<0) return err;

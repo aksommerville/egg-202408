@@ -7,13 +7,7 @@ sudo apt install clang wabt
 ## TODO
 
 - [ ] Native runtime for Linux
-- - [ ] Config file.
-- - [x] incfg: Don't ask about buttons if a similar one was already skipped: L1=>R1, L1=>L2, L2=>R2, LP=>RP, DPADY=>DPADX, LX=>LY, RX=>RY, LX=>RX?
-- - [x] Screencap. No need to implement for web -- wrappers can implement it if they want.
-- - [x] Save state. I think we only need song id, playhead, and wasm ram image. Won't work for true-native. Also connected joystick IDs, so they can report disconnection on restart.
-- - - I think don't do this for web? At least not initially, because it's complicated. eg once serialized, what do you do with it?
-- - [x] Before screencap and save state, we need configurable stateless inputs consumable by the platform.
-- - [x] Hard pause.
+- - [x] Config file.
 - - [ ] Generate input config file with one-off keyboard bindings initially.
 - [ ] Raspberry Pi 1 (Broadcom video)
 - [ ] MS Windows
