@@ -137,7 +137,7 @@ void synth_channel_note_on(struct synth *synth,struct synth_channel *channel,uin
   
     case SYNTH_CHANNEL_MODE_DRUM: {
         int soundid=channel->drumbase+noteid;
-        float trim=0.200f+(channel->trim*channel->master*velocity)/150.0f;
+        float trim=0.050f+(channel->trim*channel->master*velocity)/50.0f;
         synth_play_sound(synth,0,soundid,trim,channel->pan);
       } break;
       
