@@ -180,6 +180,13 @@ int rom_get(void *dstpp,struct rom *rom,int tid,int qual,int rid) {
 /* ID analysis.
  */
  
+uint32_t rom_pack_fqrid(int tid,int qual,int rid) {
+  if ((tid<1)||(tid>0x3f)) return 0;
+  if ((qual<0)||(qual>0x3ff)) return 0;
+  if ((rid<1)||(rid>0xffff)) return 0;
+  return (tid<<26)|(qual<<16)|rid;
+}
+ 
 void rom_unpack_fqrid(int *tid,int *qual,int *rid,uint32_t fqrid) {
   if (tid) *tid=fqrid>>26;
   if (qual) *qual=(fqrid>>16)&0x3ff;

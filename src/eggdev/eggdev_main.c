@@ -358,8 +358,11 @@ static void eggdev_rcvsig(int sigid) {
 }
  
 static int eggdev_main_serve() {
+  int err;
   if (!eggdev.port) eggdev.port=8080;
   signal(SIGINT,eggdev_rcvsig);
+  if (file_get_type("Makefile")=='f') eggdev.has_wd_makefile=1;
+  
   struct http_context_delegate delegate={
     .cb_serve=eggdev_http_serve,
   };
@@ -368,8 +371,14 @@ static int eggdev_main_serve() {
     fprintf(stderr,"%s: Failed to open HTTP server on port %d\n",eggdev.exename,eggdev.port);
     return 1;
   }
-  if (file_get_type("Makefile")=='f') eggdev.has_wd_makefile=1;
   fprintf(stderr,"%s: Listening on port %d. %s\n",eggdev.exename,eggdev.port,eggdev.external?"*** externally accessible ***":"localhost only");
+  
+  if ((err=eggdev_serve_init_audio())<0) {
+    if (err!=-2) fprintf(stderr,"%s: Unspecified error initializing audio.\n",eggdev.exename);
+    http_context_del(eggdev.http);
+    return 1;
+  }
+  
   while (!eggdev_sigc) {
     if (http_update(eggdev.http,1000)<0) {
       fprintf(stderr,"%s: Error updating HTTP server.\n",eggdev.exename);
@@ -377,6 +386,12 @@ static int eggdev_main_serve() {
       return 1;
     }
   }
+  
+  if (eggdev.audio) {
+    eggdev.audio->type->play(eggdev.audio,0);
+    hostio_audio_del(eggdev.audio);
+  }
+  if (eggdev.synth) synth_del(eggdev.synth);
   http_context_del(eggdev.http);
   fprintf(stderr,"%s: Normal exit.\n",eggdev.exename);
   return 0;

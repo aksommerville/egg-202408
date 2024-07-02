@@ -1,4 +1,5 @@
 #include "eggdev_internal.h"
+#include "opt/midi/midi.h"
 #include <unistd.h>
 
 /* Guess MIME type.
@@ -405,12 +406,59 @@ static int eggdev_http_get_roms(struct http_xfer *req,struct http_xfer *rsp) {
   return http_xfer_set_status(rsp,200,"OK");
 }
 
+/* POST /api/song
+ */
+ 
+static int eggdev_http_post_song(struct http_xfer *req,struct http_xfer *rsp) {
+  struct sr_encoder *src=http_xfer_get_body(req);
+  if (eggdev_serve_play_song(src)<0) {
+    return http_xfer_set_status(rsp,400,"Failed to compile song.");
+  }
+  return http_xfer_set_status(rsp,200,"OK");
+}
+
+/* WebSocket incoming packet.
+ */
+
+static int eggdev_http_ws_cb(struct http_websocket *ws,int opcode,const void *v,int c) {
+  /**
+  fprintf(stderr,"%s:%p[%d]",__func__,ws,opcode);
+  const uint8_t *b=v;
+  int i=c;
+  for (;i-->0;b++) fprintf(stderr," %02x",*b);
+  fprintf(stderr,"\n");
+  /**/
+  if (opcode==2) { // binary, assume MIDI
+    if (eggdev.audio&&eggdev.synth) {
+      if (eggdev.audio->type->lock&&(eggdev.audio->type->lock(eggdev.audio)<0)) return 0;
+      // Creating a new stream each time means events can't be split across packets.
+      // That wouldn't be possible though; WebSocket handles packet reassembly for us.
+      struct midi_stream stream={0};
+      if (midi_stream_receive(&stream,v,c)>=0) {
+        struct midi_event event;
+        while (midi_stream_next(&event,&stream)>0) {
+          synth_event(eggdev.synth,event.chid,event.opcode,event.a,event.b,0);
+        }
+      }
+      if (eggdev.audio->type->unlock) eggdev.audio->type->unlock(eggdev.audio);
+    }
+  }
+  return 0;
+}
+
 /* Serve, main entry point.
  */
  
 int eggdev_http_serve(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
+  struct http_websocket *ws=http_websocket_check_upgrade(req,rsp);
+  if (ws) {
+    fprintf(stderr,"%s: Accepted WebSocket connection.\n",eggdev.exename);
+    http_websocket_set_callback(ws,eggdev_http_ws_cb);
+    return 0;
+  }
   return http_dispatch(req,rsp,
     HTTP_METHOD_GET,"/api/roms",eggdev_http_get_roms,
+    HTTP_METHOD_POST,"/api/song",eggdev_http_post_song,
     HTTP_METHOD_GET,"/rt/**",eggdev_http_get_rt,
     HTTP_METHOD_GET,"/res-all",eggdev_http_get_res_all,
     HTTP_METHOD_GET,"/res",eggdev_http_res,

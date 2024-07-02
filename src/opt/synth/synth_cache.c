@@ -82,3 +82,14 @@ int synth_cache_add(struct synth_cache *cache,int p,int qual,int soundid,struct 
   entry->pcm=pcm;
   return 0;
 }
+
+/* Clear.
+ */
+ 
+void synth_cache_clear(struct synth_cache *cache) {
+  if (!cache) return;
+  while (cache->entryc>0) {
+    cache->entryc--;
+    synth_cache_entry_cleanup(cache->entryv+cache->entryc);
+  }
+}

@@ -26,4 +26,6 @@ struct sfg_pcm *synth_cache_get(const struct synth_cache *cache,int p);
 
 int synth_cache_add(struct synth_cache *cache,int p,int qual,int soundid,struct sfg_pcm *pcm);
 
+void synth_cache_clear(struct synth_cache *cache);
+
 #endif

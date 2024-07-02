@@ -93,8 +93,12 @@ static int eggrom_song_emit_channel_header(struct eggrom_song_context *ctx,int c
   for (;i-->0;event++) {
     if (event->chid!=chid) continue;
     if (event->opcode==MIDI_OPCODE_PROGRAM) {
-      if (tmp[0]) fprintf(stderr,"%s:WARNING: Multiple Program Change on channel %d. We will apply pid %d to the entire channel.\n",ctx->res->path,chid,event->a);
-      tmp[0]|=event->a;
+      if (tmp[0]&0x7f) {
+        fprintf(stderr,"%s:WARNING: Multiple Program Change on channel %d. We will apply pid %d to the entire channel.\n",ctx->res->path,chid,event->a);
+        tmp[0]=event->a;
+      } else {
+        tmp[0]|=event->a;
+      }
     } else if (event->opcode==MIDI_OPCODE_CONTROL) switch (event->a) {
       case MIDI_CONTROL_VOLUME_MSB: tmp[1]=event->b<<1; break;
       case MIDI_CONTROL_PAN_MSB: tmp[2]=event->b<<1; break;

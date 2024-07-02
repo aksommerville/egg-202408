@@ -380,3 +380,18 @@ int synth_frames_per_beat(const struct synth *synth) {
   if (synth->song->tempo<1) return synth->rate>>1;
   return (synth->song->tempo*synth->rate)/1000;
 }
+
+/* Clear cache.
+ */
+ 
+void synth_clear_cache(struct synth *synth) {
+  while (synth->playbackc>0) {
+    synth->playbackc--;
+    synth_playback_cleanup(synth->playbackv+synth->playbackc);
+  }
+  while (synth->printerc>0) {
+    synth->printerc--;
+    sfg_printer_del(synth->printerv[synth->printerc]);
+  }
+  synth_cache_clear(synth->cache);
+}

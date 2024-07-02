@@ -231,7 +231,8 @@ export class Song {
     }
     if (srcp >= src.length) throw new Error(`Invalid VLQ`);
     v <<= 7;
-    v |= src[srcp++]; c++;
+    v |= src[srcp + c];
+    c++;
     return [v, c];
   }
   

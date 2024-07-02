@@ -3,12 +3,21 @@
 # We build the 'eggdev' executable.
 # For now, that's it. eggdev is a swiss army knife, it does really all of our "tool" things.
 
-tools_OPT_ENABLE+=fs http rom serial png midi sfg
+# eggdev wants hostio for audio output, so the server can play songs and sounds.
+# You don't need the full set of drivers.
+tools_OPT_ENABLE+=fs http rom serial png midi sfg hostio synth
 
 tools_CC:=$(tools_TOOLCHAIN)gcc -c -MMD -O3 -Isrc -Werror -Wimplicit $(tools_CC_EXTRA) \
   $(patsubst %,-DUSE_%=1,$(tools_OPT_ENABLE))
 tools_LD:=$(tools_TOOLCHAIN)gcc
 tools_LDPOST:=$(tools_LD_EXTRA) -lz -lm
+
+ifneq (,$(strip $(filter asound,$(tools_OPT_ENABLE))))
+  tools_LDPOST+=-lasound
+endif
+ifneq (,$(strip $(filter pulse,$(tools_OPT_ENABLE))))
+  tools_LDPOST+=-lpulse-simple
+endif
 
 ifneq (,$(strip $(WABT_SDK)))
   tools_CC+=-DWABT_SDK=\"$(abspath $(WABT_SDK))\"

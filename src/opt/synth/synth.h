@@ -83,4 +83,6 @@ void synth_event(struct synth *synth,uint8_t chid,uint8_t opcode,uint8_t a,uint8
  */
 void synth_override_pid_0(struct synth *synth,const struct synth_builtin *builtin);
 
+void synth_clear_cache(struct synth *synth);
+
 #endif

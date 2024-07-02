@@ -7,21 +7,28 @@ import { Resmgr } from "../Resmgr.js";
 import { Bus } from "../Bus.js";
 import { Song } from "./Song.js";
 import { SongEventModal } from "./SongEventModal.js";
+import { Comm } from "../Comm.js";
 
 export class SongEditor {
   static getDependencies() {
-    return [HTMLElement, Dom, Resmgr, Bus];
+    return [HTMLElement, Dom, Resmgr, Bus, Window, Comm];
   }
-  constructor(element, dom, resmgr, bus) {
+  constructor(element, dom, resmgr, bus, window, comm) {
     this.element = element;
     this.dom = dom;
     this.resmgr = resmgr;
     this.bus = bus;
+    this.window = window;
+    this.comm = comm;
     
     this.song = null;
     this.path = "";
     
     this.buildUi();
+  }
+  
+  onRemoveFromDom() {
+    this.stopPlayback();
   }
   
   setup(serial, path) {
@@ -36,6 +43,9 @@ export class SongEditor {
     this.dom.spawn(controls, "INPUT", { type: "button", value: "+Event", "on-click": () => this.addEvent() });
     this.dom.spawn(controls, "INPUT", { type: "button", value: "+Track", "on-click": () => this.addTrack() });
     this.dom.spawn(controls, "INPUT", { type: "button", name: "division", value: "Division", "on-click": () => this.editDivision() });
+    this.dom.spawn(controls, "DIV", ["spacer"]);
+    this.dom.spawn(controls, "INPUT", ["playbtn"], { type: "button", value: ">", "on-click": () => this.playOnServer() });
+    this.dom.spawn(controls, "INPUT", { type: "button", value : "!!!", "on-click": () => this.stopPlayback() });
     this.dom.spawn(this.element, "TABLE", ["main"]);
   }
   
@@ -129,5 +139,18 @@ export class SongEditor {
       button.value = this.buttonLabelForEvent(after);
       this.resmgr.dirty(this.path, () => this.song.encode());
     }).catch(() => {});
+  }
+  
+  stopPlayback() {
+    this.comm.httpText("POST", "/api/song", null, null, null).catch(() => {});
+  }
+  
+  playOnServer() {
+    if (!this.song) return;
+    this.comm.httpText("POST", "/api/song", null, null, this.song.encode()).then(rsp => {
+      // ok!
+    }).catch(error => {
+      console.log(`Play song failed`, error);
+    });
   }
 }

@@ -32,6 +32,7 @@ int rom_init_copy(struct rom *rom,const void *src,int srcc);
 
 int rom_get(void *dstpp,struct rom *rom,int tid,int qual,int rid);
 
+uint32_t rom_pack_fqrid(int tid,int qual,int rid);
 void rom_unpack_fqrid(int *tid,int *qual,int *rid,uint32_t fqrid);
 void rom_qual_repr(char *dst/*2*/,int qual);
 int rom_qual_eval(const char *src,int srcc);

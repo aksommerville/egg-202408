@@ -183,6 +183,16 @@ char file_get_type(const char *path) {
   return '?';
 }
 
+/* Get modification time.
+ */
+ 
+int file_get_mtime(const char *path) {
+  if (!path||!path[0]) return -1;
+  struct stat st={0};
+  if (stat(path,&st)<0) return -1;
+  return st.st_mtime;
+}
+
 /* mkdir and friends.
  */
 

@@ -42,6 +42,8 @@ int dir_read(
  */
 char file_get_type(const char *path);
 
+int file_get_mtime(const char *path);
+
 /* Make a directory.
  * dir_mkdirp creates parent directories recursively, and does not report an error if already existing.
  * dir_mkdirp_parent is a convenience that splits the path and runs dir_mkdirp only on the directory portion.

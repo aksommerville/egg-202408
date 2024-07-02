@@ -5,6 +5,8 @@
 #include "opt/fs/fs.h"
 #include "opt/rom/rom.h"
 #include "opt/http/http.h"
+#include "opt/hostio/hostio_audio.h"
+#include "opt/synth/synth.h"
 #include "egg/egg.h"
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +41,10 @@ extern struct eggdev {
   int named_only;
   struct http_context *http;
   int has_wd_makefile;
+  struct hostio_audio *audio;
+  struct synth *synth;
+  struct rom drums_rom;
+  int drums_mtime;
 } eggdev;
  
 struct eggdev_rpath {
@@ -81,6 +87,8 @@ int eggdev_command_sync(struct sr_encoder *dst,const char *cmd);
 const char *eggdev_rewrite_rom_if_wasm(const char *path);
 
 int eggdev_http_serve(struct http_xfer *req,struct http_xfer *rsp,void *userdata);
+int eggdev_serve_init_audio();
+int eggdev_serve_play_song(struct sr_encoder *src); // We may yoink and overwrite (src).
 
 /* Split a file into multiple resources.
  * Add the resources to (romw) and return >0 on success.

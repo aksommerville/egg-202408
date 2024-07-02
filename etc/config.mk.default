@@ -23,6 +23,7 @@ edit:web-edit
 
 #------------------------------------------------------------------------------
 
+# Enable at least one audio driver if you want eggdev to be able to play songs.
 tools_OPT_ENABLE:=
 tools_TOOLCHAIN:=
 tools_CC_EXTRA:=
