@@ -6,22 +6,40 @@
 import { Resmgr } from "./Resmgr.js";
 import { Bus } from "./Bus.js";
 import { Dom } from "./Dom.js";
+import { ServerAudioModal } from "./ServerAudioModal.js";
+import { Comm } from "./Comm.js";
  
 export class GlobalActions {
   static getDependencies() {
-    return [Resmgr, Bus, Dom, Window];
+    return [Resmgr, Bus, Dom, Window, Comm];
   }
-  constructor(resmgr, bus, dom, window) {
+  constructor(resmgr, bus, dom, window, comm) {
     this.resmgr = resmgr;
     this.bus = bus;
     this.dom = dom;
     this.window = window;
+    this.comm = comm;
   }
   
   list() {
     return [
+      { name: "Server-side audio", value: "serverSideAudio", action: () => this.serverSideAudio() },
       { name: "Missing Strings", value: "missingStrings", action: () => this.missingStrings() },
     ];
+  }
+  
+  /* Server-side audio.
+   ***************************************************************************/
+   
+  serverSideAudio() {
+    const modal = this.dom.spawnModal(ServerAudioModal);
+    modal.result.then((rsp) => {
+      return this.comm.httpJson("POST", "/api/audio", null, null, JSON.stringify(rsp)).then(hrsp => {
+        console.log(`Initialized audio`, hrsp);
+      });
+    }).catch(error => {
+      if (error) this.bus.broadcast({ type: "error", error });
+    });
   }
   
   /* Missing Strings.

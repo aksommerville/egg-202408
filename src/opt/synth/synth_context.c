@@ -63,6 +63,7 @@ struct synth *synth_new(
   synth->qlevel=32000.0f;
   synth_precalculate_freq(synth);
   synth_precalculate_sine(synth);
+  synth->song_duration=-1.0;
   return synth;
 }
 
@@ -74,6 +75,7 @@ void synth_end_song(struct synth *synth) {
   
   synth_song_del(synth->song);
   synth->song=0;
+  synth->song_duration=-1.0;
   
   int i;
   struct synth_voice *voice=synth->voicev;
@@ -296,6 +298,17 @@ void synth_set_playhead(struct synth *synth,double beats) {
   }
 }
 
+/* Get song duration.
+ */
+ 
+double synth_get_duration(struct synth *synth) {
+  if (synth->song_duration<0.0) {
+    if (synth->song_next) synth->song_duration=synth_song_get_duration(synth->song_next);
+    else if (synth->song) synth->song_duration=synth_song_get_duration(synth->song);
+  }
+  return synth->song_duration;
+}
+
 /* Drop any voice or proc that might refer to the given channel.
  */
  
@@ -394,4 +407,47 @@ void synth_clear_cache(struct synth *synth) {
     sfg_printer_del(synth->printerv[synth->printerc]);
   }
   synth_cache_clear(synth->cache);
+}
+
+/* Reinitialize channels mid-flight.
+ */
+ 
+int synth_channels_switcheroo(struct synth *synth,const void *src,int srcc) {
+  // We can only operate if there's a song playing, and don't bugger around with when there's one pending.
+  if (!synth||!synth->song||synth->song_next) return 0;
+  if (!src||(srcc<42)) return 0;
+  
+  /* Drop all voices, procs, and channels cold.
+   * No need to drop playbacks.
+   * There is a synth_voice_cleanup() but it's noop, don't bother.
+   */
+  int i;
+  synth->voicec=0;
+  struct synth_proc *proc=synth->procv;
+  for (i=synth->procc;i-->0;proc++) synth_proc_cleanup(proc);
+  synth->procc=0;
+  for (i=SYNTH_SONG_CHANNEL_COUNT;i-->0;) {
+    synth_channel_del(synth->channelv[i]);
+    synth->channelv[i]=0;
+    synth->pidv[i]=0;
+  }
+  
+  /* Now reinstantiate the channels.
+   * Basically the same logic as synth_song_init_channels().
+   */
+  const uint8_t *srcp=((uint8_t*)src)+10;
+  struct synth_channel **chanp=synth->channelv;
+  int *pidv=synth->pidv;
+  int chid=0;
+  for (;chid<SYNTH_SONG_CHANNEL_COUNT;chid++,srcp+=4,chanp++,pidv++) {
+    *pidv=srcp[0];
+    if (!srcp[1]) continue; // volume zero; don't instantiate
+    struct synth_channel *channel=synth_channel_new(synth,chid,srcp[0]);
+    if (!channel) continue;
+    synth_channel_control(synth,channel,MIDI_CONTROL_VOLUME_MSB,srcp[1]>>1);
+    synth_channel_control(synth,channel,MIDI_CONTROL_PAN_MSB,srcp[2]>>1);
+    *chanp=channel;
+  }
+  
+  return 0;
 }

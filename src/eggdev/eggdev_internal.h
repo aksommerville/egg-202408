@@ -17,6 +17,8 @@
   #define WABT_SDK ""
 #endif
 
+#define EGGDEV_PLAYHEAD_CLIENT_LIMIT 8
+
 extern struct eggdev {
   const char *exename;
   const char *command;
@@ -45,6 +47,9 @@ extern struct eggdev {
   struct synth *synth;
   struct rom drums_rom;
   int drums_mtime;
+  struct http_websocket *playhead_clientv[EGGDEV_PLAYHEAD_CLIENT_LIMIT];
+  int playhead_clientc;
+  double playhead_update_time;
 } eggdev;
  
 struct eggdev_rpath {
@@ -55,6 +60,8 @@ struct eggdev_rpath {
   int sfxc;
   const char *path;
 };
+
+double eggdev_now();
 
 int eggdev_configure(int argc,char **argv);
 void eggdev_print_help(const char *topic,int topicc);
@@ -87,8 +94,10 @@ int eggdev_command_sync(struct sr_encoder *dst,const char *cmd);
 const char *eggdev_rewrite_rom_if_wasm(const char *path);
 
 int eggdev_http_serve(struct http_xfer *req,struct http_xfer *rsp,void *userdata);
-int eggdev_serve_init_audio();
+int eggdev_serve_init_audio(const char *driver,int driverc,const char *device,int devicec,int rate,int chanc,int buffer);
 int eggdev_serve_play_song(struct sr_encoder *src); // We may yoink and overwrite (src).
+int eggdev_serve_adjust(const uint8_t *src,int srcc);
+int eggdev_serve_update();
 
 /* Split a file into multiple resources.
  * Add the resources to (romw) and return >0 on success.

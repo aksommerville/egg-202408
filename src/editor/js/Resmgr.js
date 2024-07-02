@@ -11,7 +11,9 @@ import { StringEditor } from "./StringEditor.js";
 import { ImageEditor } from "./ImageEditor.js";
 import { MetadataEditor } from "./MetadataEditor.js";
 import { SfgEditor } from "./audio/SfgEditor.js";
-import { SongEditor } from "./song/SongEditor.js";
+import { SongEventsEditor } from "./song/SongEventsEditor.js";
+import { SongHeaderEditor } from "./song/SongHeaderEditor.js";
+import { Song } from "./song/Song.js";
 import { selectCustomEditor, listCustomEditors } from "./selectCustomEditor.js";
 
 export class Resmgr {
@@ -388,16 +390,14 @@ export class Resmgr {
       else return SfgEditor;
     }
     
-    // MIDI files use SongEditor.
-    // Type should be "song", but MIDI has an unambiguous binary signature, so use that instead.
-    if (res.serial.length >= 8) {
-      const s = res.serial;
-      if (
-        (s[0] === 0x4d) && (s[1] === 0x54) && (s[2] === 0x68) && (s[3] === 0x64) &&
-        (s[4] === 0x00) && (s[5] === 0x00) && (s[6] === 0x00) && (s[7] === 0x06)
-      ) return SongEditor;
-    } else if ((res.serial.length === 0) && (res.type === "song")) {
-      return SongEditor;
+    // For "song" type, prefer SongHeaderEditor, and allow SongEventsEditor for unconventional MIDI.
+    // By default, they'll fall thru to HexEditor.
+    if (res.type === "song") {
+      switch (Song.classifySerial(res.serial)) {
+        case "beeeeeP": return SongHeaderEditor;
+        case "pridi": return SongHeaderEditor;
+        case "muddi": return SongEventsEditor;
+      }
     }
     
     // TextEditor would suffice for metadata, but we can do better.

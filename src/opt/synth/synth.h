@@ -68,6 +68,9 @@ double synth_get_playhead(struct synth *synth,double adjust);
 
 void synth_set_playhead(struct synth *synth,double beats);
 
+// Length of current song in beats.
+double synth_get_duration(struct synth *synth);
+
 /* You may push events into the system at any time.
  * Beware that this is the same event bus the song is using.
  * Songs can only address channels 0..7. You can use 8..15 and be confident you fully control them.
@@ -84,5 +87,7 @@ void synth_event(struct synth *synth,uint8_t chid,uint8_t opcode,uint8_t a,uint8
 void synth_override_pid_0(struct synth *synth,const struct synth_builtin *builtin);
 
 void synth_clear_cache(struct synth *synth);
+
+int synth_channels_switcheroo(struct synth *synth,const void *src,int srcc);
 
 #endif

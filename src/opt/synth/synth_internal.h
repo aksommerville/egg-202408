@@ -70,6 +70,7 @@ struct synth {
   // Event graph.
   struct synth_song *song;
   struct synth_song *song_next;
+  double song_duration;
   struct synth_channel *channelv[SYNTH_CHANNEL_COUNT];
   int pidv[SYNTH_CHANNEL_COUNT];
   struct synth_builtin override_pid_0; // Hack for live instrument editor.

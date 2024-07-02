@@ -224,12 +224,12 @@ body > * {
   color: #fcc;
 }
 
-.SongEditor {
+.SongEventsEditor {
   display: flex;
   flex-direction: column;
   overflow: scroll;
 }
-.SongEditor > .controls {
+.SongEventsEditor > .controls {
   background-color: #222;
   border-bottom: 1px solid #000;
   position: sticky;
@@ -237,20 +237,48 @@ body > * {
   display: flex;
   flex-direction: row;
 }
-.SongEditor > .controls > .spacer {
+.SongEventsEditor > .controls > .spacer {
   flex: 1;
 }
-.SongEditor > .main {
+.SongEventsEditor > .main {
 }
-.SongEditor > .main tr:nth-child(odd) {
+.SongEventsEditor > .main tr:nth-child(odd) {
   background-color: #222;
 }
-.SongEditor > .main th {
+.SongEventsEditor > .main th {
   text-align: left;
   cursor: pointer;
 }
-.SongEditor > .main input.event {
+.SongEventsEditor > .main input.event {
   display: block;
+}
+
+.SongHeaderEditor .playback {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+}
+.SongHeaderEditor .playback > .playhead {
+  flex: 1;
+  height: 2em;
+}
+.SongHeaderEditor td.key {
+  text-align: right;
+}
+.SongHeaderEditor .channels {
+  width: 100%;
+}
+.SongHeaderEditor .channels th.label {
+  width: 25%;
+}
+.SongHeaderEditor .channels th.pid {
+  width: 25%;
+}
+.SongHeaderEditor .channels input {
+  width: 100%;
+}
+.SongHeaderEditor .channels select {
+  width: 100%;
 }
 
 /* From egg-202405/synthwerk.

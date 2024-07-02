@@ -417,32 +417,109 @@ static int eggdev_http_post_song(struct http_xfer *req,struct http_xfer *rsp) {
   return http_xfer_set_status(rsp,200,"OK");
 }
 
-/* WebSocket incoming packet.
+/* POST /api/song/adjust
+ */
+ 
+static int eggdev_http_post_song_adjust(struct http_xfer *req,struct http_xfer *rsp) {
+  struct sr_encoder *src=http_xfer_get_body(req);
+  if (eggdev_serve_adjust(src->v,src->c)<0) {
+    return http_xfer_set_status(rsp,500,"Failed to adjust song.");
+  }
+  return http_xfer_set_status(rsp,200,"OK");
+}
+
+/* POST /api/audio
+ */
+ 
+static int eggdev_http_post_audio(struct http_xfer *req,struct http_xfer *rsp) {
+
+  // Read the request.
+  struct sr_encoder *src=http_xfer_get_body(req);
+  struct sr_decoder decoder={.v=src->v,.c=src->c};
+  char driver[256],device[256];
+  int driverc=0,devicec=0,rate=0,chanc=0,buffer=0,result=0;
+  if (sr_decode_json_object_start(&decoder)<0) return http_xfer_set_status(rsp,400,"JSON error");
+  const char *k;
+  int kc;
+  while ((kc=sr_decode_json_next(&k,&decoder))>0) {
+    if ((kc==6)&&!memcmp(k,"driver",6)) {
+      if (((driverc=sr_decode_json_string(driver,sizeof(driver),&decoder))<0)||(driverc>sizeof(driver))) return http_xfer_set_status(rsp,400,"JSON error (driver)");
+    } else if ((kc==6)&&!memcmp(k,"device",6)) {
+      if (((devicec=sr_decode_json_string(device,sizeof(device),&decoder))<0)||(devicec>sizeof(device))) return http_xfer_set_status(rsp,400,"JSON error (device)");
+    } else if ((kc==4)&&!memcmp(k,"rate",4)) {
+      if (sr_decode_json_int(&rate,&decoder)<0) return http_xfer_set_status(rsp,400,"JSON error (rate)");
+    } else if ((kc==5)&&!memcmp(k,"chanc",5)) {
+      if (sr_decode_json_int(&chanc,&decoder)<0) return http_xfer_set_status(rsp,400,"JSON error (chanc)");
+    } else if ((kc==6)&&!memcmp(k,"buffer",6)) {
+      if (sr_decode_json_int(&buffer,&decoder)<0) return http_xfer_set_status(rsp,400,"JSON error (buffer)");
+    } else return http_xfer_set_status(rsp,400,"Unexpected key '%.*s'",kc,k);
+  }
+  sr_decode_json_end(&decoder,0);
+  
+  // Apply it.
+  if (eggdev_serve_init_audio(driver,driverc,device,devicec,rate,chanc,buffer)<0) {
+    return http_xfer_set_status(rsp,500,"Failed to apply audio settings.");
+  }
+  
+  // Respond with JSON in the same shape as the request.
+  // Except "device" and "buffer" aren't exposed, so drop them.
+  struct sr_encoder *dst=http_xfer_get_body(rsp);
+  sr_encode_json_object_start(dst,0,0);
+  if (eggdev.audio) {
+    sr_encode_json_string(dst,"driver",6,eggdev.audio->type->name,-1);
+    sr_encode_json_int(dst,"rate",4,eggdev.audio->rate);
+    sr_encode_json_int(dst,"chanc",5,eggdev.audio->chanc);
+  } else {
+    sr_encode_json_string(dst,"driver",6,"none",4);
+  }
+  sr_encode_json_end(dst,0);
+  http_xfer_set_header(rsp,"Content-Type",12,"application/json",-1);
+  return http_xfer_set_status(rsp,200,"OK");
+}
+
+/* /ws/midi
  */
 
-static int eggdev_http_ws_cb(struct http_websocket *ws,int opcode,const void *v,int c) {
-  /**
-  fprintf(stderr,"%s:%p[%d]",__func__,ws,opcode);
-  const uint8_t *b=v;
-  int i=c;
-  for (;i-->0;b++) fprintf(stderr," %02x",*b);
-  fprintf(stderr,"\n");
-  /**/
-  if (opcode==2) { // binary, assume MIDI
-    if (eggdev.audio&&eggdev.synth) {
-      if (eggdev.audio->type->lock&&(eggdev.audio->type->lock(eggdev.audio)<0)) return 0;
-      // Creating a new stream each time means events can't be split across packets.
-      // That wouldn't be possible though; WebSocket handles packet reassembly for us.
-      struct midi_stream stream={0};
-      if (midi_stream_receive(&stream,v,c)>=0) {
-        struct midi_event event;
-        while (midi_stream_next(&event,&stream)>0) {
-          synth_event(eggdev.synth,event.chid,event.opcode,event.a,event.b,0);
-        }
-      }
-      if (eggdev.audio->type->unlock) eggdev.audio->type->unlock(eggdev.audio);
+static int eggdev_http_ws_midi_cb(struct http_websocket *ws,int opcode,const void *v,int c) {
+  if (opcode!=2) return 0; // Binary only
+  if (!eggdev.audio||!eggdev.synth) return 0;
+  if (eggdev.audio->type->lock&&(eggdev.audio->type->lock(eggdev.audio)<0)) return 0;
+  // Creating a new stream each time means events can't be split across packets.
+  // That wouldn't be possible though; WebSocket handles packet reassembly for us.
+  struct midi_stream stream={0};
+  if (midi_stream_receive(&stream,v,c)>=0) {
+    struct midi_event event;
+    while (midi_stream_next(&event,&stream)>0) {
+      synth_event(eggdev.synth,event.chid,event.opcode,event.a,event.b,0);
     }
   }
+  if (eggdev.audio->type->unlock) eggdev.audio->type->unlock(eggdev.audio);
+  return 0;
+}
+
+/* /ws/playhead
+ */
+ 
+static int eggdev_http_ws_playhead_cb(struct http_websocket *ws,int opcode,const void *v,int c) {
+  if (opcode<0) {
+    int i=eggdev.playhead_clientc;
+    while (i-->0) {
+      if (eggdev.playhead_clientv[i]==ws) {
+        eggdev.playhead_clientc--;
+        memmove(eggdev.playhead_clientv+i,eggdev.playhead_clientv+i+1,sizeof(void*)*(eggdev.playhead_clientc-i));
+      }
+    }
+    return 0;
+  }
+  if (opcode!=2) return 0;
+  if (c!=2) return 0;
+  if (!eggdev.audio||!eggdev.synth) return 0;
+  uint16_t normu16=(((uint8_t*)v)[0]<<8)|((uint8_t*)v)[1];
+  double duration=synth_get_duration(eggdev.synth);
+  double beats=(normu16*duration)/65535.0;
+  if (eggdev.audio->type->lock&&(eggdev.audio->type->lock(eggdev.audio)<0)) return 0;
+  synth_set_playhead(eggdev.synth,beats);
+  if (eggdev.audio->type->unlock) eggdev.audio->type->unlock(eggdev.audio);
   return 0;
 }
 
@@ -452,13 +529,24 @@ static int eggdev_http_ws_cb(struct http_websocket *ws,int opcode,const void *v,
 int eggdev_http_serve(struct http_xfer *req,struct http_xfer *rsp,void *userdata) {
   struct http_websocket *ws=http_websocket_check_upgrade(req,rsp);
   if (ws) {
-    fprintf(stderr,"%s: Accepted WebSocket connection.\n",eggdev.exename);
-    http_websocket_set_callback(ws,eggdev_http_ws_cb);
+    const char *path=0;
+    int pathc=http_xfer_get_path(&path,req);
+    fprintf(stderr,"%s: Accepted WebSocket connection for '%.*s'.\n",eggdev.exename,pathc,path);
+    if ((pathc==8)&&!memcmp(path,"/ws/midi",8)) {
+      http_websocket_set_callback(ws,eggdev_http_ws_midi_cb);
+    } else if ((pathc==12)&&!memcmp(path,"/ws/playhead",12)) {
+      http_websocket_set_callback(ws,eggdev_http_ws_playhead_cb);
+      if (eggdev.playhead_clientc<EGGDEV_PLAYHEAD_CLIENT_LIMIT) {
+        eggdev.playhead_clientv[eggdev.playhead_clientc++]=ws;
+      }
+    }
     return 0;
   }
   return http_dispatch(req,rsp,
     HTTP_METHOD_GET,"/api/roms",eggdev_http_get_roms,
     HTTP_METHOD_POST,"/api/song",eggdev_http_post_song,
+    HTTP_METHOD_POST,"/api/song/adjust",eggdev_http_post_song_adjust,
+    HTTP_METHOD_POST,"/api/audio",eggdev_http_post_audio,
     HTTP_METHOD_GET,"/rt/**",eggdev_http_get_rt,
     HTTP_METHOD_GET,"/res-all",eggdev_http_get_res_all,
     HTTP_METHOD_GET,"/res",eggdev_http_res,

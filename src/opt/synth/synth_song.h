@@ -57,4 +57,7 @@ void synth_song_advance(struct synth_song *song,int framec);
  */
 void synth_song_set_playhead(struct synth *synth,struct synth_song *song,double beats);
 
+// Sum of all delays. We have to read the whole song each time you ask for it.
+double synth_song_get_duration(const struct synth_song *song);
+
 #endif

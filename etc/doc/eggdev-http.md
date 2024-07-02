@@ -16,8 +16,18 @@ REST hooks:
  - `GET /api/res-all`, nested JSON objects containing the entire `--data` set.
  - - Each node is either `{name:string,files:NODE[]}` or `{name:string,serial:string}`, serial is base64 encoded.
  - `POST /api/song`, request body is a MIDI file or empty. Stop any current playback and begin playing this song.
+ - `POST /api/song/adjust`. Change tempo or channel headers of the running song.
+ - - Request body is 42 bytes binary, a beeeeeP song without any events:
+ - - - "\xbe\xee\xeeP", u16:tempo, u16:dummy, u16:loopp, 8 * (u8:pid, u8:volume, u8:pan, u8:dummy)
+ - - - (loopp) is normalized 0..0xffff, it doesn't count the header like we do in the real beeeeeP files.
+ - - Empty request body is legal, and no changes will be made.
+ - - Responds with the updated state, same shape as request and normally identical to request.
+ - `POST /api/audio` req body {driver,rate,chanc,buffer,device}, driver="none" to turn off, or "" to use a default.
  
 WebSocket:
- - Any binary packet is presumed to be MIDI events; we deliver directly to the synthesizer if present.
- - - I wrote this behavior, but now I've decided not to use it. Leaving it in, in case it becomes useful, maybe for testing instruments?
- - - To play a song, prefer `POST /api/song`.
+ - `/ws/midi`: Send realtime MIDI events to the server.
+ - - Beware that due to audio driver buffering, timing is not reliable enough for playback.
+ - - Should be OK for noodling tho.
+ - `/ws/playhead`: Receive regular updates on the song's playhead.
+ - - Binary packets containing a big-endian integer in 0..65535, where 65535 is end of song.
+ - - You may also write to this socket, to move the playhead.

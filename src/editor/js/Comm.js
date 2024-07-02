@@ -8,6 +8,11 @@ export class Comm {
   }
   constructor(window) {
     this.window = window;
+    
+    this.nextPlayheadListener = 1;
+    this.playheadListeners = [];
+    this.playheadSocket = null;
+    this.playheadConnected = false;
   }
   
   http(method, path, query, headers, body, returnType) {
@@ -39,6 +44,66 @@ export class Comm {
     return rsp.arrayBuffer();
   }
   
+  /* Subscribe to playhead of song playing server-side.
+   ******************************************************************************/
+   
+  setPlayhead(v) {
+    if (!this.playheadConnected) return false;
+    v = Math.max(0, Math.min(0xffff, v * 0xffff));
+    this.playheadSocket.send(new Uint8Array([v >> 8, v]));
+    return true;
+  }
+  
+  listenPlayhead(cb) {
+    const id = this.nextPlayheadListener++;
+    this.playheadListeners.push({ id, cb });
+    if (!this.playheadSocket) this.connectPlayhead();
+    return id;
+  }
+  
+  unlistenPlayhead(id) {
+    const p = this.playheadListeners.findIndex(l => l.id === id);
+    if (p < 0) return;
+    this.playheadListeners.splice(p, 1);
+    // When we run out of playhead listeners, don't close the socket immediately.
+    // User might be switching to a different song and will resubscribe right away.
+    // So check after half a second or so.
+    this.window.setTimeout(() => this.checkPlayheadAbandonment(), 500);
+  }
+  
+  checkPlayheadAbandonment() {
+    if (this.playheadListeners.length) return;
+    if (!this.playheadSocket) return;
+    this.playheadSocket.close();
+    this.playheadSocket = null;
+  }
+  
+  connectPlayhead() {
+    this.playheadSocket = new WebSocket(`ws://${this.window.location.host}/ws/playhead`);
+    this.playheadSocket.binaryType = "arraybuffer";
+    this.playheadSocket.addEventListener("open", () => {
+      this.playheadConnected = true;
+    });
+    this.playheadSocket.addEventListener("close", () => {
+      this.playheadSocket = null;
+      this.playheadConnected = false;
+      for (const { cb } of this.playheadListeners) cb(0);
+    });
+    this.playheadSocket.addEventListener("error", () => {
+      this.playheadSocket = null;
+      this.playheadConnected = false;
+      for (const { cb } of this.playheadListeners) cb(0);
+    });
+    this.playheadSocket.addEventListener("message", msg => {
+      if (msg.data?.byteLength === 2) {
+        const view = new Uint8Array(msg.data);
+        let v = ((view[0] << 8) | view[1]) / 65535.0;
+        if (v) {
+          for (const { cb } of this.playheadListeners) cb(v);
+        }
+      }
+    });
+  }
 }
 
 Comm.singleton = true;

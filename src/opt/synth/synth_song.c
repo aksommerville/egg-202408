@@ -199,3 +199,35 @@ void synth_song_set_playhead(struct synth *synth,struct synth_song *song,double 
     dstframe-=err;
   }
 }
+
+/* Calculate duration.
+ */
+ 
+double synth_song_get_duration(const struct synth_song *song) {
+  if (!song) return 0.0;
+  if (song->tempo<1) return 0.0;
+  double duration=0.0; // initially in milliseconds
+  int srcp=song->startp;
+  while (srcp<song->srcc) {
+    uint8_t lead=song->src[srcp++];
+    if (!lead) break;
+    if (!(lead&0x80)) {
+      duration+=lead;
+      continue;
+    }
+    if ((lead&0xf0)==0x80) {
+      srcp+=2;
+      continue;
+    }
+    if ((lead&0xf0)==0x90) {
+      srcp+=1;
+      continue;
+    }
+    if ((lead&0xf8)==0xa0) {
+      srcp+=1;
+      continue;
+    }
+    break;
+  }
+  return duration/song->tempo;
+}

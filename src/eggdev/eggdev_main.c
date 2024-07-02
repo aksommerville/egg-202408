@@ -373,18 +373,13 @@ static int eggdev_main_serve() {
   }
   fprintf(stderr,"%s: Listening on port %d. %s\n",eggdev.exename,eggdev.port,eggdev.external?"*** externally accessible ***":"localhost only");
   
-  if ((err=eggdev_serve_init_audio())<0) {
-    if (err!=-2) fprintf(stderr,"%s: Unspecified error initializing audio.\n",eggdev.exename);
-    http_context_del(eggdev.http);
-    return 1;
-  }
-  
   while (!eggdev_sigc) {
-    if (http_update(eggdev.http,1000)<0) {
+    if (http_update(eggdev.http,100)<0) {
       fprintf(stderr,"%s: Error updating HTTP server.\n",eggdev.exename);
       http_context_del(eggdev.http);
       return 1;
     }
+    eggdev_serve_update();
   }
   
   if (eggdev.audio) {

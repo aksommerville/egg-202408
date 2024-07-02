@@ -1,8 +1,112 @@
 /* Song.js
- * Model for a MIDI file.
+ * Model for a MIDI or beeeeeP file.
  */
  
 export class Song {
+
+  /* For a Uint8Array of the input file, return one of:
+   *  - "empty": No data, or not a Uint8Array.
+   *  - "beeeeeP"
+   *  - "pridi": MIDI, agreeable to our header conventions.
+   *  - "muddi": MIDI but unconventional.
+   *  - "invalid"
+   * We don't fully validate.
+   */
+  static classifySerial(src) {
+    if (!(src instanceof Uint8Array) || !src.length) return "empty";
+    if ((src[0] === 0xbe) && (src[1] === 0xee) && (src[2] === 0xee) && (src[3] === 0x50)) return "beeeeeP";
+    let notec = 0;
+    for (const event of Song.streamEventsInFileOrder(src)) {
+      if (event.chid >= 8) return "muddi"; // We only support 8 channels ultimately.
+      switch (event.opcode) {
+        case 0x90: notec++; break;
+        case 0xb0: switch (event.a) {
+            case 0x00: if (event.when || event.b) return "muddi"; // Bank Select MSB. We only want fqpid in 0..255, and only at time zero.
+            case 0x20: if (event.when || (event.b > 1)) return "muddi"; // '' LSB
+            case 0x07: if (event.when) return "muddi"; // Volume, time zero only.
+            case 0x0a: if (event.when) return "muddi"; // Pan ''
+          } break;
+        case 0xc0: if (event.when) return "muddi"; // Program Change, time zero only.
+        case 0xff: switch (event.a) {
+            case 0x51: { // Set Tempo. Our UI only supports tempo at time zero, though that's purely a UI thing.
+                if (event.when) return "muddi";
+              } break;
+          } break;
+      }
+    }
+    // If there's at least one note, and nothing jumped out as unrepresentable, call it "pridi".
+    if (notec) return "pridi";
+    return "invalid";
+  }
+  
+  /* Yield all events in the order stored.
+   * That's chronological within each track, but we do not interleave the tracks.
+   * { trid, when, [chid], opcode, [a], [b], [v] }
+   * (src) is a Uint8Array of a MIDI file.
+   */
+  static *streamEventsInFileOrder(src) {
+    let trid = 0;
+    for (let srcp=0; srcp<src.length; ) {
+      const chunkid = (src[srcp] << 24) | (src[srcp + 1] << 16) | (src[srcp + 2] << 8) | src[srcp + 3]; srcp += 4;
+      const chunklen = (src[srcp] << 24) | (src[srcp + 1] << 16) | (src[srcp + 2] << 8) | src[srcp + 3]; srcp += 4;
+      if ((chunklen < 0) || (srcp > src.length - chunklen)) break;
+      const nextp = srcp + chunklen;
+      switch (chunkid) {
+        case 0x4d546864: { // MThd: No need to examine.
+          } break;
+        case 0x4d54726b: { // MTrk
+            let status = 0;
+            let when = 0;
+            while (srcp < nextp) {
+              const [delay, dlen] = Song.decodeVlq(src, srcp);
+              srcp += dlen;
+              when += delay;
+              if (src[srcp] & 0x80) {
+                status = src[srcp++];
+              } else if (status) {
+              } else {
+                throw new Error(`Invalid leading byte ${src[srcp]} at ${srcp}/${src.length} in MIDI file.`);
+              }
+              let opcode = status & 0xf0;
+              let chid = status & 0x0f;
+              switch (opcode) {
+                case 0x80:
+                case 0x90:
+                case 0xa0:
+                case 0xb0:
+                case 0xe0: {
+                    const a = src[srcp++];
+                    const b = src[srcp++];
+                    yield { trid, when, chid, opcode, a, b };
+                  } break;
+                case 0xc0:
+                case 0xd0: {
+                    const a = src[srcp++];
+                    yield { trid, when, chid, opcode, a };
+                  } break;
+                case 0xf0: {
+                    opcode = status;
+                    chid = 0xff;
+                    status = 0;
+                    let a = 0;
+                    if (opcode === 0xff) {
+                      a = src[srcp++];
+                    }
+                    const [paylen, paylenlen] = Song.decodeVlq(src, srcp);
+                    srcp += paylenlen;
+                    const v = src.slice(srcp, srcp + paylen);
+                    srcp += paylen;
+                    yield { trid, when, opcode, a, v };
+                  } break;
+              }
+            }
+            trid++;
+          } break;
+      }
+      srcp = nextp;
+    }
+  }
+
   constructor(src) {
     this.nextId = 1;
     if (!src?.length) {
@@ -36,6 +140,67 @@ export class Song {
       }
     }
     this.division = division;
+    return true;
+  }
+  
+  /* If a Set Tempo event exists at time zero, overwrite its value.
+   * Otherwise insert one on the first track.
+   */
+  setTempo(usPerQnote) {
+    if ((usPerQnote < 1) || (usPerQnote > 0xffffff)) throw new Error(`Invalid tempo ${usPerQnote}`);
+    for (const track of this.tracks) {
+      for (const event of track.events) {
+        if (event.when) break;
+        if (event.opcode !== 0xff) continue;
+        if (event.a !== 0x51) continue;
+        if (event.v?.length !== 3) continue;
+        event.v[0] = usPerQnote >> 16;
+        event.v[1] = usPerQnote >> 8;
+        event.v[2] = usPerQnote;
+        return true;
+      }
+    }
+    if (!this.tracks.length) {
+      this.tracks.push({ events: [] });
+    }
+    this.tracks[0].events.splice(0, 0, {
+      id: this.nextId++,
+      when: 0,
+      chid: 0xff,
+      opcode: 0xff,
+      a: 0x51,
+      b: 0,
+      v: new Uint8Array([usPerQnote >> 16, (usPerQnote >> 8) & 0xff, usPerQnote & 0xff]),
+    });
+    return true;
+  }
+  
+  /* Update an event at time zero matching (chid,opcode), or create one.
+   * If opcode is 0xb0 Control Change, (a) must match too.
+   */
+  setHeaderEvent(chid, opcode, a, b) {
+    for (const track of this.tracks) {
+      for (const event of track.events) {
+        if (event.when) break;
+        if (event.chid !== chid) continue;
+        if (event.opcode !== opcode) continue;
+        if (opcode === 0xb0) {
+          if (event.a !== a) continue;
+        } else {
+          event.a = a;
+        }
+        event.b = b;
+        return true;
+      }
+    }
+    if (!this.tracks.length) {
+      this.tracks.push({ events: [] });
+    }
+    this.tracks[0].events.splice(0, 0, {
+      id: this.nextId++,
+      when: 0,
+      chid, opcode, a, b,
+    });
     return true;
   }
   
@@ -107,6 +272,95 @@ export class Song {
     }
   }
   
+  /* Return a model for SongHeaderEditor: {
+   *   tempo: bpm (can be fractional)
+   *   channels: {
+   *     chid: 0..7
+   *     label: string
+   *     pid: 0..255
+   *     volume: 0..1
+   *     pan: -1..1
+   *   }[] // up to eight, and never sparse
+   * }
+   */
+  getHeaders() {
+    const model = {
+      tempo: 120,
+      channels: [],
+    };
+    const textDecoder = new TextDecoder("utf8");
+    const reqch = (chid) => {
+      if (model.channels[chid]) return model.channels[chid];
+      return model.channels[chid] = {
+        chid: chid,
+        label: "",
+        pid: 0,
+        volume: 0.5,
+        pan: 0,
+      };
+    };
+    for (const track of this.tracks) {
+      let chpfx = -1;
+      for (const event of track.events) {
+      
+        // A Note On event at any time on a valid chid, we must have a channel for it (even if there's no header events).
+        if (event.opcode === 0x90) {
+          if (event.chid >= 8) break;
+          reqch(event.chid);
+          continue;
+        }
+        
+        // Everything else is only allowed at time zero.
+        if (event.when) continue;
+        
+        if ((event.chid >= 0) && (event.chid < 8)) {
+          const ch = reqch(event.chid);
+          switch (event.opcode) {
+            case 0xb0: switch (event.a) {
+                case 0x07: ch.volume = event.b / 127.0; break; // Volume
+                case 0x0a: ch.pan = event.b / 64.0 - 1.0; break; // Pan
+                case 0x20: ch.pid = (ch.pid & 0x7f) | (event.b << 7); break; // Bank LSB
+              } break;
+            case 0xc0: ch.pid = (ch.pid & 0x80) | event.a; break;
+          }
+        
+        } else if (event.opcode === 0xff) switch (event.a) {
+          case 0x20: { // Channel Prefix
+              if ((event.v.length === 1) && (event.v[0] < 8)) chpfx = event.v[0];
+              else chpfx = -1;
+            } break;
+          case 0x03: // Track Name
+          case 0x04: { // Instrument Name
+              if (chpfx < 0) break;
+              const ch = reqch(chpfx);
+              const s = textDecoder.decode(event.v);
+              if (ch.label.indexOf(s) >= 0) break;
+              if (ch.label) ch.label += ", ";
+              ch.label += s;
+            } break;
+          case 0x51: { // Set Tempo
+              if (event.v.length === 3) {
+                const usPerQnote = (event.v[0] << 16) | (event.v[1] << 8) | event.v[2];
+                const minPerQnote = usPerQnote / (1000000 * 60);
+                model.tempo = 1.0 / minPerQnote;
+              }
+            } break;
+        }
+      }
+    }
+    for (let chid=model.channels.length; chid-->0; ) {
+      if (model.channels[chid]) continue;
+      model.channels[chid] = {
+        chid: chid,
+        label: "unused",
+        pid: 0,
+        volume: 0.5,
+        pan: 0,
+      };
+    }
+    return model;
+  }
+  
   /* Decode.
    *********************************************************************************************/
   
@@ -148,7 +402,7 @@ export class Song {
     let status=0, when=0;
     for (let srcp=0; srcp<src.length; ) {
     
-      const [delay, dlen] = this.decodeVlq(src, srcp);
+      const [delay, dlen] = Song.decodeVlq(src, srcp);
       srcp += dlen;
       when += delay;
       
@@ -207,7 +461,7 @@ export class Song {
               a = src[srcp++];
             }
             // Opcode must be 0xff=Meta, 0xf0=Sysex, or 0xf7=Sysex, but we'll allow 0xf-anything.
-            const [paylen, paylenlen] = this.decodeVlq(src, srcp);
+            const [paylen, paylenlen] = Song.decodeVlq(src, srcp);
             srcp += paylenlen;
             const v = src.slice(srcp, srcp + paylen);
             srcp += paylen;
@@ -221,7 +475,7 @@ export class Song {
   }
   
   // => [value, length]
-  decodeVlq(src, srcp) {
+  static decodeVlq(src, srcp) {
     let v=0, c=0;
     while (src[srcp + c] & 0x80) {
       v <<= 7;

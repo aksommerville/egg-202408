@@ -164,7 +164,7 @@ export class SongEventModal {
   }
 }
 
-const CONTROL_KEYS = [
+export const CONTROL_KEYS = [
 "MSB Bank","MSB Mod","MSB Breath","MSB ?","MSB Foot","MSB Portamento Time","MSB Data Entry","MSB Volume",
 "MSB Balance","MSB ?","MSB Pan","MSB Expression","MSB Effect 1","MSB Effect 2","MSB Effect 3","MSB Effect 4",
 "MSB GP 1","MSB GP 2","MSB GP 3","MSB GP 4","MSB ?","MSB ?","MSB ?","MSB ?",
@@ -183,7 +183,7 @@ const CONTROL_KEYS = [
 "All Sound Off","Reset Controllers","Local Controller Switch","All Notes Off","Omni Off (+Notes Off)","Omni On (+Notes Off)","Poly Switch (+Notes Off)","Poly On (+Notes Off)",
 ];
 
-const GM_PROGRAM_NAMES = [
+export const GM_PROGRAM_NAMES = [
 "Acoustic Grand Piano","Bright Acoustic Piano","Electric Grand Piano","Honky","Electric Piano 1 (Rhodes Piano)","Electric Piano 2 (Chorused Piano)","Harpsichord","Clavinet",
 "Celesta","Glockenspiel","Music Box","Vibraphone","Marimba","Xylophone","Tubular Bells","Dulcimer (Santur)",
 "Drawbar Organ (Hammond)","Percussive Organ","Rock Organ","Church Organ","Reed Organ","Accordion (French)","Harmonica","Tango Accordion (Band neon)",

@@ -1,5 +1,6 @@
-/* SongEditor.js
- * Top level editor for MIDI files.
+/* SongEventsEditor.js
+ * Generic MIDI file editor.
+ * Not very useful or friendly, but we do aim to produce sensible UI for any valid MIDI file.
  */
  
 import { Dom } from "../Dom.js";
@@ -9,7 +10,7 @@ import { Song } from "./Song.js";
 import { SongEventModal } from "./SongEventModal.js";
 import { Comm } from "../Comm.js";
 
-export class SongEditor {
+export class SongEventsEditor {
   static getDependencies() {
     return [HTMLElement, Dom, Resmgr, Bus, Window, Comm];
   }
