@@ -220,7 +220,18 @@ export class Audio {
     if (v === channel.wheel) return;
     channel.wheel = v;
     channel.wheelCents = ((v - 0x2000) * channel.wheelRange) / 0x2000;
-    //TODO Apply to in-flight voices. Must respect (when) too!
+    for (const voice of this.voices) {
+      if (voice.channel !== channel) continue;
+      if (voice.osc) {
+        voice.osc.detune.setValueAtTime(channel.wheelCents, when);
+      } else if (voice.oscDry && voice.oscWet) {
+        voice.oscDry.detune.setValueAtTime(channel.wheelCents, when);
+        voice.oscWet.detune.setValueAtTime(channel.wheelCents, when);
+      }
+      if (voice.modosc && voice.modrate) {
+        voice.modosc.frequency.setValueAtTime(voice.frequency * voice.modrate * Math.pow(2, channel.wheelCents / 1200), when);
+      }
+    }
   }
   
   requireNoise() {
@@ -374,7 +385,9 @@ class Song {
     if ((lead & 0xf8) === 0xa0) {
       const a = this.src[this.readp++] || 0;
       const chid = lead & 0x07;
-      const v = (a << 6) | (a >> 2);
+      // It's important that 0x80 produce exactly 0x2000 -- that's zero.
+      // Other values are less sensitive; repeat (a) to saturation the larger MIDI range.
+      const v = (a === 0x80) ? 0x2000 : ((a << 6) | (a >> 2));
       if (!skip) this.audio.changeWheel(chid, v, this.readTime);
       return "ok";
     }
@@ -454,6 +467,7 @@ class Channel {
           const releaseTime = 0.050;
           const level = this.volume * this.master * (velocity + 0.079) * 0.400;
           const voice = new Voice(audio);
+          voice.channel = this;
           voice.oscillateShape("square", audio.hzByNoteid[noteid], this.wheelCents);
           voice.plateauLevel(when, attackTime, level, durs, releaseTime);
           voice.begin();
@@ -462,6 +476,7 @@ class Channel {
         
       case "wave": {
           const voice = new Voice(audio);
+          voice.channel = this;
           voice.oscillateWave(this.wave, audio.hzByNoteid[noteid], this.wheelCents);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
@@ -470,6 +485,7 @@ class Channel {
         
       case "rock": {
           const voice = new Voice(audio);
+          voice.channel = this;
           voice.oscillateMix(this.wave, this.mix, audio.hzByNoteid[noteid], this.wheelCents);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
@@ -478,6 +494,7 @@ class Channel {
         
       case "fmrel": {
           const voice = new Voice(audio);
+          voice.channel = this;
           voice.oscillateFmRelative(audio.hzByNoteid[noteid], this.wheelCents, this.fmRate, this.fmRangeScale, this.fmRangeEnv);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
@@ -486,6 +503,7 @@ class Channel {
         
       case "fmabs": {
           const voice = new Voice(audio);
+          voice.channel = this;
           voice.oscillateFmAbsolute(audio.hzByNoteid[noteid], this.wheelCents, this.fmRate, this.fmRangeScale, this.fmRangeEnv);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
@@ -494,6 +512,7 @@ class Channel {
         
       case "sub": {
           const voice = new Voice(audio);
+          voice.channel = this;
           voice.oscillateSubtractive(audio.hzByNoteid[noteid], this.wheelCents, this.subQ1, this.subQ2, this.subGain);
           voice.tinyEnv(when, this.levelTiny, durs, velocity, this.volume * this.master);
           voice.begin();
@@ -609,13 +628,16 @@ class Channel {
       this.fmLfoOut.disconnect();
       this.fmLfoOut = null;
     }
+    this.fxVoices = [];
   }
   
   fxNote(audio, when, noteid, velocity, durs) {
     const voice = new Voice(this.audio);
+    voice.channel = this;
     voice.oscillateFmRelative(this.audio.hzByNoteid[noteid], this.wheelCents, this.fmRate, this.fmRangeScale, this.fmRangeEnv, this.fmLfoOut);
     voice.tinyEnv(when, this.levelTiny, durs, velocity, 1);
     voice.begin(this.fxAttach);
+    this.fxVoices.push(voice);
     return voice;
   }
 }
@@ -745,6 +767,8 @@ class Voice {
   }
   
   oscillateFmRelative(frequency, detune, rate, scale, env, lfo) {
+    this.frequency = frequency;
+    this.modrate = rate;
     this.osc = new OscillatorNode(this.audio.context, {
       type: "sine",
       frequency,
@@ -770,6 +794,8 @@ class Voice {
   }
   
   oscillateFmAbsolute(frequency, detune, rate, scale, env) {
+    this.frequency = frequency;
+    this.modrate = 0;
     this.osc = new OscillatorNode(this.audio.context, {
       type: "sine",
       frequency,

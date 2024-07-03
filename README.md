@@ -12,7 +12,7 @@ sudo apt install clang wabt
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
 - [ ] TOUCH events for native. What would that take? Maybe acquire some tablet thingy and try it out?
 - [ ] Web: Pointer lock is broken, see eggsamples/shmup
-- [ ] Web: Pitch bend is broken, painfully obvious in Courage Quest (eggsamples/arrautza)
+- [x] Web: Pitch bend is broken, painfully obvious in Courage Quest (eggsamples/arrautza)
 - [ ] Editor
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
 - - [ ] Synth receiver (I want to run midevil against this server).
