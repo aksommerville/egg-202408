@@ -26,6 +26,7 @@ You can supply a file containing "TID NAME" as `--types=PATH` to most eggdev com
 Must contain a field `framebuffer`. And I strongly recommend `title`, `iconImage`, and `language`.
 
 Binary form starts with a 2-byte signature "\xeeM".
+And it ends with a 2-byte terminator "\0\0", equivalent to "empty key, empty value", which would not be legal.
 Followed by a series of key=value pairs, with keys and values each limited to 256 bytes:
 
 ```
@@ -34,7 +35,11 @@ u8 vc
 ... k
 ... v
 repeat
+u16 zero
 ```
+
+The terminator, combined with the fact that metadata:0:1 must be the first resource in an archive,
+allows software to read the metadata reliably without decoding the TOC.
 
 Input file is like INI or Java properties. "key = value" or "key: value", whitespace optional.
 '#' starts a line comment, start of line only.

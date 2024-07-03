@@ -52,6 +52,10 @@ int eggdev_metadata_compile(struct romw *romw,struct romw_res *res) {
       return -1;
     }
   }
+  if (sr_encode_raw(&dst,"\0\0",2)<0) {
+    sr_encoder_cleanup(&dst);
+    return -1;
+  }
   romw_res_handoff_serial(res,dst.v,dst.c);
   return 0;
 }
