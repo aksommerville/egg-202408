@@ -565,11 +565,17 @@ export class Input {
     if (!this.canvas || !this.canvas.requestPointerLock) return 0;
     if (lock) {
       if (this.mouseLocked) return 1;
+      if (navigator.userActivation?.hasBeenActive === false) {
+        // requestPointerLock will fail due to no user interaction yet.
+        // The '===false' is important, in case userActivation isn't supported. It's new (2023-ish).
+        return 0;
+      }
       this.mouseLocked = true;
       this.canvas.requestPointerLock(/*{
         unadjustedMovement: true, // Not supported in Chrome/Linux, and the whole request gets rejected for it.
       }*/).then(rsp => {
       }).catch(e => {
+        console.log(`canvas.requestPointerLock failed`, e);
         this.mouseLocked = false;
       });
     } else if (this.mouseLocked) {

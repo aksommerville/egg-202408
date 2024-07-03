@@ -11,7 +11,10 @@ sudo apt install clang wabt
 - [ ] MacOS
 - [ ] All structs declared to the public API must be the same size in wasm and native. Can we assert that somehow?
 - [ ] TOUCH events for native. What would that take? Maybe acquire some tablet thingy and try it out?
-- [ ] Web: Pointer lock is broken, see eggsamples/shmup
+- [x] Web: Pointer lock is broken, see eggsamples/shmup
+- - DOMException: A user gesture is required to request Pointer Lock.
+- - So it's like WebAudio, we have to wait until the first interaction somehow.
+- - Unfortunately, the request is async so we can't tell the game when it fails.
 - [x] Web: Pitch bend is broken, painfully obvious in Courage Quest (eggsamples/arrautza)
 - [ ] Editor
 - - [ ] SfgEditor: Option to play audio server-side, and toggle between server and client on the fly.
