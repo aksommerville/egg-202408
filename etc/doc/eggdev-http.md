@@ -29,5 +29,5 @@ WebSocket:
  - - Beware that due to audio driver buffering, timing is not reliable enough for playback.
  - - Should be OK for noodling tho.
  - `/ws/playhead`: Receive regular updates on the song's playhead.
- - - Binary packets containing a big-endian integer in 0..65535, where 65535 is end of song.
+ - - Binary packets contain a big-endian integer in 0..65535, where 65535 is end of song.
  - - You may also write to this socket, to move the playhead.

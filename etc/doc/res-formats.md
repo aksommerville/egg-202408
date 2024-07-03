@@ -27,7 +27,7 @@ Must contain a field `framebuffer`. And I strongly recommend `title`, `iconImage
 
 Binary form starts with a 2-byte signature "\xeeM".
 And it ends with a 2-byte terminator "\0\0", equivalent to "empty key, empty value", which would not be legal.
-Followed by a series of key=value pairs, with keys and values each limited to 256 bytes:
+Followed by a series of key=value pairs, with keys and values each limited to 255 bytes:
 
 ```
 u8 kc
@@ -60,7 +60,7 @@ I recommend using both in this case, so lazy decoders don't have to look up stri
 | iconImage           | no   | Decimal ID of an image resource, recommend 16x16 with alpha. |
 | author              | yes  | Your name. |
 | copyright           | yes  | eg "(c) 2024 AK Sommerville" |
-| description         | yes  | Long-form text for human consumption. |
+| description         | yes  | Long-form text for human consumption. (but not too long! Remember, limited to 255 bytes) |
 | genre               | yes  | Recommend picking one that's been used on Itch.io, so we're all on the same page. |
 | tags                | yes  | Comma-delimited. Ditto Itch. |
 | advisory            | yes  | Freeform text, warn of anything offensive etc. |
@@ -75,6 +75,17 @@ I recommend using both in this case, so lazy decoders don't have to look up stri
 | players             | no   | Integers and elapsis eg "1..4" |
 | magic               | no   | Arbitrary text for matching save states. Content may be shown to the user in mismatch cases, but doesn't need to be meaningful. |
 
+`freedom`:
+ - `restricted`: Do not modify, do not distribute, and do not play unless you have a license.
+ - `limited`: Assume you're allowed to play the file if you have it. But don't assume anything else.
+ - `intact`: Free to play and distribute, if unmodified.
+ - `free`: Free to play and distribute, even if modified. Read the license first if you're yoinking assets, but assume it's OK if undefined.
+ 
+`magic`: By default, when loading a save state, we check `title` and `version`, and fail if they don't match.
+You might happen to know that different versions are actually save-state-compatible, eg if they're only different in art assets or something.
+So you can supply `magic` then, and `version` will be ignored.
+The actual content of `magic` isn't important.
+
 ## string
 
 Resources in the archive are just plain text. I recommend UTF-8.
@@ -88,8 +99,11 @@ Followed by loose text to end of line, or a JSON string.
 
 ## song
 
-TODO
+Binary is a format peculiar to Egg.
+Inputs should be MIDI, with some extra constraints.
+See [song-format.md](./song-format.md) for details.
 
 ## sound
 
-TODO
+Complex, see [sfg.md](./sfg.md).
+I recommend that you edit sound effects only via Egg's editor.

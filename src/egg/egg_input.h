@@ -158,6 +158,10 @@ void egg_show_cursor(int show);
 /* If the platform allows it, prevent normal mouse processing and return only unadjusted deltas.
  * While locked, you will receive MMOTION events with signed (x,y).
  * TODO Can we provide a predictable range for those?
+ * **BEWARE** In web browsers, we can't lock the cursor until after the first user interaction.
+ * So if you try to lock during egg_client_init(), be prepared for it to fail.
+ * Sensible to retry after a key or mouse button event. See eggsamples/shmup for a simple example of this.
+ * It's better to sidestep the problem, by entering the lock only after some interaction (eg stay unlocked during the main menu?).
  */
 int egg_lock_cursor(int lock);
 

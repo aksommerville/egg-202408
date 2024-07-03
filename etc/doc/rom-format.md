@@ -7,6 +7,10 @@ Every resource is uniquely identified by 32 bits:
 - 0x03ff0000 10-bit qualifier "qual". Usually zero, or a packed language code.
 - 0x0000ffff 16-bit resource id "rid". Nonzero.
 
+qual: Read as two 5-bit characters in this alphabet: "012345abcdefghijklmnopqrstuvwxyz".
+So qual zero represents as "00", and the two-letter combinations are all nonzero.
+When not zero, it's expected to be an ISO 639 language code.
+
 Zero-length resources are indistinguishable from absent ones.
 The archive's framing is designed such that resources must be sorted by (tid,qual,rid).
 
