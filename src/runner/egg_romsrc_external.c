@@ -50,7 +50,9 @@ static void egg_wasm_log(wasm_exec_env_t ee,const char *fmt,int vargs) {
       case 'p': {
           uint32_t *pointer=wamr_validate_pointer(egg.wamr,1,vargs,4);
           vargs+=4;
-          const char *string=pointer?wamr_validate_pointer(egg.wamr,1,*pointer,0):0;
+          // We need to return host addresses, not wasm ones. (this block is both %p and %s).
+          // But if it was NULL to the wasm program, keep it NULL.
+          const char *string=(pointer&&*pointer)?wamr_validate_pointer(egg.wamr,1,*pointer,0):0;
           strfmt_provide_p(&strfmt,string);
         } break;
     }

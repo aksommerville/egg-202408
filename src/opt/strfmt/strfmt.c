@@ -1,6 +1,7 @@
 #include "strfmt.h"
 #include "opt/serial/serial.h"
 #include <string.h>
+#include <stdio.h>
 
 #define STRFMT_STATE_OUTER 0
 #define STRFMT_STATE_NEED_LEN 1

@@ -33,7 +33,7 @@ Begins with a fixed header:
 ```
 
 Start Position and Repeat Position are in bytes from the start of the file.
-Must be >=40.
+Must be >=42.
 
 Followed by events until end of file.
 Events are identifiable by their first byte.

@@ -63,6 +63,7 @@ But the platform is pretty generic and can support a lot more than that.
 - - [ ] Synth receiver (I want to run midevil against this server).
 - - - This is never going to be a good choice due to buffer latency. Can we bake Egg's synthesizer into midevil instead?
 - - [ ] SongEventsEditor: Smart "auto-repair" to reassign or drop channels, eliminate tempo and program changes, anything else needed by beeeeeP.
+- - - arrautza/7-heart_of_stone.mid needs this due to channel 9. (could easily fix, but leave it so we can test auto-repair)
 - - [ ] Might need more visibility for the server-side audio state.
 - [ ] Choose a way to indicate the loop point in MIDI files. I believe both synthesizers are already ready for it.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
