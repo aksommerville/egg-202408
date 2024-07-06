@@ -311,7 +311,8 @@ void *render_texture_get_pixels(int *w,int *h,int *fmt,struct render *render,int
   if (!w||!h||!fmt) return 0;
   if ((texid<1)||(texid>render->texturec)) return 0;
   struct render_texture *texture=render->texturev+texid-1;
-  if (!texture->fbid) return 0; // We can only read from textures that have an associated framebuffer.
+  //if (!texture->fbid) return 0; // We can only read from textures that have an associated framebuffer.
+  if (render_texture_require_fb(texture)<0) return 0;
   *w=texture->w;
   *h=texture->h;
   *fmt=texture->fmt;
