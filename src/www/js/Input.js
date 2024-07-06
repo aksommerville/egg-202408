@@ -571,9 +571,7 @@ export class Input {
         return 0;
       }
       this.mouseLocked = true;
-      this.canvas.requestPointerLock(/*{
-        unadjustedMovement: true, // Not supported in Chrome/Linux, and the whole request gets rejected for it.
-      }*/).then(rsp => {
+      this.requestPointerLock().then(() => {
       }).catch(e => {
         console.log(`canvas.requestPointerLock failed`, e);
         this.mouseLocked = false;
@@ -583,6 +581,24 @@ export class Input {
       document.exitPointerLock();
     }
     return 1;
+  }
+  
+  // Call only if (this.canvas.requestPointerLock) exists.
+  // Returns a Promise, which is new behavior for requestPointerLock but not universally implemented yet.
+  // eg in my version of Firefox (127.0.2), we get undefined back.
+  requestPointerLock() {
+    const result = this.canvas.requestPointerLock();
+    if (result instanceof Promise) return result;
+    return new Promise((resolve, reject) => {
+      const listener = (event) => {
+        document.removeEventListener("pointerlockchange", listener);
+        document.removeEventListener("pointerlockerror", listener);
+        if (event.type === "pointerlockerror") reject();
+        else resolve();
+      };
+      document.addEventListener("pointerlockchange", listener);
+      document.addEventListener("pointerlockerror", listener);
+    });
   }
   
   egg_joystick_devid_by_index(p) {

@@ -19,7 +19,9 @@
   _(image) \
   _(song) \
   _(sound)
-  
+
+/* Generate the numeric 10-bit resource qualifier from an ISO 639 string eg "en".
+ */
 #define EGG_QUAL(lang) ( \
   ((((lang[0]>='0')&&(lang[0]<='5'))?(lang[0]-'0'):(lang[0]-'a'+6))<<5)| \
    (((lang[1]>='0')&&(lang[1]<='5'))?(lang[1]-'0'):(lang[1]-'a'+6)) \

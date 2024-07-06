@@ -68,4 +68,6 @@ But the platform is pretty generic and can support a lot more than that.
 - [ ] Choose a way to indicate the loop point in MIDI files. I believe both synthesizers are already ready for it.
 - [ ] egg_gles2_wrapper.xc:glGetVertexAttribPointerv: What does this function do?
 - [ ] glReadPixels et al: Could our buffer measurement come up short, if the user sets eg GL_UNPACK_ALIGNMENT to something wacky?
+- [ ] Error restoring state in Arrautza
+- [x] requestPointerLock for Firefox
 
