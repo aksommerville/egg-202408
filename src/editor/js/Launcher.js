@@ -36,6 +36,7 @@ export class Launcher {
     
     iframe.addEventListener("load", () => {
       try {
+        iframe.focus();
         iframe.contentWindow.postMessage(serial);
       } catch (error) {
         console.log(`iframe.contentWindow.postMessage failed`, error);
