@@ -7,19 +7,19 @@
 	<string>en</string>
 
 	<key>CFBundleExecutable</key>
-	<string>GAMEEXENAME</string>
+	<string>egg</string>
 
 	<key>CFBundleIconFile</key>
 	<string>appicon</string>
 
 	<key>CFBundleIdentifier</key>
-	<string>REVDNS_IDENTIFIER</string>
+	<string>com.aksommerville.egg</string>
 
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 
 	<key>CFBundleName</key>
-	<string>GAMETITLE</string>
+	<string>Egg</string>
 
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>

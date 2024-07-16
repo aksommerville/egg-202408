@@ -9,6 +9,8 @@
 extern struct macioc {
   struct macioc_delegate delegate;
   int terminate;
+  char **argv;
+  int argc;
 } macioc;
 
 #endif

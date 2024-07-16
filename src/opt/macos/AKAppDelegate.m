@@ -7,7 +7,7 @@
 
 -(void)applicationDidFinishLaunching:(NSNotification*)notification {
   if (macioc.delegate.init) {
-    if (macioc.delegate.init(macioc.delegate.userdata)<0) {
+    if (macioc.delegate.init(macioc.argc,macioc.argv)<0) {
       macioc.delegate.init=0;
       macioc_terminate(1);
       return;
@@ -22,7 +22,11 @@
     dispatch_queue_main_t q=dispatch_get_main_queue();
     dispatch_source_t source=dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER,0,0,q);
     dispatch_source_set_timer(source,dispatch_time(DISPATCH_TIME_NOW,0),interval,0);
-    dispatch_source_set_event_handler(source,^(){ macioc.delegate.update(macioc.delegate.userdata); });
+    dispatch_source_set_event_handler(source,^(){
+      if (macioc.delegate.update()<0) {
+        fprintf(stderr,"%s:%d:TODO: Handle error from macioc.delegate.update\n",__FILE__,__LINE__);
+      }
+    });
     dispatch_activate(source);
   }
 }
@@ -41,9 +45,12 @@
 -(void)applicationWillTerminate:(NSNotification*)notification {
   macioc.terminate=1;
   if (macioc.delegate.quit) {
-    void (*fn)(void*)=macioc.delegate.quit;
+    void (*fn)()=macioc.delegate.quit;
     macioc.delegate.quit=0; // guarantee not to call more than once
-    fn(macioc.delegate.userdata);
+    fn();
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+    // We reach this point and then segfault, when aborting due to video error. ???
+    // With the video error fixed, ie macioc.delegate.init() succeeds, we get a similar error on cmd-Q, but not on clicking the window's goaway.
   }
 }
 

@@ -42,15 +42,17 @@ int macos_prerun_argv(int argc,char **argv) {
 
 int macos_main(
   int argc,char **argv,
-  void (*cb_quit)(void *userdata),
-  int (*cb_init)(void *userdata),
-  void (*cb_update)(void *userdata),
-  void *userdata
+  void (*cb_quit)(),
+  int (*cb_init)(int argc,char **argv),
+  int (*cb_update)()
 ) {
+  fprintf(stderr,"%s...\n",__func__);
   macioc.delegate.rate=60.0;
   macioc.delegate.quit=cb_quit;
   macioc.delegate.init=cb_init;
   macioc.delegate.update=cb_update;
+  macioc.argv=argv;
+  macioc.argc=argc;
   return NSApplicationMain(argc,(void*)argv);
 }
 
@@ -58,6 +60,9 @@ int macos_main(
  */
 
 void macioc_terminate(int status) {
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
   macioc.terminate=1;
-  [NSApplication.sharedApplication terminate:0];
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+  [NSApplication.sharedApplication terminate:NSApplication.sharedApplication];
+  fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
 }

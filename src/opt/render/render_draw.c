@@ -1,12 +1,18 @@
 #include "render_internal.h"
 #include <math.h>
 
+// TODO Understand this better.
+#if USE_macos
+  #define GLSL_PREAMBLE "#version 120\n"
+#else
+  #define GLSL_PREAMBLE "#version 100\nprecision mediump float;\n"
+#endif
+
 /* raw
  */
  
 static const char render_raw_vsrc[]=
-  "#version 100\n"
-  "precision mediump float;\n"
+  GLSL_PREAMBLE
   "uniform vec2 screensize;\n"
   "uniform vec4 tint;\n"
   "uniform float alpha;\n"
@@ -21,8 +27,7 @@ static const char render_raw_vsrc[]=
 "";
 
 static const char render_raw_fsrc[]=
-  "#version 100\n"
-  "precision mediump float;\n"
+  GLSL_PREAMBLE
   "varying vec4 vcolor;\n"
   "void main() {\n"
     "gl_FragColor=vcolor;\n"
@@ -33,8 +38,7 @@ static const char render_raw_fsrc[]=
  */
  
 static const char render_decal_vsrc[]=
-  "#version 100\n"
-  "precision mediump float;\n"
+  GLSL_PREAMBLE
   "uniform vec2 screensize;\n"
   "attribute vec2 apos;\n"
   "attribute vec2 atexcoord;\n"
@@ -47,8 +51,7 @@ static const char render_decal_vsrc[]=
 "";
 
 static const char render_decal_fsrc[]=
-  "#version 100\n"
-  "precision mediump float;\n"
+  GLSL_PREAMBLE
   "uniform sampler2D sampler;\n"
   "uniform float alpha;\n"
   "uniform vec4 tint;\n"
@@ -63,8 +66,7 @@ static const char render_decal_fsrc[]=
  */
  
 static const char render_tile_vsrc[]=
-  "#version 100\n"
-  "precision mediump float;\n"
+  GLSL_PREAMBLE
   "uniform vec2 screensize;\n"
   "uniform float pointsize;\n"
   "attribute vec2 apos;\n"
@@ -93,8 +95,7 @@ static const char render_tile_vsrc[]=
 "";
 
 static const char render_tile_fsrc[]=
-  "#version 100\n"
-  "precision mediump float;\n"
+  GLSL_PREAMBLE
   "uniform sampler2D sampler;\n"
   "uniform float alpha;\n"
   "uniform vec4 tint;\n"

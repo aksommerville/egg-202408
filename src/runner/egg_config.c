@@ -268,6 +268,7 @@ static int egg_config_default_path(char **v,const char *sfx) {
   }
   
   // Otherwise the user provided an explicit path and we will honor it.
+  return 0;
 }
 
 /* Load one config file.

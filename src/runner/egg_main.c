@@ -327,6 +327,17 @@ static void egg_rcvsig(int sigid) {
 /* Main.
  */
  
+#if USE_macos
+
+#include "opt/macos/macos.h"
+
+int main(int argc,char **argv) {
+  if ((argc=macos_prerun_argv(argc,argv))<0) return 1;
+  return macos_main(argc,argv,egg_quit,egg_init,egg_update);
+}
+
+#else
+ 
 int main(int argc,char **argv) {
   int err;
   signal(SIGINT,egg_rcvsig);
@@ -343,3 +354,5 @@ int main(int argc,char **argv) {
   egg_quit();
   return 0;
 }
+
+#endif

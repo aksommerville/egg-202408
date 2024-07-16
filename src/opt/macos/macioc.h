@@ -11,9 +11,9 @@ struct macioc_delegate {
   int rate; // hz, for update(). <=0 we will not update
   void *userdata;
   void (*focus)(void *userdata,int focus);
-  void (*quit)(void *userdata);
-  int (*init)(void *userdata);
-  void (*update)(void *userdata);
+  void (*quit)();
+  int (*init)(int argc,char **argv);
+  int (*update)();
 };
 
 /* Call from your main().
